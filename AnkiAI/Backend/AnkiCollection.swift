@@ -120,6 +120,7 @@ final class AnkiCollection {
     }
 
     private struct CardInfoDTO: Decodable {
+        let note_id: Int64
         let due_date: Int64?
         let due_position: Int?
         let interval: Int
@@ -139,6 +140,7 @@ final class AnkiCollection {
         do {
             let d = try JSONDecoder().decode(CardInfoDTO.self, from: data)
             return CardInfo(
+                noteId: d.note_id,
                 dueDate: d.due_date.map { Date(timeIntervalSince1970: TimeInterval($0)) },
                 duePosition: d.due_position,
                 interval: d.interval, ease: d.ease, reviews: d.reviews, lapses: d.lapses,
@@ -146,6 +148,33 @@ final class AnkiCollection {
         } catch {
             throw AnkiBackendError.decode("\(error)")
         }
+    }
+
+    private struct NoteFieldsDTO: Decodable {
+        let notetype_id: Int64
+        let fields: [String]
+        let tags: [String]
+    }
+
+    /// Raw note fields + notetype id (for editing existing notes).
+    func note(id: Int64) throws -> NoteData {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_note_fields(handle, id, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do {
+            let d = try JSONDecoder().decode(NoteFieldsDTO.self, from: data)
+            return NoteData(id: id, notetypeId: d.notetype_id, fields: d.fields)
+        } catch {
+            throw AnkiBackendError.decode("\(error)")
+        }
+    }
+
+    func updateNote(_ note: NoteData) throws {
+        let fieldsJSON = String(data: try JSONEncoder().encode(note.fields), encoding: .utf8) ?? "[]"
+        let rc = fieldsJSON.withCString { anki_backend_update_note(handle, note.id, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
     /// Answer/grade a card now via the scheduler (mutates the collection).

@@ -91,21 +91,20 @@ public actor BackendCollectionGateway: CollectionGateway {
         try opened().addNote(notetypeId: notetypeId, fields: fields, deckId: deckId)
     }
 
-    /// Card context for the "Ask Claude" reviewer chat. The backend doesn't expose
-    /// raw note fields publicly (no get_note/get_card), so we build context from the
-    /// rendered question/answer HTML + the card's deck. noteId is 0 (editing an
-    /// existing note still requires backend note access — a later slice).
+    /// Card context for the "Ask Claude" reviewer chat — REAL raw note fields via
+    /// the NotesService (card → note id via card_stats → get_note). This also
+    /// gives the correct noteId so AI edit-card proposals target the real note.
     public func cardContext(cardId: Int64) async throws -> (noteId: Int64, deckId: Int64, fields: [String])? {
         let col = try opened()
-        let rendered = try col.renderCard(cardId: cardId)
         let info = try col.cardInfo(cardId: cardId)
+        let noteData = try col.note(id: info.noteId)
         let deckId = (try? col.deckTree().first { $0.name == info.deck })?.deckId ?? 0
-        return (noteId: 0, deckId: deckId, fields: [rendered.questionHTML, rendered.answerHTML])
+        return (noteId: info.noteId, deckId: deckId, fields: noteData.fields)
     }
     public func note(id: Int64) async throws -> NoteData {
-        throw GatewayError.notImplementedInM21("note")
+        try opened().note(id: id)
     }
     public func updateNote(_ note: NoteData) async throws {
-        throw GatewayError.notImplementedInM21("updateNote")
+        try opened().updateNote(note)
     }
 }

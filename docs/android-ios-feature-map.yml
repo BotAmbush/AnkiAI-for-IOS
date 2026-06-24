@@ -136,14 +136,16 @@ features:
     ios_paths:
       - AnkiAI/Domain/DomainModels.swift
       - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components:
       - Frameworks/AnkiCore.xcframework
     tests:
       - AnkiAITests/BackendAddNoteTests.swift
+      - AnkiAITests/BackendNoteEditTests.swift
     status: partial
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.5 — add-note (create card) wired + integration-tested. Editing an existing note (update/cardContext) still throws notImplementedInM21 (needs backend get_note/get_card); full editor UI pending.
+    notes: "M2.5 add-note + M2.14 read/edit existing notes via NotesService get_note/update_notes (raw fields, undoable) — integration-tested. A dedicated full note-editor UI is still pending, but create + field edit work."
 
   - feature_id: reviewer
     description: Review screen showing question/answer with rendering.
@@ -600,10 +602,11 @@ features:
     backend_components: []
     tests:
       - AnkiAITests/AIChatViewModelTests.swift
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+      - AnkiAITests/BackendNoteEditTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Chat logic + proposals unit-tested against stub gateway; write-to-backend (apply edit/add) pending (throws notImplementedInM21).
+    notes: "M2.14 — reviewer chat now has REAL card context (raw note fields via NotesService) and the 'improve card' edit proposal applies to the real note (update_notes, undoable). Live Claude responses need a user API key."
 
   - feature_id: ai_card_creator
     description: AI card creator — generate flashcards from a prompt/material.

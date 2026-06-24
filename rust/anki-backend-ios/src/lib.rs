@@ -26,8 +26,10 @@ use std::ptr;
 use anki::collection::{Collection, CollectionBuilder};
 use anki::prelude::*;
 use anki::search::SortMode;
+use anki::services::NotesService;
 use anki_proto::decks::DeckTreeNode;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
+use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
@@ -305,6 +307,7 @@ pub extern "C" fn anki_backend_card_info(
     match handle.col.card_stats(CardId(card_id)) {
         Ok(s) => {
             let json = serde_json::json!({
+                "note_id": s.note_id,
                 "due_date": s.due_date,
                 "due_position": s.due_position,
                 "interval": s.interval,
@@ -778,6 +781,100 @@ pub extern "C" fn anki_backend_import_apkg(
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("import_apkg failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Raw note fields/notetype/tags as JSON `{notetype_id, fields:[...], tags:[...]}`
+/// via the NotesService (so editing existing notes works without rendering).
+#[no_mangle]
+pub extern "C" fn anki_backend_note_fields(
+    handle: *mut Handle,
+    note_id: i64,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.get_note(PbNoteId { nid: note_id }) {
+        Ok(note) => {
+            let json = serde_json::json!({
+                "notetype_id": note.notetype_id,
+                "fields": note.fields,
+                "tags": note.tags,
+            })
+            .to_string();
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("note json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("get_note failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Replace a note's fields with `fields_json` (a JSON array of strings) and save
+/// it (undoable). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_update_note(
+    handle: *mut Handle,
+    note_id: i64,
+    fields_json: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let fields_json = match unsafe { cstr_to_string(fields_json) } {
+        Some(f) => f,
+        None => {
+            set_last_error("null fields".into());
+            return 1;
+        }
+    };
+    let fields: Vec<String> = match serde_json::from_str(&fields_json) {
+        Ok(f) => f,
+        Err(e) => {
+            set_last_error(format!("invalid fields json: {e}"));
+            return 1;
+        }
+    };
+    let mut note = match handle.col.get_note(PbNoteId { nid: note_id }) {
+        Ok(n) => n,
+        Err(e) => {
+            set_last_error(format!("get_note failed: {e}"));
+            return 2;
+        }
+    };
+    note.fields = fields;
+    match handle.col.update_notes(UpdateNotesRequest {
+        notes: vec![note],
+        skip_undo_entry: false,
+    }) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("update_notes failed: {e}"));
             2
         }
     }

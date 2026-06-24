@@ -63,6 +63,7 @@ public enum AnswerRating: Int, Sendable, CaseIterable {
 /// Scheduling info for a card (M2.12). `dueDate` is set for review/learning
 /// cards; `duePosition` is the new-queue position for new cards.
 public struct CardInfo: Equatable, Sendable {
+    public let noteId: Int64
     public let dueDate: Date?
     public let duePosition: Int?
     public let interval: Int      // days
@@ -71,8 +72,9 @@ public struct CardInfo: Equatable, Sendable {
     public let lapses: Int
     public let cardType: String
     public let deck: String
-    public init(dueDate: Date?, duePosition: Int?, interval: Int, ease: Int,
+    public init(noteId: Int64, dueDate: Date?, duePosition: Int?, interval: Int, ease: Int,
                 reviews: Int, lapses: Int, cardType: String, deck: String) {
+        self.noteId = noteId
         self.dueDate = dueDate
         self.duePosition = duePosition
         self.interval = interval
