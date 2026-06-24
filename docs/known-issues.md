@@ -20,6 +20,11 @@ be treated as green until a macOS run passes.
 3. Wait for the monthly minutes quota to reset.
 Then re-run the workflow (`mode=full`) on `main` and drive the build-repair loop.
 
+## ⛳ OPEN TODO — card import from a collection file is NOT finished
+Loading a user's existing collection via **file import (.apkg/.colpkg) is incomplete**
+(see below). Per the user's direction, the current path to load a real collection is
+**AnkiWeb sync** (M2.19+). File import remains an open TODO to revisit later.
+
 ## M2.10/M2.18 import round-trip — needs local debugging
 `.apkg` **export** works (verified: valid ZIP package). The export→**import**
 round-trip into a *fresh* collection fails with an opaque anki `InvalidInput`

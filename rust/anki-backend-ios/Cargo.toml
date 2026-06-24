@@ -14,13 +14,14 @@ crate-type = ["staticlib"]
 [dependencies]
 # Pinned upstream Anki (see docs/anki-backend-pin.md). Path points at the
 # submodule-aware clone produced by tools/build-anki-backend.sh.
-anki = { path = "../.work/anki/rslib" }
+# native-tls (Apple Security framework / Secure Transport) gives AnkiWeb sync a
+# TLS backend that cross-compiles to iOS without an OpenSSL/aws-lc build.
+anki = { path = "../.work/anki/rslib", features = ["native-tls"] }
 anki_proto = { path = "../.work/anki/rslib/proto" }
 serde_json = "1"
 # Anki declares tokio without "io-util"; its media/sync code uses AsyncReadExt.
-# Enabling io-util here turns it on for the whole graph via feature unification,
-# so the `anki` crate compiles. (Build-time only; we do not call sync.)
-tokio = { version = "1.45", features = ["io-util"] }
+# We also need a runtime (rt) + time/net to block_on the async sync functions.
+tokio = { version = "1.45", features = ["io-util", "rt", "rt-multi-thread", "time", "net"] }
 
 [profile.release]
 opt-level = "z"
