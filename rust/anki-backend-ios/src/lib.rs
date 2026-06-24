@@ -881,7 +881,8 @@ pub extern "C" fn anki_backend_import_apkg(
     match handle.col.import_apkg(&in_path, opts) {
         Ok(_) => 0,
         Err(e) => {
-            set_last_error(format!("import_apkg failed: {e}"));
+            // Debug format so opaque errors (e.g. InvalidInput { info }) surface.
+            set_last_error(format!("import_apkg failed: {e:?}"));
             2
         }
     }

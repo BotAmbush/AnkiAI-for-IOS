@@ -20,14 +20,17 @@ be treated as green until a macOS run passes.
 3. Wait for the monthly minutes quota to reset.
 Then re-run the workflow (`mode=full`) on `main` and drive the build-repair loop.
 
-## M2.10 import round-trip — under investigation
-`.apkg` **export** works (verified: valid ZIP package produced). The full
-export→**import** round-trip into a *fresh* collection currently fails with
-anki-internal `InvalidInput: "decks have different kinds"`
-(`import_export/package/apkg/import/decks.rs:141`) — likely the Default-deck merge
-under default `ImportAnkiPackageOptions`. Import is wired but not yet asserted;
-to investigate: try non-default import options (with_scheduling / merge), or
-import into a collection seeded to avoid the Default-deck kind clash.
+## M2.10/M2.18 import round-trip — needs local debugging
+`.apkg` **export** works (verified: valid ZIP package). The export→**import**
+round-trip into a *fresh* collection fails with an opaque anki `InvalidInput`
+(previously surfaced as "decks have different kinds",
+`import_export/package/apkg/import/decks.rs:141`). Tried **default** and
+**with_scheduling + with_deck_configs** options (M2.18) — both fail. The error
+message isn't propagated (the bridge now uses Debug format to capture it next
+time). This is an anki-internal edge that needs **local** debugging (can't run
+anki on the Windows dev box) or the **.colpkg restore** path (whole-collection
+replace, which sidesteps deck merging). Import is wired but not asserted. Getting
+a real user collection in (this or sync) is the top remaining gap.
 
 ## M2.1 status (verified 2026-06-24, run 28101322821)
 - **Real Anki collection READ path works.** The app links the real Rust backend

@@ -243,3 +243,9 @@ See `feature-parity-checklist.md` for the per-feature completed/partial/unsuppor
 - [ ] Bridge `rename_deck` (DecksService) + `remove_deck`
   (remove_decks_and_child_decks); gateway methods; deck-list swipe actions
   (Rename via alert, Delete; Default protected). Integration tests via deck tree.
+
+### M2.18 — .apkg import fix attempt (FAILED — export-only kept green)
+Tried with_scheduling + with_deck_configs options; import still fails with opaque
+anki InvalidInput (deck-kind conflict). Reverted to export-only test (green);
+import wired but deferred, error now Debug-formatted for future local debugging.
+See known-issues. Top remaining gap: getting a real collection in (import/sync).
