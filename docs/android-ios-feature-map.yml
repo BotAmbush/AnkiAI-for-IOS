@@ -448,9 +448,9 @@ features:
     tests:
       - AnkiAITests/BackendImportExportTests.swift
     status: partial
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.10 — .apkg export_apkg/import_apkg + round-trip test WRITTEN and committed (aefdd72) but NOT YET VERIFIED: GitHub Actions macOS minutes were exhausted before this could build (see docs/known-issues.md). Mark verified only after a green run."
+    notes: "M2.10 — .apkg EXPORT verified (valid ZIP package, run 28129393676). IMPORT wired but deferred: round-trip into a fresh collection hits anki InvalidInput 'decks have different kinds' (see docs/known-issues.md). Files-app/share-sheet UI + .colpkg pending."
 
   - feature_id: apkg_colpkg
     description: APKG / collection package handling.
@@ -463,9 +463,9 @@ features:
     tests:
       - AnkiAITests/BackendImportExportTests.swift
     status: partial
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.10 — .apkg round-trip WRITTEN but NOT YET VERIFIED (CI minutes exhausted). .colpkg not yet wired."
+    notes: "M2.10 — .apkg export verified; import deferred (deck-kind conflict). .colpkg not yet wired."
 
   - feature_id: backups_restore
     description: Collection backups and restoration.

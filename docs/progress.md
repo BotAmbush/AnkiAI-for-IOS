@@ -147,12 +147,18 @@ integration test written. **Never built** — GitHub Actions macOS minutes were 
 (see known-issues "BLOCKER"). Do NOT treat as green until a macOS run passes. This is the
 first slice this session that is unverified.
 
-### M2.11 — Reviewer polish (user feedback) + verify M2.10 (IN PROGRESS)
-Repo made public → Actions minutes unblocked. Three device-test fixes from the user:
-- [ ] #1 deck-complete state (no more silent loop to the start) — `finished` view + Review again.
-- [ ] #2 answer-button interval labels (`describe_next_states`, [again,hard,good,easy]).
-- [ ] #3 editable AI budget limit + live "Remaining" in Settings.
-- [ ] Verify M2.10 (.apkg round-trip) in the same run.
+### M2.11 — Reviewer polish (user device feedback) (CI GREEN ✅, verified 2026-06-25)
+Repo made public → Actions minutes unblocked. Run `28129393676`: **63 tests (0 failures)**.
+- [x] #1 deck-complete state (no more silent loop) — completion view + "Review again".
+- [x] #2 answer-button interval labels (`describe_next_states` → [again,hard,good,easy])
+  shown under each grade button; test added.
+- [x] #3 editable AI budget limit + live "Remaining" in Settings.
+
+### M2.10 — Import/export — EXPORT verified; import deferred
+`.apkg` **export** verified (valid ZIP package). **Import** round-trip into a fresh
+collection hits anki-internal `InvalidInput "decks have different kinds"` — wired but
+deferred/documented (see known-issues). CI fix this round: `Section` header/footer; the
+import is the only piece not green.
 
 ### M2.12+ — remaining core (NOT STARTED — larger slices)
 - [ ] Files-app/share-sheet UI for import/export; .colpkg; media serving (`<img>`);
