@@ -5,11 +5,25 @@ import SwiftUI
 /// analyzer once the backend is connected (milestone 2); milestone 1 shows the
 /// engine working against representative sample stats.
 struct InsightsView: View {
+    @EnvironmentObject private var env: AppEnvironment
     @State private var tips: [AITip] = []
+    @State private var stats: CollectionStats?
 
     var body: some View {
         NavigationStack {
             List {
+                Section("Collection") {
+                    if let stats {
+                        statRow("Total cards", stats.total)
+                        statRow("New", stats.newCount, .blue)
+                        statRow("Learning", stats.learning, .red)
+                        statRow("Review (due)", stats.review, .green)
+                        statRow("Mature (≥21d)", stats.mature)
+                        statRow("Suspended", stats.suspended)
+                    } else {
+                        ProgressView()
+                    }
+                }
                 Section {
                     ForEach(tips) { tip in
                         HStack(alignment: .top, spacing: 12) {
@@ -18,12 +32,25 @@ struct InsightsView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                } header: {
+                    Text("AI tips")
                 } footer: {
-                    Text("Tips are generated from your review history. Sample data shown until the collection is connected.")
+                    Text("Card counts are live from your collection. AI tips use sample review history until revlog analysis is wired (M2.x).")
                 }
             }
             .navigationTitle("Insights")
-            .onAppear { tips = AITipEngine.generateTips(Self.sampleStats) }
+            .task {
+                stats = try? await env.gateway.collectionStats()
+                tips = AITipEngine.generateTips(Self.sampleStats)
+            }
+        }
+    }
+
+    private func statRow(_ label: String, _ value: Int, _ color: Color = .primary) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text("\(value)").font(.body.monospacedDigit().bold()).foregroundColor(color)
         }
     }
 

@@ -106,6 +106,39 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64
 }
 
+/// Collection-wide card statistics (M2.8). Computed from backend searches.
+public struct CollectionStats: Equatable, Sendable {
+    public let total: Int
+    public let newCount: Int
+    public let learning: Int
+    public let review: Int
+    public let suspended: Int
+    public let mature: Int
+    public init(total: Int, newCount: Int, learning: Int, review: Int, suspended: Int, mature: Int) {
+        self.total = total
+        self.newCount = newCount
+        self.learning = learning
+        self.review = review
+        self.suspended = suspended
+        self.mature = mature
+    }
+}
+
+public extension CollectionGateway {
+    /// Collection statistics computed via backend search queries. Default
+    /// implementation works for any gateway that implements `searchCardIds`.
+    func collectionStats() async throws -> CollectionStats {
+        let total = try await searchCardIds(query: "").count
+        let newCount = try await searchCardIds(query: "is:new").count
+        let learning = try await searchCardIds(query: "is:learn").count
+        let review = try await searchCardIds(query: "is:review").count
+        let suspended = try await searchCardIds(query: "is:suspended").count
+        let mature = try await searchCardIds(query: "prop:ivl>=21").count
+        return CollectionStats(total: total, newCount: newCount, learning: learning,
+                               review: review, suspended: suspended, mature: mature)
+    }
+}
+
 public enum GatewayError: Error, Equatable {
     case notFound
     case noNotetypes

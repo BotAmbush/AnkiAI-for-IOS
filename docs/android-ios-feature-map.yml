@@ -421,13 +421,16 @@ features:
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/stats
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Domain/DomainModels.swift
+      - AnkiAI/Features/Insights/InsightsView.swift
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendStatsTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+ (distinct from AI insights).
+    notes: M2.8 — live collection counts (total/new/learning/review/mature/suspended) via backend search, shown in Insights. Full graphs/intervals/forecast pending.
 
   - feature_id: import_export
     description: Import/export of collections and notes.
