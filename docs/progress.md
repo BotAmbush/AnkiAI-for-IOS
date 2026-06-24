@@ -122,12 +122,37 @@ Run `28120838056`, commit `ae8533d`: **53 tests (0 failures)**.
   card → searchable + renders the added front/back. CI fix: `return 1;` in the
   add_note JSON-parse error arm.
 
-### M2.6 — Move card between decks (IN PROGRESS)
-- [ ] Backend `set_deck`; reviewer "move card"; integration test (counts shift).
+### M2.6 — Move card between decks (CI GREEN ✅, verified 2026-06-24)
+Run `28121831458`, commit `34b9ef2`: **54 tests (0 failures)**.
+- [x] Bridge `set_deck`; gateway `moveCard`; reviewer "Move to Default deck".
+- [x] Integration test: moving all Math cards to Hebrew empties Math's due counts
+  and grows Hebrew's; canonical fixture byte-identical.
 
 ### M2.7+ — remaining core (NOT STARTED)
 - [ ] Note edit/cardContext (needs backend get_note/get_card); flags/tags; card
   browser; full editor; media serving; statistics; import/export; sync.
+
+## Session summary (2026-06-24) — M2.1 → M2.6, all CI-verified green
+
+The real Anki collection path now covers, end-to-end through the Rust backend
+`AnkiCore.xcframework` (anki 25.09.2) with integration tests proving the canonical
+fixture is never mutated:
+- **Read**: open collection, deck tree (names + new/learn/review counts), list
+  cards per deck, render question/answer + note-type CSS.
+- **Write (scheduler/management)**: grade (Again/Hard/Good/Easy), bury, suspend,
+  undo, move card between decks.
+- **Notes**: add note (the AI card creator now adds REAL cards), resolve/create
+  deck, Basic notetype id.
+- **Reviewer UI**: deck → real cards rendered → Show Answer → grade buttons →
+  next; toolbar Bury/Suspend/Move/Undo; Ask Claude.
+- 54 unit + integration tests; unsigned arm64 IPA (~4.65 MB, backend linked).
+
+Still Mode A (`initial-full-migration`); `lastAndroidCommitFullyPortedToIOS`
+stays **null**. Notable gaps: note **editing** of existing cards + reviewer
+card-context for AI (blocked on backend `get_note`/`get_card` not being public —
+a workaround via rendered HTML is the next investigation), flags/tags, card
+browser, full editor, media serving, statistics, import/export, sync,
+notifications, localization, accessibility, forced-study.
 - [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
 - [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
 - [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).
