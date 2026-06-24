@@ -9,6 +9,7 @@ struct AISettingsView: View {
     @State private var testResult: String?
     @State private var testing = false
     @State private var spent: Double = 0
+    @State private var limitText = ""
 
     var body: some View {
         NavigationStack {
@@ -52,16 +53,38 @@ struct AISettingsView: View {
 
                 Section("Budget") {
                     LabeledContent("Spent", value: String(format: "$%.4f", spent))
-                    LabeledContent("Limit", value: String(format: "$%.2f", env.settings.budgetLimitUSD))
+                    LabeledContent("Remaining", value: String(format: "$%.4f", max(0, env.settings.budgetLimitUSD - spent)))
+                    HStack {
+                        Text("Limit")
+                        Spacer()
+                        Text("$").foregroundColor(.secondary)
+                        TextField("20.00", text: $limitText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 90)
+                            .onSubmit { saveLimit() }
+                        Button("Set") { saveLimit() }
+                            .buttonStyle(.bordered)
+                            .disabled(Double(limitText) == nil)
+                    }
                     Button("Reset spending") { env.settings.totalSpentUSD = 0; spent = 0 }
+                } footer: {
+                    Text("Spend is estimated from token usage. Editing the limit updates the remaining amount.")
                 }
             }
             .navigationTitle("AI Assistant")
             .onAppear {
                 hasKey = env.settings.hasAPIKey
                 spent = env.settings.totalSpentUSD
+                limitText = String(format: "%.2f", env.settings.budgetLimitUSD)
             }
         }
+    }
+
+    private func saveLimit() {
+        guard let value = Double(limitText), value >= 0 else { return }
+        env.settings.budgetLimitUSD = value
+        limitText = String(format: "%.2f", value)
     }
 
     private func testConnection() async {

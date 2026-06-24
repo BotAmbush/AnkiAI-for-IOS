@@ -125,6 +125,17 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    /// [again, hard, good, easy] interval labels for the answer buttons.
+    func answerButtonLabels(cardId: Int64) throws -> [String] {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_answer_button_labels(handle, cardId, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do { return try JSONDecoder().decode([String].self, from: data) }
+        catch { throw AnkiBackendError.decode("\(error)") }
+    }
+
     func suspendCard(cardId: Int64) throws {
         guard anki_backend_suspend_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }

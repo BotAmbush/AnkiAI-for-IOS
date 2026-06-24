@@ -147,9 +147,17 @@ integration test written. **Never built** — GitHub Actions macOS minutes were 
 (see known-issues "BLOCKER"). Do NOT treat as green until a macOS run passes. This is the
 first slice this session that is unverified.
 
-### M2.11+ — remaining core (NOT STARTED — larger slices)
+### M2.11 — Reviewer polish (user feedback) + verify M2.10 (IN PROGRESS)
+Repo made public → Actions minutes unblocked. Three device-test fixes from the user:
+- [ ] #1 deck-complete state (no more silent loop to the start) — `finished` view + Review again.
+- [ ] #2 answer-button interval labels (`describe_next_states`, [again,hard,good,easy]).
+- [ ] #3 editable AI budget limit + live "Remaining" in Settings.
+- [ ] Verify M2.10 (.apkg round-trip) in the same run.
+
+### M2.12+ — remaining core (NOT STARTED — larger slices)
 - [ ] Files-app/share-sheet UI for import/export; .colpkg; media serving (`<img>`);
-  AnkiWeb sync; full stats graphs; note editor (blocked on backend get_note/get_card).
+  AnkiWeb sync; full stats graphs; per-card next-due in browser; note editor
+  (blocked on backend get_note/get_card).
 
 ## Session summary (2026-06-24) — M2.1 → M2.9, all CI-verified green
 

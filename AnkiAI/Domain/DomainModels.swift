@@ -86,6 +86,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func renderCard(cardId: Int64) async throws -> RenderedCard
     /// Answer/grade a card via the real backend scheduler (M2.3 write path).
     func answerCard(cardId: Int64, rating: AnswerRating) async throws
+    /// Interval labels for the answer buttons, [again, hard, good, easy] (M2.11).
+    func answerButtonLabels(cardId: Int64) async throws -> [String]
     /// Suspend / bury a card; undo the last operation (M2.4 write paths).
     func suspendCard(cardId: Int64) async throws
     func buryCard(cardId: Int64) async throws

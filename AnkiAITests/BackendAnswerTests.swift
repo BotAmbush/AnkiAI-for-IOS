@@ -59,6 +59,15 @@ final class BackendAnswerTests: XCTestCase {
         XCTAssertEqual(try dirHash(fixtureDir), originalHash)
     }
 
+    func testAnswerButtonLabels() async throws {
+        let (gateway, _, _) = try openedCopy()
+        let ids = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")
+        let id = try XCTUnwrap(ids.first)
+        let labels = try await gateway.answerButtonLabels(cardId: id)
+        XCTAssertEqual(labels.count, 4, "labels are [again, hard, good, easy]")
+        XCTAssertFalse(labels.allSatisfy { $0.isEmpty }, "intervals should be described")
+    }
+
     func testInvalidRatingNotExposed() async throws {
         // AnswerRating is a closed enum (1...4); ensure the mapping is intact.
         XCTAssertEqual(AnswerRating.again.rawValue, 1)

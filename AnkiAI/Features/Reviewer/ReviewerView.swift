@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Reviewer (M2.2 read slice): loads REAL cards from a deck and renders their
-/// question/answer + note-type CSS via the Anki backend. Read-only — answer
-/// buttons, undo, and scheduler mutations are the next slice. "Ask Claude" opens
-/// the AI chat (card-context wiring to the backend comes later).
+/// Reviewer: loads REAL cards from a deck, renders question/answer + note-type CSS
+/// via the backend, and grades them through the real scheduler. Answer buttons
+/// show the next interval per rating; finishing the deck shows a completion state.
 struct ReviewerView: View {
     @EnvironmentObject private var env: AppEnvironment
     let deckName: String
@@ -11,7 +10,9 @@ struct ReviewerView: View {
     @State private var cardIds: [Int64] = []
     @State private var index = 0
     @State private var rendered: RenderedCard?
+    @State private var labels: [String] = ["", "", "", ""]
     @State private var showAnswer = false
+    @State private var finished = false
     @State private var isLoading = true
     @State private var isAnswering = false
     @State private var error: String?
@@ -32,6 +33,8 @@ struct ReviewerView: View {
                 Spacer()
             } else if cardIds.isEmpty {
                 Spacer(); Text("No cards in this deck.").foregroundColor(.secondary); Spacer()
+            } else if finished {
+                completionView
             } else if let rendered {
                 CardWebView(html: showAnswer ? rendered.answerHTML : rendered.questionHTML, css: rendered.css)
                     .frame(maxHeight: .infinity)
@@ -61,7 +64,7 @@ struct ReviewerView: View {
                     Button { Task { await undoLast() } }
                         label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                 } label: { Image(systemName: "ellipsis.circle") }
-                .disabled(cardIds.isEmpty)
+                .disabled(cardIds.isEmpty || finished)
             }
         }
         .task { await loadDeck() }
@@ -75,6 +78,20 @@ struct ReviewerView: View {
         }
     }
 
+    private var completionView: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Text("🎉").font(.system(size: 56))
+            Text("Deck complete").font(.title2.bold())
+            Text("You've gone through all \(cardIds.count) card(s) in \(leaf).")
+                .font(.callout).foregroundColor(.secondary).multilineTextAlignment(.center).padding(.horizontal)
+            Button("Review again") { Task { await loadDeck() } }
+                .buttonStyle(.borderedProminent)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var controls: some View {
         VStack(spacing: 8) {
             HStack {
@@ -86,13 +103,22 @@ struct ReviewerView: View {
                 Button("Show Answer") { showAnswer = true }
                     .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
             } else {
-                // Real scheduler grading via the backend.
+                // Real scheduler grading; each button shows the next interval.
                 HStack(spacing: 8) {
-                    ForEach(AnswerRating.allCases, id: \.rawValue) { rating in
-                        Button(rating.label) { Task { await answer(rating) } }
-                            .buttonStyle(.bordered)
+                    ForEach(Array(AnswerRating.allCases.enumerated()), id: \.element.rawValue) { i, rating in
+                        Button {
+                            Task { await answer(rating) }
+                        } label: {
+                            VStack(spacing: 2) {
+                                Text(rating.label)
+                                if i < labels.count, !labels[i].isEmpty {
+                                    Text(labels[i]).font(.caption2).foregroundColor(.secondary)
+                                }
+                            }
                             .frame(maxWidth: .infinity)
-                            .disabled(isAnswering)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isAnswering)
                     }
                 }
             }
@@ -101,7 +127,7 @@ struct ReviewerView: View {
     }
 
     private func loadDeck() async {
-        isLoading = true; error = nil
+        isLoading = true; error = nil; finished = false
         do {
             cardIds = try await env.gateway.cardIds(inDeckNamed: deckName)
             index = 0
@@ -115,11 +141,17 @@ struct ReviewerView: View {
     private func renderCurrent() async throws {
         showAnswer = false
         rendered = try await env.gateway.renderCard(cardId: cardIds[index])
+        // Interval labels are best-effort (non-fatal if unavailable).
+        labels = (try? await env.gateway.answerButtonLabels(cardId: cardIds[index])) ?? ["", "", "", ""]
     }
 
     private func next() async {
         guard !cardIds.isEmpty else { return }
-        index = (index + 1) % cardIds.count
+        if index + 1 >= cardIds.count {
+            finished = true   // reached the end of the deck — show completion
+            return
+        }
+        index += 1
         do { try await renderCurrent() } catch { self.error = "\(error)" }
     }
 

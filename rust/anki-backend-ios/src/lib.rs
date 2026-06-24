@@ -329,6 +329,53 @@ pub extern "C" fn anki_backend_render_card(
     }
 }
 
+/// Return the four answer-button interval labels for a card as a JSON array of
+/// strings in [again, hard, good, easy] order (e.g. ["<1m","<10m","1d","4d"]).
+#[no_mangle]
+pub extern "C" fn anki_backend_answer_button_labels(
+    handle: *mut Handle,
+    card_id: i64,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let states = match handle.col.get_scheduling_states(CardId(card_id)) {
+        Ok(s) => s,
+        Err(e) => {
+            set_last_error(format!("get_scheduling_states failed: {e}"));
+            return 2;
+        }
+    };
+    match handle.col.describe_next_states(&states) {
+        Ok(labels) => {
+            let json = serde_json::to_string(&labels).unwrap_or_else(|_| "[]".into());
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("labels json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("describe_next_states failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Answer (grade) a card now with `rating` (1=Again 2=Hard 3=Good 4=Easy),
 /// driving the real backend scheduler. Returns 0 on success.
 #[no_mangle]

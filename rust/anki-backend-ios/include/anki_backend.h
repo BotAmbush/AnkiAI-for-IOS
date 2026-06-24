@@ -38,6 +38,9 @@ int32_t anki_backend_render_card(AnkiHandle *handle, int64_t card_id, char **out
 /* Answer/grade a card now via the scheduler. rating: 1=Again 2=Hard 3=Good 4=Easy. */
 int32_t anki_backend_answer_card(AnkiHandle *handle, int64_t card_id, int32_t rating);
 
+/* Answer-button interval labels: JSON [again, hard, good, easy]. */
+int32_t anki_backend_answer_button_labels(AnkiHandle *handle, int64_t card_id, char **out_json);
+
 /* Suspend a card (excluded from review until unsuspended). */
 int32_t anki_backend_suspend_card(AnkiHandle *handle, int64_t card_id);
 
