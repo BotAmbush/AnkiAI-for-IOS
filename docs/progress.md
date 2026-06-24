@@ -169,7 +169,7 @@ Due/Interval/Reviews/Lapses/Ease; tests (new vs reviewed). Addresses the user's
 Run `28131527987` (66 tests): reviewer-chat fix (interim, via rendered HTML),
 keyboard dismissal on chat + settings, app icon (1024 AppIcon asset).
 
-### M2.14 — Real note read/edit via NotesService (no workaround) (IN PROGRESS)
+### M2.14 — Real note read/edit via NotesService (CI GREEN ✅, verified 2026-06-25, run 28132274709)
 Replaces the M2.13 rendered-HTML cardContext workaround — `get_note`/`update_notes`
 ARE available via the `anki::services::NotesService` trait.
 - [ ] Bridge `note_fields` (get_note → raw fields) + `update_note` (update_notes,
