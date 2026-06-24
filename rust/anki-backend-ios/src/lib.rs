@@ -464,7 +464,7 @@ pub extern "C" fn anki_backend_add_note(
         Ok(f) => f,
         Err(e) => {
             set_last_error(format!("invalid fields json: {e}"));
-            1
+            return 1;
         }
     };
     match add_note_impl(&mut handle.col, notetype_id, deck_id, &fields) {
