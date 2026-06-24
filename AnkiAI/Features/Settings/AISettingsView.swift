@@ -51,7 +51,7 @@ struct AISettingsView: View {
                     LabeledContent("Card creator", value: "Claude Sonnet 4.6")
                 }
 
-                Section("Budget") {
+                Section {
                     LabeledContent("Spent", value: String(format: "$%.4f", spent))
                     LabeledContent("Remaining", value: String(format: "$%.4f", max(0, env.settings.budgetLimitUSD - spent)))
                     HStack {
@@ -68,6 +68,8 @@ struct AISettingsView: View {
                             .disabled(Double(limitText) == nil)
                     }
                     Button("Reset spending") { env.settings.totalSpentUSD = 0; spent = 0 }
+                } header: {
+                    Text("Budget")
                 } footer: {
                     Text("Spend is estimated from token usage. Editing the limit updates the remaining amount.")
                 }
