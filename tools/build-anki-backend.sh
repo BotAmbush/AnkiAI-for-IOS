@@ -92,6 +92,14 @@ BRIDGE="$ROOT/rust/anki-backend-ios"
 # anki's media/sync code compiles (see Cargo.toml).
 LIBS=()
 for t in "${TARGETS[@]}"; do
+  # anki's build.rs reads anki_descriptors.bin produced by anki_proto's build
+  # script. Cargo's DAG does not capture that implicit file dependency, so anki's
+  # build script can race ahead of anki_proto's (flaky ENOENT). Build anki_proto
+  # FIRST per target to generate the descriptor deterministically.
+  echo "── cargo build -p anki_proto --target $t --release (descriptor) ──"
+  ( cd "$BRIDGE" && cargo +"$RUST_TOOLCHAIN" build -p anki_proto --release --target "$t" \
+      2>&1 | tee "$OUT/anki_proto-build-$t.log" )
+
   echo "── cargo build (bridge) --target $t --release ──"
   ( cd "$BRIDGE" && cargo +"$RUST_TOOLCHAIN" build --release --target "$t" \
       2>&1 | tee "$OUT/bridge-build-$t.log" )
