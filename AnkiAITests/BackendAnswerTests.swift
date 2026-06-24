@@ -69,7 +69,8 @@ final class BackendAnswerTests: XCTestCase {
     func testAnswerSingleCardIsDeterministicMutation() async throws {
         let (gateway, _, _) = try openedCopy()
         let before = try await gateway.deckTree()
-        let id = try XCTUnwrap(try await gateway.cardIds(inDeckNamed: "Math").first)
+        let mathIds = try await gateway.cardIds(inDeckNamed: "Math")
+        let id = try XCTUnwrap(mathIds.first)
         try await gateway.answerCard(cardId: id, rating: .good)
         let after = try await gateway.deckTree()
         XCTAssertNotEqual(before, after, "grading a card must change the deck tree")
