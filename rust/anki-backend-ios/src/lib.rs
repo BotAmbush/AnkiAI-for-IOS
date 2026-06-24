@@ -298,7 +298,9 @@ pub extern "C" fn anki_backend_answer_card(
         set_last_error(format!("invalid rating {rating} (expected 1..=4)"));
         return 1;
     }
-    match handle.col.grade_now(&[CardId(card_id)], rating) {
+    // External scale is the standard Anki 1=Again 2=Hard 3=Good 4=Easy.
+    // grade_now uses a 0-based scale (0=Again 1=Hard 2=Good 3=Easy), so subtract 1.
+    match handle.col.grade_now(&[CardId(card_id)], rating - 1) {
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("answer_card failed: {e}"));
@@ -390,9 +392,9 @@ fn build_fixture(path: &str) -> Result<()> {
         col.set_due_date(&[*review_card], "0", None)?;
     }
     if math_cards.len() > 1 {
-        // grade_now rating: 1=Again 2=Hard 3=Good 4=Easy. "Again" puts a new card
-        // into a short (re)learning step due today under both the classic and
-        // FSRS schedulers, so it reliably counts toward learn_count.
+        // Direct call uses grade_now's NATIVE 0-based scale (0=Again 1=Hard
+        // 2=Good 3=Easy). Grading a new card here puts it into a short learning
+        // step due today (counts toward learn_count) under classic and FSRS.
         col.grade_now(&[math_cards[1]], 1)?;
     }
 
