@@ -2,7 +2,7 @@
 
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
-| R1 | Building Rust `anki` rslib as an iOS xcframework (toolchain, targets, protobuf/uniffi bridge) | High — blocks all core parity | M2 spike; pin a known-good `anki` commit matching the fork's backend version; build in CI on macOS with rust + cargo iOS targets |
+| R1 | ~~Building Rust `anki` rslib as an iOS xcframework~~ | **RESOLVED (M2.1)** | Proven in CI: pinned anki `25.09.2` + bridge compile for both iOS targets and assemble `AnkiCore.xcframework`; app links it (IPA arm64). Build-script gotchas fixed (submodules, tokio io-util, anki_proto-first, no cache). See `docs/anki-backend-ios-feasibility.md`. Remaining backend surface (scheduler/sync/etc.) reuses the same proven path. |
 | R2 | **Forced-study enforcement** cannot match Android | Medium | iOS has no `TYPE_APPLICATION_OVERLAY` / always-on foreground service and restricts background exec. Use local notifications + an in-app enforced session + optional Screen Time API exploration. Document as **partial parity** (feature-parity-checklist). |
 | R3 | Background tasks / reminders differ on iOS | Medium | `BGTaskScheduler` + `UNUserNotificationCenter`; accept best-effort timing vs Android alarms |
 | R4 | CI cannot sign → install path differs | Low | Unsigned IPA + iLoader signing on-device (INSTALLING-IPA.md); CI builds with signing disabled |

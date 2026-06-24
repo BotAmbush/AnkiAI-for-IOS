@@ -9,9 +9,9 @@ A feature is **not** marked complete just because a similarly-named Swift file e
 
 | Feature | Status | Notes |
 |---|---|---|
-| Collection open/close | 🔬 ☐ | Rust backend xcframework (DL-001) |
-| Decks & subdecks | 🔬 ◑ | Names/hierarchy modeled; live counts need backend |
-| Notes / cards / note types | 🔬 ◑ | `NoteData` + gateway; real CRUD at M2 |
+| Collection open/close | ✅ | **Real Rust backend** (`AnkiCore.xcframework`, anki 25.09.2). `AnkiCollection` open/close; verified by integration tests + CI (run 28101322821) |
+| Decks & subdecks | ✅ (read) | **Real** deck + subdeck names and live new/learn/review counts via `BackendCollectionGateway.deckTree()`; shown in deck list. Deck create/rename = later slice |
+| Notes / cards / note types | 🔬 ◑ | Read path open; full CRUD = M2.2 (writes throw `notImplementedInM21`) |
 | Card templates & CSS | 🔬 ☐ | Template rendering is backend `render_card` |
 | Front/back & HTML rendering | ◑ | `CardWebView` renders raw HTML now; template/qfmt via backend |
 | MathJax rendering | ✅ | WKWebView + `\( \)`/`\[ \]`; bundle locally (M1 tail) |
@@ -29,7 +29,7 @@ A feature is **not** marked complete just because a similarly-named Swift file e
 | Scheduling / learning-review-relearn steps | 🔬 ☐ | backend scheduler (M2) |
 | FSRS behavior & config | 🔬 ☐ | backend FSRS (M2) |
 | Timezone / day-rollover | 🔬 ☐ | backend + tests (M2) |
-| Collection DB compatibility | 🔬 ☐ | guaranteed by reusing backend |
+| Collection DB compatibility | ✅ (verified) | reusing the canonical Rust backend; integration test proves a real `collection.anki2` opens and is **byte-identical** after read (no schema migration / destructive write) |
 | Import/export (.apkg, colpkg) | 🔬 ☐ | backend import/export (M2) |
 | Backups & restoration | 🔬 ☐ | backend backups (M2) |
 | Synchronization / AnkiWeb | 🔬 ☐ | backend sync (M2) |

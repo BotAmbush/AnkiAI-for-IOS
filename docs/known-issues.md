@@ -2,10 +2,18 @@
 
 Updated 2026-06-24 (M1).
 
-## Not yet built (by design — milestoned)
-- **No real Anki collection yet.** M1 runs on an in-memory `StubCollectionGateway`. Decks,
-  counts, the review queue, answer buttons, browser, editor, stats, scheduler/FSRS, sync, and
-  import/export all arrive with the Rust backend in **M2**. Nothing here claims otherwise.
+## M2.1 status (verified 2026-06-24, run 28101322821)
+- **Real Anki collection READ path works.** The app links the real Rust backend
+  (`AnkiCore.xcframework`, anki 25.09.2) and the deck list shows real decks/subdecks with live
+  new/learn/review counts. Verified by 3 integration tests + a green CI build + a 4.5 MB arm64 IPA.
+- **Validation level:** fixture-based + Simulator (CI). **Not yet** validated on a physical
+  device, and not against a user's real/synced collection.
+- **Still stubbed / not implemented:** review queue, answer buttons, scheduler/FSRS UI, card
+  browser, editor, statistics, filtered decks, import/export, backups, sync. Collection **write**
+  paths (note add/update, card context) throw `GatewayError.notImplementedInM21` by design — the AI
+  card-edit/add and creator-"add" actions therefore error until M2.2 wires writes to the backend.
+- The production collection is seeded once on first launch via the backend (a real sample
+  collection, not hardcoded data).
 - **AI Insights uses sample stats.** The tip *engine* is real and tested; live numbers need
   revlog reads (M2).
 - **Creator attachments (photo/PDF) UI not wired.** The client/model support images and are

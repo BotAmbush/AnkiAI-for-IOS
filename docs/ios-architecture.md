@@ -8,8 +8,9 @@ SwiftUI Views (Features/*, App/*)
 ViewModels (@MainActor ObservableObject)   ── AIChatViewModel, …
         │  call
 Domain services / gateways
-   ├─ CollectionGateway  ──► M1: StubCollectionGateway (in-memory)
-   │                         M2: BackendCollectionGateway ──► Swift libanki ──► Rust anki xcframework
+   ├─ CollectionGateway  ──► PRODUCTION: BackendCollectionGateway (actor)
+   │        │                              └─► AnkiCollection (C-ABI) ──► AnkiCore.xcframework (Rust anki 25.09.2)
+   │        └─► StubCollectionGateway (previews / isolated unit tests only)
    ├─ AI Provider (AIChatAPIClient → ClaudeAPIClient)  ──► Anthropic API (URLSession)
    ├─ AIDatabase (ai_insights.db)  ──► SQLiteDatabase (system libsqlite3)
    └─ AISettingsStore  ──► Keychain (secrets) + UserDefaults (prefs)
@@ -33,11 +34,21 @@ exposes exactly those (decks, note read/update, add note, card context, notetype
 M1 ships an in-memory stub so the whole app + AI flow runs and is tested on CI/Simulator.
 M2 implements `BackendCollectionGateway` over the Rust backend with identical semantics.
 
-## Rust backend plan (M2)
-- Build `anki` `rslib` for `aarch64-apple-ios` + `aarch64-apple-ios-sim` (+ `x86_64` sim) → `AnkiCore.xcframework` in CI.
-- Bridge via the backend's protobuf service (the same surface `libanki` uses on Android) or uniffi.
-- Swift `libanki`-equivalent mirrors the Kotlin `Collection`, `Decks`, `Notes`, `Cards`, `Notetypes`, `Scheduler`, `Media`, import/export, sync.
-- This is what guarantees collection/scheduler/FSRS/sync/import-export parity (DL-001).
+## Rust backend (implemented for M2.1)
+- `tools/build-anki-backend.sh` clones pinned `anki` (submodule-aware), builds the
+  narrow C-ABI bridge crate `rust/anki-backend-ios` (staticlib) for
+  `aarch64-apple-ios` + `aarch64-apple-ios-sim`, and assembles
+  `Frameworks/AnkiCore.xcframework` (CI; no cache; reproducible).
+- The bridge exposes a tiny C surface (open / deck_tree_json / close / create_fixture
+  / last_error / string_free) — **no raw Rust types cross the boundary**. Header +
+  `module AnkiCore` modulemap ship in the xcframework; Swift does `import AnkiCore`.
+- `AnkiCollection` (Swift) owns the opaque handle (open in init, close once);
+  `BackendCollectionGateway` (actor) serializes access behind `CollectionGateway`.
+- Build-script notes (root causes fixed): clone submodules (i18n `.ftl`); enable
+  `tokio/io-util` via the bridge (anki omits it); build `anki_proto` first
+  (descriptor race); no cargo cache (cross-target poisoning).
+- Read path done (deck tree). Scheduler/FSRS/notes/sync remain to be surfaced via
+  the same xcframework in later slices — they guarantee parity (DL-001).
 
 ## Persistence split
 - **Anki collection** (`collection.anki2`): owned exclusively by the Rust backend (M2). Never opened by Swift SQLite.

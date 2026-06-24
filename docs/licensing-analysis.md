@@ -14,7 +14,7 @@ comments.
 | Component | Origin | License | Notes |
 |---|---|---|---|
 | AnkiAI iOS (this repo) | derived from AnkiDroid fork | GPL-3.0 | inherited |
-| Rust `anki` backend (M2) | `ankitects/anki` | AGPL-3.0 (rslib) | **Action item**: confirm AGPL obligations before shipping; the official AnkiMobile is closed but Anki core is AGPL — review distribution terms. Tracked as a release blocker. |
+| Rust `anki` backend (**linked since M2.1**) | `ankitects/anki` `25.09.2` (`3890e12c…`) | **AGPL-3.0-or-later** | Now statically linked into the app (`AnkiCore.xcframework`). The combined binary is AGPL-3.0-or-later. **Release blocker**: satisfy AGPL (corresponding source — repo is source-available; include the license + offer). Does not block development. See `docs/anki-backend-pin.md`. |
 | MathJax | mathjax.org | Apache-2.0 | bundling planned (DL-008) |
 | XcodeGen (build-time only) | yonaskolb/XcodeGen | MIT | not shipped in the app |
 | System `libsqlite3` | Apple SDK | platform | no third-party SQLite package |
@@ -22,9 +22,11 @@ comments.
 
 ## Dependency policy (CLAUDE.md)
 Before adding any iOS dependency: check maintenance, license compatibility, iOS support, and
-whether a native API suffices. So far **zero** third-party Swift packages are bundled — the AI db
-uses system SQLite and networking uses `URLSession` — keeping CI robust and the dependency surface
-minimal.
+whether a native API suffices. **Zero** third-party *Swift* packages are bundled — the AI db
+uses system SQLite and networking uses `URLSession`. The one binary dependency is the canonical
+Anki Rust backend (AGPL), reused deliberately for data/sync compatibility (DL-001) and pinned
+(`docs/anki-backend-pin.md`). Its own crate dependencies (Cargo) are AGPL-compatible OSS pulled at
+build time; a full crate-level license inventory is a pre-release task.
 
 ## Open item
 - [ ] Resolve AGPL implications of distributing the Rust `anki` backend in an iOS app before any

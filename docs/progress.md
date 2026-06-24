@@ -55,11 +55,42 @@ Next for M1:
 - [ ] Bundle MathJax locally instead of CDN (offline rendering parity).
 - [ ] Localized strings (Hebrew/RTL) from `ai_strings.xml` / `values-iw`.
 
-### M2 — Rust anki backend integration (NOT STARTED)
-- [ ] Build `anki` rslib as an `xcframework` (uniffi/protobuf bridge) in CI on macOS.
-- [ ] Swift `libanki`-equivalent: Collection open/close, Decks, Notes, Cards, Notetypes, Scheduler, FSRS, Media, import/export, sync.
-- [ ] Replace `StubCollectionGateway` with `BackendCollectionGateway`.
-- [ ] Then: real deck list/counts, real reviewer queue + answer buttons + undo/bury/suspend, card browser, editor, stats, filtered decks, backups, AnkiWeb sync.
+### M2.1 — Real Anki collection READ path (CI GREEN ✅, verified 2026-06-24)
+Status: **complete and verified on macOS CI** — full pipeline green (run `28101322821`,
+commit `d0656a1`): pinned Rust backend built for both iOS targets → `AnkiCore.xcframework`
+assembled → app linked the real backend → **41 tests passed (0 failures)** incl. 3 backend
+integration tests → unsigned IPA packaged and downloaded.
+
+- [x] **Feasibility proven by CI** (GO): pinned `ankitects/anki` `25.09.2`
+  (`3890e12c…`) + a narrow C-ABI bridge compile for `aarch64-apple-ios` and
+  `-sim` (run `28099025800`). See `docs/anki-backend-ios-feasibility.md`, `docs/anki-backend-pin.md`.
+- [x] Deterministic, **cache-free** backend build (`tools/build-anki-backend.sh`):
+  submodule-aware clone; `anki_proto` built first (descriptor-race fix); bridge
+  built per target; `xcframework` assembled.
+- [x] **Swift bridge**: `AnkiCollection` (owns the C handle, open/deckTree/close),
+  `BackendCollectionGateway` (actor) behind the existing `CollectionGateway` seam.
+- [x] **Production no longer uses `StubCollectionGateway`** — deck list reads the
+  real backend; stub is previews/tests only.
+- [x] **Real deck tree**: real deck + subdeck names and live new/learn/review
+  counts shown in the deck list (loading/error states; no fake data).
+- [x] **Integration tests**: open a real fixture collection via the backend,
+  assert real names + counts, and verify the canonical fixture is byte-identical
+  (no destructive writes) + deterministic reopen.
+- [x] Unsigned IPA now 4.5 MB / 13.9 MB arm64 executable (backend statically linked),
+  verified Mach-O arm64, iOS 16.0.
+
+Build-repair loop for M2.1 took 6 runs (submodule → tokio io-util → cache poisoning
+→ build-script descriptor race → fixture/level assertions → green). Each fix documented.
+
+Write/edit paths (note add/update, card context) intentionally throw
+`GatewayError.notImplementedInM21` — they arrive with later M2 slices.
+
+### M2.2+ — remaining core (NOT STARTED)
+- [ ] Swift wrappers for Notes, Cards, Notetypes, templates/CSS rendering, media.
+- [ ] Reviewer queue + answer buttons + undo/bury/suspend; card browser; editor.
+- [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
+- [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
+- [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).
 
 ### M3 — Forced study, notifications, accessibility, polish (NOT STARTED)
 - [ ] Forced-study enforcement (iOS analog of the Android overlay/foreground service — constrained by iOS background limits; see migration-risks.md).

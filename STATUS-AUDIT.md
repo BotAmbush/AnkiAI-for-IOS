@@ -1,5 +1,12 @@
 # AnkiAI iOS Migration — Status Audit
 
+> ⚠️ **SUPERSEDED — point-in-time snapshot, not current.** This audit predates the
+> **M2.1** milestone (real Anki collection read path via the Rust backend, CI green
+> at run `28101322821`). For current status see `docs/progress.md`,
+> `docs/feature-parity-checklist.md`, and `docs/known-issues.md`. Do not treat the
+> percentages/blockers below as up to date (e.g. the M2.1 backend feasibility risk
+> is now RESOLVED).
+
 **Audit date:** 2026-06-24
 **Audited by:** Claude (read-only audit; the only file created/modified is this `STATUS-AUDIT.md`)
 **iOS project:** `C:\AnkiAI-for-IOS`

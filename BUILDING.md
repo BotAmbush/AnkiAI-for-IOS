@@ -40,7 +40,29 @@ tests on Simulator, and packages `Payload/AnkiAI.app` → `AnkiAI-unsigned.ipa`.
 - No third-party Swift packages are bundled today (system SQLite + URLSession), so package
   resolution cannot break CI.
 
-## Milestone 2 (Rust backend)
-Building the core requires `AnkiCore.xcframework` from the upstream `anki` rslib (Rust toolchain +
-iOS targets). The workflow will gain a Rust build step then. Until M2, the app builds and runs
-against the in-memory collection stub.
+## Anki Rust backend (`AnkiCore.xcframework`) — required since M2.1
+
+The app links the canonical upstream Anki Rust backend (pinned in
+`docs/anki-backend-pin.md`: `ankitects/anki` `25.09.2`, commit `3890e12c…`, Rust 1.89.0).
+
+Build it locally on a Mac (needs `rustup` + `protoc`):
+```bash
+brew install protobuf
+tools/build-anki-backend.sh xcframework   # → Frameworks/AnkiCore.xcframework
+xcodegen generate
+```
+`tools/build-anki-backend.sh spike` just compiles the bridge for both iOS targets
+(`aarch64-apple-ios`, `aarch64-apple-ios-sim`) without assembling the xcframework.
+
+The script clones anki **with submodules** (i18n translations), builds `anki_proto` first
+(to avoid a build-script descriptor race), then the bridge crate
+(`rust/anki-backend-ios`), and assembles the xcframework. It is **cache-free and
+reproducible**.
+
+### CI modes (`workflow_dispatch` input `mode`)
+- `full` — build the xcframework, then app + unit + integration tests + unsigned IPA.
+- `backend_spike` — only prove the backend compiles for iOS.
+- `backend_xcframework` — only build the xcframework.
+
+The `app` job downloads the `AnkiCore-xcframework` artifact before generating the project,
+so `Frameworks/AnkiCore.xcframework` exists for XcodeGen and `xcodebuild`.

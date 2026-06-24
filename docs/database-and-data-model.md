@@ -2,11 +2,20 @@
 
 ## Two databases — kept strictly separate (mirrors the fork)
 
-### 1. Anki collection — `collection.anki2` (owned by the Rust backend, M2)
+### 1. Anki collection — `collection.anki2` (owned by the Rust backend)
 Standard Anki SQLite schema (`col`, `notes`, `cards`, `revlog`, `decks`/`deck_config`,
 `notetypes`/`templates`/`fields`, `graves`, media DB). The Swift app **never** opens this
-directly — all access is through the backend, guaranteeing format + sync compatibility
-(DL-001). The fork does not modify this schema; neither do we.
+directly via SQLite — all access is through the backend, guaranteeing format + sync
+compatibility (DL-001). The fork does not modify this schema; neither do we.
+
+**M2.1 status (verified):** the real backend (`AnkiCore.xcframework`, upstream anki
+`25.09.2`, commit `3890e12c…`) opens a real `collection.anki2` via `AnkiCollection`
+(Swift) → `BackendCollectionGateway`. An integration test creates a fixture collection,
+copies it, opens the copy through the backend, reads the deck tree, and asserts the
+**canonical fixture is byte-identical afterward** (hash of all files incl. `-wal`/`-shm`) —
+detecting accidental schema migrations or destructive writes. Read path only so far; the
+backend computes deck due-counts (which may legitimately unbury on day-rollover — hence
+tests open a copy).
 
 Columns the AI features read (read-only, via `RevlogAnalyzer` → gateway at M2):
 `revlog(id, cid, ease, ivl, factor, time)`, `cards(id, nid, did, queue, ivl, factor, lapses)`,
