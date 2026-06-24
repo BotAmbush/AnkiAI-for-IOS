@@ -264,8 +264,10 @@ fn build_fixture(path: &str) -> Result<()> {
         col.set_due_date(&[*review_card], "0", None)?;
     }
     if math_cards.len() > 1 {
-        // grade_now rating: 1=Again 2=Hard 3=Good 4=Easy. Good → learning.
-        col.grade_now(&[math_cards[1]], 3)?;
+        // grade_now rating: 1=Again 2=Hard 3=Good 4=Easy. "Again" puts a new card
+        // into a short (re)learning step due today under both the classic and
+        // FSRS schedulers, so it reliably counts toward learn_count.
+        col.grade_now(&[math_cards[1]], 1)?;
     }
 
     col.close(None)?;

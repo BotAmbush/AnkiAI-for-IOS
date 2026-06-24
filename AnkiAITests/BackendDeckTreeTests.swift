@@ -53,7 +53,8 @@ final class BackendDeckTreeTests: XCTestCase {
         XCTAssertTrue(names.contains("Languages::Hebrew"))
 
         let heb = try XCTUnwrap(decks.first { $0.name == "Languages::Hebrew" })
-        XCTAssertEqual(heb.level, 1, "subdeck should be level 1")
+        // Backend deck levels are 1-based for real decks (top-level = 1, subdeck = 2).
+        XCTAssertEqual(heb.level, 2, "subdeck should be level 2")
         XCTAssertGreaterThan(heb.newCount, 0, "Hebrew deck should have new cards")
 
         let math = try XCTUnwrap(decks.first { $0.name == "Math" })

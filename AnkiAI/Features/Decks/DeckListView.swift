@@ -70,7 +70,7 @@ private struct DeckRow: View {
             Image(systemName: deck.level == 0 ? "tray.full" : "tray")
                 .foregroundColor(.secondary)
             Text(leaf)
-                .padding(.leading, CGFloat(deck.level) * 14)
+                .padding(.leading, CGFloat(max(0, deck.level - 1)) * 14)
             Spacer()
             CountChip(value: deck.newCount, color: .blue)
             CountChip(value: deck.learnCount, color: .red)
