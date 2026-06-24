@@ -9,6 +9,8 @@ struct RootView: View {
         TabView {
             DeckListView()
                 .tabItem { Label("Decks", systemImage: "rectangle.stack") }
+            CardBrowserView()
+                .tabItem { Label("Browse", systemImage: "magnifyingglass") }
             InsightsView()
                 .tabItem { Label("Insights", systemImage: "lightbulb") }
             AISettingsView()

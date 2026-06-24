@@ -87,6 +87,17 @@ final class AnkiCollection {
         catch { throw AnkiBackendError.decode("\(error)") }
     }
 
+    /// Card ids matching an arbitrary Anki search string (empty = all).
+    func searchCardIds(query: String) throws -> [Int64] {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = query.withCString { anki_backend_search_card_ids(handle, $0, &out) }
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.deckTree(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do { return try JSONDecoder().decode([Int64].self, from: data) }
+        catch { throw AnkiBackendError.decode("\(error)") }
+    }
+
     /// Backend-rendered question/answer HTML + CSS for a card.
     func renderCard(cardId: Int64) throws -> RenderedCard {
         var out: UnsafeMutablePointer<CChar>?

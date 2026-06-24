@@ -232,6 +232,54 @@ pub extern "C" fn anki_backend_deck_card_ids(
     }
 }
 
+/// Card ids matching an arbitrary Anki search string (e.g. "deck:Math", "tag:x",
+/// free text), as a JSON array of integers via `out_json`. Empty search = all.
+#[no_mangle]
+pub extern "C" fn anki_backend_search_card_ids(
+    handle: *mut Handle,
+    search: *const c_char,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let search = match unsafe { cstr_to_string(search) } {
+        Some(s) => s,
+        None => {
+            set_last_error("null search".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.search_cards(search.as_str(), SortMode::NoOrder) {
+        Ok(cids) => {
+            let ids: Vec<i64> = cids.iter().map(|c| c.0).collect();
+            let json = serde_json::to_string(&ids).unwrap_or_else(|_| "[]".into());
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("search json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("search_cards failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Render an existing card via the backend (templates + CSS). Returns JSON
 /// `{question_html, answer_html, css}` via `out_json`. Caller frees the string.
 #[no_mangle]

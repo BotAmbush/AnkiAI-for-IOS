@@ -80,6 +80,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func deckTree() async throws -> [DeckTreeEntry]
     /// Card ids in a deck (and its subdecks), by full deck name (M2.2 read path).
     func cardIds(inDeckNamed name: String) async throws -> [Int64]
+    /// Card ids matching an arbitrary Anki search string (M2.7 card browser).
+    func searchCardIds(query: String) async throws -> [Int64]
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
     func renderCard(cardId: Int64) async throws -> RenderedCard
     /// Answer/grade a card via the real backend scheduler (M2.3 write path).

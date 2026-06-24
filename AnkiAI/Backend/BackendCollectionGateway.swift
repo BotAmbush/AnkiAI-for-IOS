@@ -42,6 +42,10 @@ public actor BackendCollectionGateway: CollectionGateway {
         try opened().cardIds(inDeckNamed: name)
     }
 
+    public func searchCardIds(query: String) async throws -> [Int64] {
+        try opened().searchCardIds(query: query)
+    }
+
     public func renderCard(cardId: Int64) async throws -> RenderedCard {
         try opened().renderCard(cardId: cardId)
     }

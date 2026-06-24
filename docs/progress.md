@@ -128,9 +128,13 @@ Run `28121831458`, commit `34b9ef2`: **54 tests (0 failures)**.
 - [x] Integration test: moving all Math cards to Hebrew empties Math's due counts
   and grows Hebrew's; canonical fixture byte-identical.
 
-### M2.7+ — remaining core (NOT STARTED)
-- [ ] Note edit/cardContext (needs backend get_note/get_card); flags/tags; card
-  browser; full editor; media serving; statistics; import/export; sync.
+### M2.7 — Card browser (IN PROGRESS)
+- [ ] Backend generic `search_cards`; Browse tab (deck:/tag:/free text); detail
+  view; integration tests (empty=all, deck:, tag:, free text).
+
+### M2.8+ — remaining core (NOT STARTED)
+- [ ] Note edit/cardContext (needs backend get_note/get_card); flags/tags; full
+  editor; media serving; statistics; import/export; sync.
 
 ## Session summary (2026-06-24) — M2.1 → M2.6, all CI-verified green
 
