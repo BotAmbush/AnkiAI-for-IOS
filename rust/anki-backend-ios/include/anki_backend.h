@@ -50,6 +50,12 @@ int32_t anki_backend_undo(AnkiHandle *handle);
 /* Move a card to another deck. */
 int32_t anki_backend_set_card_deck(AnkiHandle *handle, int64_t card_id, int64_t deck_id);
 
+/* Set a card's flag (0=none, 1=red, 2=orange, 3=green, 4=blue). */
+int32_t anki_backend_set_card_flag(AnkiHandle *handle, int64_t card_id, uint32_t flag);
+
+/* Add space-separated tags to a note. */
+int32_t anki_backend_add_tags_to_note(AnkiHandle *handle, int64_t note_id, const char *tags);
+
 /* Write the "Basic" notetype id to *out_id. */
 int32_t anki_backend_basic_notetype_id(AnkiHandle *handle, int64_t *out_id);
 

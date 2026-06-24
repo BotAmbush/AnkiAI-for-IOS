@@ -60,6 +60,12 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func moveCard(cardId: Int64, toDeckId: Int64) async throws {
         try opened().setCardDeck(cardId: cardId, deckId: toDeckId)
     }
+    public func setFlag(cardId: Int64, flag: Int) async throws {
+        try opened().setFlag(cardId: cardId, flag: UInt32(max(0, flag)))
+    }
+    public func addTags(noteId: Int64, tags: String) async throws {
+        try opened().addTags(noteId: noteId, tags: tags)
+    }
 
     // MARK: - Note write path (M2.5: add-card wired; edit/cardContext later)
 

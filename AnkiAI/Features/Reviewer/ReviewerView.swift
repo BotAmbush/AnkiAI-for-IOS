@@ -50,6 +50,13 @@ struct ReviewerView: View {
                         label: { Label("Suspend card", systemImage: "pause.circle") }
                     Button { Task { await moveCurrentToDefault(); await next() } }
                         label: { Label("Move to Default deck", systemImage: "tray.and.arrow.down") }
+                    Menu {
+                        Button("None") { Task { await flagCurrent(0) } }
+                        Button("🔴 Red") { Task { await flagCurrent(1) } }
+                        Button("🟠 Orange") { Task { await flagCurrent(2) } }
+                        Button("🟢 Green") { Task { await flagCurrent(3) } }
+                        Button("🔵 Blue") { Task { await flagCurrent(4) } }
+                    } label: { Label("Flag", systemImage: "flag") }
                     Divider()
                     Button { Task { await undoLast() } }
                         label: { Label("Undo", systemImage: "arrow.uturn.backward") }
@@ -131,6 +138,10 @@ struct ReviewerView: View {
     private func mutateCurrent(_ op: (Int64) async throws -> Void) async {
         guard cardIds.indices.contains(index) else { return }
         do { try await op(cardIds[index]) } catch { self.error = "\(error)" }
+    }
+
+    private func flagCurrent(_ flag: Int) async {
+        await mutateCurrent { try await env.gateway.setFlag(cardId: $0, flag: flag) }
     }
 
     private func moveCurrentToDefault() async {

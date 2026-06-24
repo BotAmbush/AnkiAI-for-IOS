@@ -392,6 +392,59 @@ fn bury_or_suspend(
     }
 }
 
+/// Set a card's flag (0=none, 1=red, 2=orange, 3=green, 4=blue, …). Returns 0.
+#[no_mangle]
+pub extern "C" fn anki_backend_set_card_flag(
+    handle: *mut Handle,
+    card_id: i64,
+    flag: u32,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.set_card_flag(&[CardId(card_id)], flag) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("set_card_flag failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Add space-separated `tags` to a note. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_add_tags_to_note(
+    handle: *mut Handle,
+    note_id: i64,
+    tags: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let tags = match unsafe { cstr_to_string(tags) } {
+        Some(t) => t,
+        None => {
+            set_last_error("null tags".into());
+            return 1;
+        }
+    };
+    match handle.col.add_tags_to_notes(&[NoteId(note_id)], &tags) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("add_tags_to_notes failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Move a card to another deck. Returns 0 on success.
 #[no_mangle]
 pub extern "C" fn anki_backend_set_card_deck(

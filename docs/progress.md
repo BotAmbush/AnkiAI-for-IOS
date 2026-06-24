@@ -133,13 +133,16 @@ Run `28123587961`, commit `b84313b`: **58 tests (0 failures)**.
 - [x] Bridge generic `search_cards`; Browse tab (deck:/tag:/free text); detail
   view; integration tests (empty=all 7, deck:Math=4, Hebrew=3, tag:vocab=2, free text).
 
-### M2.8 — Live collection statistics (IN PROGRESS)
-- [ ] `collectionStats()` via backend search (total/new/learning/review/mature/
-  suspended), shown in Insights; integration test against fixture.
+### M2.8 — Live collection statistics (CI GREEN ✅, verified 2026-06-24)
+Run `28124399945`, commit `cb0e7a4`: **59 tests (0 failures)**. Live counts in Insights.
 
-### M2.9+ — remaining core (NOT STARTED)
-- [ ] Note edit/cardContext (needs backend get_note/get_card); flags/tags; full
-  editor; media serving; import/export; sync; full stats graphs.
+### M2.9 — Flags + tags (IN PROGRESS)
+- [ ] Bridge `set_card_flag` + `add_tags_to_notes`; reviewer flag menu; tests via
+  `flag:` / `tag:` search.
+
+### M2.10+ — remaining core (NOT STARTED)
+- [ ] Note edit/cardContext (needs backend get_note/get_card); full editor; media
+  serving; import/export; sync; full stats graphs.
 
 ## Session summary (2026-06-24) — M2.1 → M2.6, all CI-verified green
 

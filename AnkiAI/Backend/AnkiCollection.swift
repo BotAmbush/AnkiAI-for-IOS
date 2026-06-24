@@ -141,6 +141,15 @@ final class AnkiCollection {
         guard anki_backend_set_card_deck(handle, cardId, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func setFlag(cardId: Int64, flag: UInt32) throws {
+        guard anki_backend_set_card_flag(handle, cardId, flag) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func addTags(noteId: Int64, tags: String) throws {
+        let rc = tags.withCString { anki_backend_add_tags_to_note(handle, noteId, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func basicNotetypeId() throws -> Int64 {
         var out: Int64 = 0
         guard anki_backend_basic_notetype_id(handle, &out) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
