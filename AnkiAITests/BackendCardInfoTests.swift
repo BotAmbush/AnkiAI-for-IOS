@@ -26,6 +26,19 @@ final class BackendCardInfoTests: XCTestCase {
         XCTAssertNil(info.dueDate, "a new card has no scheduled due date")
     }
 
+    func testCardContextForReviewerChat() async throws {
+        // The reviewer "Ask Claude" chat needs card context; the backend builds it
+        // from rendered HTML + card info (no get_note). Must return non-nil fields.
+        let gateway = try openFixture()
+        let ids = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")
+        let id = try XCTUnwrap(ids.first)
+        let ctx = try await gateway.cardContext(cardId: id)
+        let unwrapped = try XCTUnwrap(ctx)
+        XCTAssertEqual(unwrapped.fields.count, 2, "front + back")
+        XCTAssertFalse(unwrapped.fields[0].isEmpty, "front HTML should be present")
+        XCTAssertGreaterThan(unwrapped.deckId, 0, "deck id resolved from the card's deck")
+    }
+
     func testReviewedCardInfo() async throws {
         let gateway = try openFixture()
         let ids = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")

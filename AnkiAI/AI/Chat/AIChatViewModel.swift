@@ -80,7 +80,18 @@ public final class AIChatViewModel: ObservableObject {
 
     public func sendMessage(_ userText: String) async {
         if isCreatorMode { await generateCards(userText); return }
-        guard let apiKey = settings.apiKey, cardContext != nil else { return }
+        guard let apiKey = settings.apiKey else {
+            error = "Please enter your Claude API key in Settings → AI Assistant."
+            return
+        }
+        if cardContext == nil {
+            // Context loads asynchronously when the chat opens; try to load it now.
+            await loadCardContext()
+        }
+        guard cardContext != nil else {
+            error = "Card context isn't ready yet — please try again in a moment."
+            return
+        }
 
         isLoading = true; error = nil
         try? db.insert(AIChatMessage(sessionId: sessionId, role: AIChatMessage.roleUser, content: userText))

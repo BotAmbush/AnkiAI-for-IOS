@@ -160,10 +160,18 @@ collection hits anki-internal `InvalidInput "decks have different kinds"` — wi
 deferred/documented (see known-issues). CI fix this round: `Section` header/footer; the
 import is the only piece not green.
 
-### M2.12 — Per-card info / next-due (IN PROGRESS)
-Addresses user feedback (browser didn't show time-until-next).
-- [ ] Bridge `card_stats` → `anki_backend_card_info`; gateway `cardInfo`; browser
-  detail shows Due/Interval/Reviews/Lapses/Ease; integration tests (new vs reviewed).
+### M2.12 — Per-card info / next-due (CI GREEN ✅, verified 2026-06-25)
+Run `28130976682`. Bridge `card_stats` → `cardInfo`; browser detail shows
+Due/Interval/Reviews/Lapses/Ease; tests (new vs reviewed). Addresses the user's
+"no time-until-next in browser" feedback.
+
+### M2.13 — Device-feedback round 2 (IN PROGRESS)
+- [ ] Reviewer "Ask Claude" chat BUG fix: chat returned nothing and didn't even
+  record the message, because `cardContext` threw (backend has no get_note). Now
+  built from rendered HTML + card info; sendMessage gives feedback if key/context
+  missing. Gateway `cardContext` test added.
+- [ ] Keyboard dismissal (`.scrollDismissesKeyboard(.interactively)`) on chat + settings.
+- [ ] App icon (was missing) — generated 1024 AppIcon asset.
 
 ### M2.13+ — remaining core (NOT STARTED — larger slices)
 - [ ] Fix .apkg import (deck-kind conflict) or wire .colpkg backup/restore;

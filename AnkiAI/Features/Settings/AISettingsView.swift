@@ -74,6 +74,7 @@ struct AISettingsView: View {
                     Text("Spend is estimated from token usage. Editing the limit updates the remaining amount.")
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("AI Assistant")
             .onAppear {
                 hasKey = env.settings.hasAPIKey
