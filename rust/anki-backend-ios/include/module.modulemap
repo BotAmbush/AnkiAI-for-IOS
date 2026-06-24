@@ -1,0 +1,4 @@
+module AnkiCore {
+    header "anki_backend.h"
+    export *
+}

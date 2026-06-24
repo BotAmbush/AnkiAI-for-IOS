@@ -1,0 +1,29 @@
+[package]
+name = "anki_backend_ios"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Narrow C-ABI bridge over the pinned upstream Anki Rust backend for iOS."
+
+[lib]
+name = "anki_backend_ios"
+# staticlib → linked into AnkiCore.xcframework; cdylib not needed on iOS.
+crate-type = ["staticlib"]
+
+[dependencies]
+# Pinned upstream Anki (see docs/anki-backend-pin.md). Path points at the
+# submodule-aware clone produced by tools/build-anki-backend.sh.
+anki = { path = "../.work/anki/rslib" }
+anki_proto = { path = "../.work/anki/rslib/proto" }
+serde_json = "1"
+# Anki declares tokio without "io-util"; its media/sync code uses AsyncReadExt.
+# Enabling io-util here turns it on for the whole graph via feature unification,
+# so the `anki` crate compiles. (Build-time only; we do not call sync.)
+tokio = { version = "1.45", features = ["io-util"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

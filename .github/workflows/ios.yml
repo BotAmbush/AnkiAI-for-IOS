@@ -42,6 +42,16 @@ jobs:
           rustup --version
           rustc --version || true
 
+      # Cache cargo registry + bridge target to speed up iterations. Keyed on the
+      # bridge lockfile + pinned anki commit; the build is still reproducible
+      # without the cache (a clean run regenerates everything).
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/anki-backend-ios -> target"
+          key: anki-3890e12c
+          cache-on-failure: true
+
       - name: Build pinned Anki backend
         run: |
           case "${{ inputs.mode }}" in

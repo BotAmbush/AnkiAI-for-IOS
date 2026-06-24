@@ -84,43 +84,35 @@ mode=$MODE
 built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 
-case "$MODE" in
-  spike)
-    # Prove the upstream `anki` crate compiles for each iOS target. Build inside
-    # the anki workspace so its rust-toolchain.toml applies. No default features
-    # (sync TLS backends are opt-in and unused for the read path).
-    cd "$ANKI_DIR"
-    for t in "${TARGETS[@]}"; do
-      echo "── cargo build -p anki --target $t (no-default-features) ──"
-      cargo +"$RUST_TOOLCHAIN" build -p anki --no-default-features \
-        --target "$t" --release 2>&1 | tee "$OUT/anki-build-$t.log"
-    done
-    echo "SPIKE OK: anki compiled for ${TARGETS[*]}"
-    ;;
+BRIDGE="$ROOT/rust/anki-backend-ios"
+[ -d "$BRIDGE" ] || { echo "bridge crate missing: $BRIDGE" >&2; exit 5; }
 
-  xcframework)
-    # Build the bridge static lib per target, then assemble the xcframework.
-    BRIDGE="$ROOT/rust/anki-backend-ios"
-    [ -d "$BRIDGE" ] || { echo "bridge crate missing: $BRIDGE" >&2; exit 5; }
-    LIBS=()
-    for t in "${TARGETS[@]}"; do
-      echo "── cargo build (bridge) --target $t ──"
-      ( cd "$BRIDGE" && cargo +"$RUST_TOOLCHAIN" build --release --target "$t" \
-          2>&1 | tee "$OUT/bridge-build-$t.log" )
-      LIBS+=("$BRIDGE/target/$t/release/libanki_backend_ios.a")
-    done
+# Build the narrow C-ABI bridge static lib for each iOS target. This compiles the
+# pinned `anki` crate transitively; the bridge enables tokio's io-util feature so
+# anki's media/sync code compiles (see Cargo.toml).
+LIBS=()
+for t in "${TARGETS[@]}"; do
+  echo "── cargo build (bridge) --target $t --release ──"
+  ( cd "$BRIDGE" && cargo +"$RUST_TOOLCHAIN" build --release --target "$t" \
+      2>&1 | tee "$OUT/bridge-build-$t.log" )
+  LIBS+=("$BRIDGE/target/$t/release/libanki_backend_ios.a")
+done
 
-    XCF="$ROOT/Frameworks/AnkiCore.xcframework"
-    rm -rf "$XCF"; mkdir -p "$ROOT/Frameworks"
-    HEADERS="$BRIDGE/include"
-    ARGS=()
-    for lib in "${LIBS[@]}"; do ARGS+=(-library "$lib" -headers "$HEADERS"); done
-    xcodebuild -create-xcframework "${ARGS[@]}" -output "$XCF"
-    echo "Built $XCF"
-    ;;
+if [ "$MODE" = "spike" ]; then
+  echo "SPIKE OK: bridge + anki compiled for ${TARGETS[*]}"
+  exit 0
+fi
 
-  *)
-    echo "unknown mode: $MODE (use spike|xcframework)" >&2
-    exit 2
-    ;;
-esac
+if [ "$MODE" = "xcframework" ]; then
+  XCF="$ROOT/Frameworks/AnkiCore.xcframework"
+  rm -rf "$XCF"; mkdir -p "$ROOT/Frameworks"
+  HEADERS="$BRIDGE/include"
+  ARGS=()
+  for lib in "${LIBS[@]}"; do ARGS+=(-library "$lib" -headers "$HEADERS"); done
+  xcodebuild -create-xcframework "${ARGS[@]}" -output "$XCF"
+  echo "Built $XCF"
+  exit 0
+fi
+
+echo "unknown mode: $MODE (use spike|xcframework)" >&2
+exit 2

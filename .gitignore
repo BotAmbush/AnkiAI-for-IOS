@@ -46,6 +46,9 @@ secrets.xcconfig
 
 # Rust backend build output (milestone 2)
 rust/target/
+rust/**/target/
+rust/.work/
+Frameworks/*.xcframework
 *.xcframework.zip
 
 # macOS

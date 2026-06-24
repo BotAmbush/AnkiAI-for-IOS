@@ -1,0 +1,36 @@
+#ifndef ANKI_BACKEND_H
+#define ANKI_BACKEND_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Opaque handle to an open collection. */
+typedef struct Handle AnkiHandle;
+
+/* Last error for the calling thread, or NULL. Valid until the next call. Do not free. */
+const char *anki_backend_last_error(void);
+
+/* Free a string returned by this library. */
+void anki_backend_string_free(char *s);
+
+/* Open a collection at `path`. Writes the handle to *out. Returns 0 on success. */
+int32_t anki_backend_open(const char *path, AnkiHandle **out);
+
+/* Close a collection (consumes the handle). Safe with NULL. Returns 0 on success. */
+int32_t anki_backend_close(AnkiHandle *handle);
+
+/* Deck tree as a JSON array of {deck_id,name,level,new,learn,review}.
+   Writes a heap string to *out_json (free with anki_backend_string_free). */
+int32_t anki_backend_deck_tree_json(AnkiHandle *handle, char **out_json);
+
+/* Test support: build a deterministic fixture collection at `path`. */
+int32_t anki_backend_create_fixture(const char *path);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ANKI_BACKEND_H */
