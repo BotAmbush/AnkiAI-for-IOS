@@ -56,6 +56,12 @@ int32_t anki_backend_set_card_flag(AnkiHandle *handle, int64_t card_id, uint32_t
 /* Add space-separated tags to a note. */
 int32_t anki_backend_add_tags_to_note(AnkiHandle *handle, int64_t note_id, const char *tags);
 
+/* Export the whole collection to an .apkg at out_path. */
+int32_t anki_backend_export_apkg(AnkiHandle *handle, const char *out_path);
+
+/* Import an .apkg from in_path into the open collection. */
+int32_t anki_backend_import_apkg(AnkiHandle *handle, const char *in_path);
+
 /* Write the "Basic" notetype id to *out_id. */
 int32_t anki_backend_basic_notetype_id(AnkiHandle *handle, int64_t *out_id);
 

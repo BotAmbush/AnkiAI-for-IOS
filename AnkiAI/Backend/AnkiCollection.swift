@@ -150,6 +150,16 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func exportApkg(toPath path: String) throws {
+        let rc = path.withCString { anki_backend_export_apkg(handle, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func importApkg(fromPath path: String) throws {
+        let rc = path.withCString { anki_backend_import_apkg(handle, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func basicNotetypeId() throws -> Int64 {
         var out: Int64 = 0
         guard anki_backend_basic_notetype_id(handle, &out) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }

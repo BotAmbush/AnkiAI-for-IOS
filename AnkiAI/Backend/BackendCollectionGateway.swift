@@ -66,6 +66,12 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func addTags(noteId: Int64, tags: String) async throws {
         try opened().addTags(noteId: noteId, tags: tags)
     }
+    public func exportApkg(toPath path: String) async throws {
+        try opened().exportApkg(toPath: path)
+    }
+    public func importApkg(fromPath path: String) async throws {
+        try opened().importApkg(fromPath: path)
+    }
 
     // MARK: - Note write path (M2.5: add-card wired; edit/cardContext later)
 

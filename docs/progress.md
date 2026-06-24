@@ -141,11 +141,13 @@ Run `28125950705`, commit `7f4b285`: **61 tests (0 failures)**.
 - [x] Bridge `set_card_flag` + `add_tags_to_notes`; reviewer Flag submenu; tests
   via `flag:` / `tag:` search.
 
-### M2.10+ — remaining core (NOT STARTED — larger slices)
-- [ ] Note edit/cardContext (blocked: backend `get_note`/`get_card` not public —
-  investigate a rendered-HTML workaround for AI card context).
-- [ ] Media serving (`<img>`) to the WebView; import/export (.apkg/.colpkg);
-  AnkiWeb sync; full statistics graphs; full note editor UI.
+### M2.10 — Import/export (.apkg round-trip) (IN PROGRESS)
+- [ ] Bridge `export_apkg`/`import_apkg`; gateway methods; round-trip integration
+  test (export → import into a fresh collection; 7 cards + decks survive).
+
+### M2.11+ — remaining core (NOT STARTED — larger slices)
+- [ ] Files-app/share-sheet UI for import/export; .colpkg; media serving (`<img>`);
+  AnkiWeb sync; full stats graphs; note editor (blocked on backend get_note/get_card).
 
 ## Session summary (2026-06-24) — M2.1 → M2.9, all CI-verified green
 

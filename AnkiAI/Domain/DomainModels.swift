@@ -95,6 +95,9 @@ public protocol CollectionGateway: AnyObject, Sendable {
     /// Set a card flag (0=none,1=red,2=orange,3=green,4=blue) / add note tags (M2.9).
     func setFlag(cardId: Int64, flag: Int) async throws
     func addTags(noteId: Int64, tags: String) async throws
+    /// Export the whole collection to / import an `.apkg` (M2.10).
+    func exportApkg(toPath path: String) async throws
+    func importApkg(fromPath path: String) async throws
     func allDecks() async throws -> [DeckNameId]
     func deckName(id: Int64) async throws -> String?
     /// Resolve an exact deck name to an id, creating it if necessary (mirrors `decks.id(name)`).

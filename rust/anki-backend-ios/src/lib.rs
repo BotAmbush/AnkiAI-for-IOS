@@ -27,6 +27,7 @@ use anki::collection::{Collection, CollectionBuilder};
 use anki::prelude::*;
 use anki::search::SortMode;
 use anki_proto::decks::DeckTreeNode;
+use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
@@ -616,6 +617,71 @@ fn add_note_impl(col: &mut Collection, notetype_id: i64, deck_id: i64, fields: &
     }
     col.add_note(&mut note, DeckId(deck_id))?;
     Ok(note.id.0)
+}
+
+/// Export the whole collection to an `.apkg` at `out_path`. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_export_apkg(
+    handle: *mut Handle,
+    out_path: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let out_path = match unsafe { cstr_to_string(out_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null out path".into());
+            return 1;
+        }
+    };
+    // Default options (no media, current format); empty search = whole collection.
+    match handle
+        .col
+        .export_apkg(&out_path, ExportAnkiPackageOptions::default(), "", None)
+    {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("export_apkg failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Import an `.apkg` from `in_path` into the open collection. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_import_apkg(
+    handle: *mut Handle,
+    in_path: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let in_path = match unsafe { cstr_to_string(in_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null in path".into());
+            return 1;
+        }
+    };
+    match handle
+        .col
+        .import_apkg(&in_path, ImportAnkiPackageOptions::default())
+    {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("import_apkg failed: {e}"));
+            2
+        }
+    }
 }
 
 // ─── Test support (used only by integration tests) ────────────────────────────
