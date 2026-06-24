@@ -181,8 +181,9 @@ public final class AIChatViewModel: ObservableObject {
         isLoading = true
         do {
             let notetypeId: Int64
-            if let sourceNoteId = cardContext?.noteId {
-                notetypeId = (try? await gateway.note(id: sourceNoteId).notetypeId) ?? (try await gateway.basicNotetypeId())
+            if let sourceNoteId = cardContext?.noteId,
+               let sourceNotetypeId = try? await gateway.note(id: sourceNoteId).notetypeId {
+                notetypeId = sourceNotetypeId
             } else {
                 notetypeId = try await gateway.basicNotetypeId()
             }

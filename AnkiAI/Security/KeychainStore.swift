@@ -1,10 +1,28 @@
 import Foundation
 import Security
 
+/// Abstraction over secret storage so view models / settings can be tested
+/// without a Keychain entitlement (the host-less unit-test bundle cannot use the
+/// Keychain reliably). Production uses `KeychainStore`; tests use `InMemorySecretStore`.
+public protocol SecretStore {
+    func set(_ value: String, for key: String)
+    func get(_ key: String) -> String?
+    func remove(_ key: String)
+}
+
+/// In-memory secret store for tests.
+public final class InMemorySecretStore: SecretStore {
+    private var storage: [String: String] = [:]
+    public init() {}
+    public func set(_ value: String, for key: String) { storage[key] = value }
+    public func get(_ key: String) -> String? { storage[key] }
+    public func remove(_ key: String) { storage[key] = nil }
+}
+
 /// Keychain-backed secret storage. Per the iOS migration requirements, the Claude
 /// API key lives in the Keychain (the Android fork used SharedPreferences; iOS
 /// upgrades this to the platform secure store).
-public struct KeychainStore {
+public struct KeychainStore: SecretStore {
     public let service: String
     public init(service: String = "com.evyatar.ankiai.secrets") { self.service = service }
 
@@ -53,10 +71,10 @@ public struct KeychainStore {
 public final class AISettingsStore {
     public static let keyClaudeAPIKey = "claude_api_key"
 
-    private let keychain: KeychainStore
+    private let keychain: SecretStore
     private let defaults: UserDefaults
 
-    public init(keychain: KeychainStore = KeychainStore(), defaults: UserDefaults = .standard) {
+    public init(keychain: SecretStore = KeychainStore(), defaults: UserDefaults = .standard) {
         self.keychain = keychain
         self.defaults = defaults
     }

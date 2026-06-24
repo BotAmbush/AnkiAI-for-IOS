@@ -26,7 +26,7 @@ final class AIChatViewModelTests: XCTestCase {
     private func makeVM(cardId: Int64, reply: Result<String, AIClientError>) throws -> (AIChatViewModel, FakeChatClient, AISettingsStore) {
         let db = try AIDatabase(path: ":memory:")
         let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
-        let settings = AISettingsStore(defaults: defaults)
+        let settings = AISettingsStore(keychain: InMemorySecretStore(), defaults: defaults)
         settings.apiKey = "sk-ant-test"
         let fake = FakeChatClient(reply: reply)
         let vm = AIChatViewModel(cardId: cardId, gateway: StubCollectionGateway(), db: db,
@@ -65,7 +65,7 @@ final class AIChatViewModelTests: XCTestCase {
         let reply = #"{"action":"edit_card","fieldName":"Front","newContent":"<b>NEW</b>","explanation":"x"}"#
         let gateway = StubCollectionGateway()
         let db = try AIDatabase(path: ":memory:")
-        let settings = AISettingsStore(defaults: UserDefaults(suiteName: "t-\(UUID())")!)
+        let settings = AISettingsStore(keychain: InMemorySecretStore(), defaults: UserDefaults(suiteName: "t-\(UUID())")!)
         settings.apiKey = "sk-ant-test"
         let fake = FakeChatClient(reply: .success(reply))
         let vm = AIChatViewModel(cardId: 1000, gateway: gateway, db: db, settings: settings,
