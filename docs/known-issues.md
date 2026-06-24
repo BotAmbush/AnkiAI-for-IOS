@@ -2,6 +2,24 @@
 
 Updated 2026-06-24 (M1).
 
+## ⛔ BLOCKER (2026-06-24): GitHub Actions macOS minutes exhausted
+After ~10+ full macOS builds in one day on the **private** repo (macOS minutes bill
+at 10×), GitHub Actions began failing every job **instantly** (0 steps, ~3–6 s, no
+logs / `BlobNotFound`) — runs `28127177086` and `28127347121`. The last green run was
+M2.9 (`28125950705`). The workflow is unchanged; this is account-level **included-minutes
+/ spending-limit exhaustion**, not a code error.
+
+**Consequence:** the **M2.10** slice (`.apkg` export/import + round-trip test, commit
+`aefdd72`) is **written and committed but UNVERIFIED** — it has never built. It must not
+be treated as green until a macOS run passes.
+
+**To unblock (user action — pick one):**
+1. **Make the repo public** — public repos get unlimited free Actions minutes (the code is
+   already GPL/AGPL; this is a product decision).
+2. Add a payment method / raise the **Actions spending limit** (Settings → Billing).
+3. Wait for the monthly minutes quota to reset.
+Then re-run the workflow (`mode=full`) on `main` and drive the build-repair loop.
+
 ## M2.1 status (verified 2026-06-24, run 28101322821)
 - **Real Anki collection READ path works.** The app links the real Rust backend
   (`AnkiCore.xcframework`, anki 25.09.2) and the deck list shows real decks/subdecks with live

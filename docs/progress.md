@@ -141,9 +141,11 @@ Run `28125950705`, commit `7f4b285`: **61 tests (0 failures)**.
 - [x] Bridge `set_card_flag` + `add_tags_to_notes`; reviewer Flag submenu; tests
   via `flag:` / `tag:` search.
 
-### M2.10 — Import/export (.apkg round-trip) (IN PROGRESS)
-- [ ] Bridge `export_apkg`/`import_apkg`; gateway methods; round-trip integration
-  test (export → import into a fresh collection; 7 cards + decks survive).
+### M2.10 — Import/export (.apkg round-trip) (CODE WRITTEN — ⛔ CI BLOCKED, UNVERIFIED)
+Commit `aefdd72`: bridge `export_apkg`/`import_apkg` + gateway methods + round-trip
+integration test written. **Never built** — GitHub Actions macOS minutes were exhausted
+(see known-issues "BLOCKER"). Do NOT treat as green until a macOS run passes. This is the
+first slice this session that is unverified.
 
 ### M2.11+ — remaining core (NOT STARTED — larger slices)
 - [ ] Files-app/share-sheet UI for import/export; .colpkg; media serving (`<img>`);
