@@ -209,7 +209,7 @@ pub extern "C" fn anki_backend_deck_card_ids(
     }
     let escaped = name.replace('\\', "\\\\").replace('"', "\\\"");
     let search = format!("deck:\"{escaped}\"");
-    match handle.col.search_cards(search, SortMode::NoOrder) {
+    match handle.col.search_cards(search.as_str(), SortMode::NoOrder) {
         Ok(cids) => {
             let ids: Vec<i64> = cids.iter().map(|c| c.0).collect();
             let json = serde_json::to_string(&ids).unwrap_or_else(|_| "[]".into());
