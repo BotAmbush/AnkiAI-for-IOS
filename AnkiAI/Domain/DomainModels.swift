@@ -84,6 +84,10 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func renderCard(cardId: Int64) async throws -> RenderedCard
     /// Answer/grade a card via the real backend scheduler (M2.3 write path).
     func answerCard(cardId: Int64, rating: AnswerRating) async throws
+    /// Suspend / bury a card; undo the last operation (M2.4 write paths).
+    func suspendCard(cardId: Int64) async throws
+    func buryCard(cardId: Int64) async throws
+    func undo() async throws
     func allDecks() async throws -> [DeckNameId]
     func deckName(id: Int64) async throws -> String?
     /// Resolve an exact deck name to an id, creating it if necessary (mirrors `decks.id(name)`).

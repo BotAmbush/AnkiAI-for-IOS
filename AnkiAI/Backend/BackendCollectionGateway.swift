@@ -50,6 +50,10 @@ public actor BackendCollectionGateway: CollectionGateway {
         try opened().answerCard(cardId: cardId, rating: Int32(rating.rawValue))
     }
 
+    public func suspendCard(cardId: Int64) async throws { try opened().suspendCard(cardId: cardId) }
+    public func buryCard(cardId: Int64) async throws { try opened().buryCard(cardId: cardId) }
+    public func undo() async throws { try opened().undo() }
+
     // MARK: - Write/edit path (not in M2.1)
 
     public func resolveOrCreateDeck(name: String) async throws -> Int64 {

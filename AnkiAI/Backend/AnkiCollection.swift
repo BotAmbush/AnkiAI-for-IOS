@@ -114,6 +114,18 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func suspendCard(cardId: Int64) throws {
+        guard anki_backend_suspend_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func buryCard(cardId: Int64) throws {
+        guard anki_backend_bury_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func undo() throws {
+        guard anki_backend_undo(handle) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     static func lastError() -> String {
         guard let c = anki_backend_last_error() else { return "unknown error" }
         return String(cString: c)

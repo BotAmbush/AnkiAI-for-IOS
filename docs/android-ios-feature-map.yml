@@ -162,14 +162,18 @@ features:
     android_paths:
       - AnkiDroid/src/main/java/com/ichi2/anki/ui/windows/reviewer/ReviewerFragment.kt
       - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components:
       - Frameworks/AnkiCore.xcframework
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendAnswerTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Backend answer_card exists; not surfaced in iOS.
+    notes: M2.3 — Again/Hard/Good/Easy via backend grade_now (real scheduler write); integration test proves the deck's new count drops after grading (run 28117704977).
 
   - feature_id: undo
     description: Undo of collection operations.
@@ -219,10 +223,11 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendDeckTreeTests.swift
+      - AnkiAITests/BackendAnswerTests.swift
     status: partial
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Scheduler runs inside the linked backend (due counts verified); not yet surfaced for reviewing.
+    notes: M2.3 — scheduler read (counts) + write (grade_now) verified; full reviewer queue, custom scheduling config still pending.
 
   - feature_id: fsrs
     description: FSRS parameters and scheduling.

@@ -101,9 +101,21 @@ Status: **green** (run `28114901645`, commit `9e6c2e2`): backend xcframework + a
 - Read-only: answer buttons, undo/bury/suspend, scheduler mutations, media `<img>`
   resolution remain for the next slice.
 
-### M2.3+ — remaining core (NOT STARTED)
-- [ ] Review queue + answer buttons (`answer_card`) + undo/bury/suspend/flags/tags.
-- [ ] Swift wrappers for Notes/Cards/Notetypes write paths; media serving; card browser; editor.
+### M2.3 — Answer buttons + real scheduler write (CI GREEN ✅, verified 2026-06-24)
+Run `28117704977`, commit `0e7ad03`: **48 tests (0 failures)**, 4.62 MB arm64 IPA.
+- [x] Bridge `anki_backend_answer_card` → `col.grade_now`; ReviewerView shows
+  Again/Hard/Good/Easy after reveal; grading drives the real scheduler + advances.
+- [x] Integration test: grading every Math card "Easy" reduces the deck's new
+  count (real write); canonical fixture byte-identical.
+- CI fix: `grade_now` uses a 0-based rating scale (0=Again…3=Easy); bridge maps
+  the external 1..=4 by subtracting 1.
+
+### M2.4 — Undo / bury / suspend (IN PROGRESS)
+- [ ] Bridge bury/suspend/undo; reviewer controls; integration tests.
+
+### M2.5+ — remaining core (NOT STARTED)
+- [ ] Flags/tags; Swift wrappers for Notes/Cards/Notetypes write paths; media
+  serving; card browser; editor; statistics; import/export; sync.
 - [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
 - [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
 - [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).

@@ -41,6 +41,20 @@ struct ReviewerView: View {
         }
         .navigationTitle(leaf)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button { Task { await mutateCurrent { try await env.gateway.buryCard(cardId: $0) }; await next() } }
+                        label: { Label("Bury card", systemImage: "arrow.down.to.line") }
+                    Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await next() } }
+                        label: { Label("Suspend card", systemImage: "pause.circle") }
+                    Divider()
+                    Button { Task { await undoLast() } }
+                        label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+                } label: { Image(systemName: "ellipsis.circle") }
+                .disabled(cardIds.isEmpty)
+            }
+        }
         .task { await loadDeck() }
         .sheet(isPresented: $showChat) {
             NavigationStack {
@@ -110,5 +124,19 @@ struct ReviewerView: View {
             self.error = "\(error)"
         }
         isAnswering = false
+    }
+
+    private func mutateCurrent(_ op: (Int64) async throws -> Void) async {
+        guard cardIds.indices.contains(index) else { return }
+        do { try await op(cardIds[index]) } catch { self.error = "\(error)" }
+    }
+
+    private func undoLast() async {
+        do {
+            try await env.gateway.undo()
+            await loadDeck()
+        } catch {
+            self.error = "\(error)"
+        }
     }
 }

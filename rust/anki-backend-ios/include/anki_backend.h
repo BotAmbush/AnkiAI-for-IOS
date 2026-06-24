@@ -35,6 +35,15 @@ int32_t anki_backend_render_card(AnkiHandle *handle, int64_t card_id, char **out
 /* Answer/grade a card now via the scheduler. rating: 1=Again 2=Hard 3=Good 4=Easy. */
 int32_t anki_backend_answer_card(AnkiHandle *handle, int64_t card_id, int32_t rating);
 
+/* Suspend a card (excluded from review until unsuspended). */
+int32_t anki_backend_suspend_card(AnkiHandle *handle, int64_t card_id);
+
+/* Bury a card (hidden until next day / unburied). */
+int32_t anki_backend_bury_card(AnkiHandle *handle, int64_t card_id);
+
+/* Undo the last undoable operation. Non-zero if nothing to undo. */
+int32_t anki_backend_undo(AnkiHandle *handle);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

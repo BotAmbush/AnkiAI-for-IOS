@@ -27,6 +27,7 @@ use anki::collection::{Collection, CollectionBuilder};
 use anki::prelude::*;
 use anki::search::SortMode;
 use anki_proto::decks::DeckTreeNode;
+use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
@@ -304,6 +305,60 @@ pub extern "C" fn anki_backend_answer_card(
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("answer_card failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Suspend a card (excluded from review until unsuspended). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_suspend_card(handle: *mut Handle, card_id: i64) -> c_int {
+    bury_or_suspend(handle, card_id, BuryOrSuspendMode::Suspend, "suspend")
+}
+
+/// Bury a card (hidden until the next day / unburied). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_bury_card(handle: *mut Handle, card_id: i64) -> c_int {
+    bury_or_suspend(handle, card_id, BuryOrSuspendMode::BuryUser, "bury")
+}
+
+fn bury_or_suspend(
+    handle: *mut Handle,
+    card_id: i64,
+    mode: BuryOrSuspendMode,
+    what: &str,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.bury_or_suspend_cards(&[CardId(card_id)], mode) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("{what} failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Undo the last undoable operation. Returns 0 on success, non-zero if there is
+/// nothing to undo (message in last_error).
+#[no_mangle]
+pub extern "C" fn anki_backend_undo(handle: *mut Handle) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.undo() {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("undo failed: {e}"));
             2
         }
     }
