@@ -1,26 +1,84 @@
 name: iOS Build & Test
 
-# Manually triggered: the Windows dev machine cannot run Xcode, so the macOS
-# runner is the authoritative build. Trigger from the Actions tab → Run workflow.
+# Manually triggered: the Windows dev machine cannot run Xcode/Rust-iOS, so the
+# macOS runner is the authoritative build. Trigger from Actions → Run workflow.
+#
+# mode:
+#   full                 build pinned Anki backend xcframework, then app + tests + IPA
+#   backend_spike        Phase A: only prove the pinned `anki` crate compiles for iOS
+#   backend_xcframework  build the backend xcframework only (no app)
 on:
   workflow_dispatch:
     inputs:
-      run_ui_tests:
-        description: "Also run UI tests (slower)"
-        type: boolean
-        default: false
+      mode:
+        description: "Build mode"
+        type: choice
+        options: [full, backend_spike, backend_xcframework]
+        default: full
 
 permissions:
   contents: read
 
 jobs:
-  build-test-package:
-    # macOS 15 ships Xcode 16, which reads the project format XcodeGen emits.
+  # ── Phase A/B: pinned upstream Anki Rust backend for iOS ────────────────────
+  anki-backend:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode (latest 16.x)
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+          xcodebuild -version
+
+      - name: Install protobuf (protoc)
+        run: brew install protobuf
+
+      - name: Toolchain info
+        run: |
+          rustup --version
+          rustc --version || true
+
+      - name: Build pinned Anki backend
+        run: |
+          case "${{ inputs.mode }}" in
+            backend_spike) M=spike ;;
+            *) M=xcframework ;;
+          esac
+          echo "Backend script mode: $M"
+          bash tools/build-anki-backend.sh "$M"
+
+      - name: Upload backend logs & metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anki-backend-logs
+          path: |
+            build/backend/*.log
+            build/backend/backend-metadata.txt
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload XCFramework (if built)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnkiCore-xcframework
+          path: Frameworks/AnkiCore.xcframework
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Phase C/D: app build, tests, IPA (full mode only) ───────────────────────
+  app:
+    needs: anki-backend
+    if: ${{ inputs.mode == 'full' }}
     runs-on: macos-15
     timeout-minutes: 60
     env:
       SCHEME: AnkiAI
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,6 +89,12 @@ jobs:
           if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
           xcodebuild -version
           swift --version
+
+      - name: Download AnkiCore.xcframework
+        uses: actions/download-artifact@v4
+        with:
+          name: AnkiCore-xcframework
+          path: Frameworks/AnkiCore.xcframework
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -65,7 +129,7 @@ jobs:
           echo "Using simulator $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
-      - name: Run unit tests (Simulator)
+      - name: Run unit + integration tests (Simulator)
         run: |
           set -o pipefail
           mkdir -p build
