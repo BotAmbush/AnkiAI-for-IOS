@@ -1,0 +1,73 @@
+# XcodeGen project definition.
+# The macOS CI runner regenerates AnkiAI.xcodeproj from this file with:
+#     xcodegen generate
+# so the fragile .pbxproj is never hand-edited or committed.
+name: AnkiAI
+options:
+  bundleIdPrefix: com.evyatar.ankiai
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGN_IDENTITY: ""
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  AnkiAI:
+    type: application
+    platform: iOS
+    sources:
+      - path: AnkiAI
+    info:
+      path: AnkiAI/Info.plist
+      properties:
+        CFBundleDisplayName: AnkiAI
+        CFBundleShortVersionString: "0.1.0"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: "Attach photos of study material for AI card creation."
+        NSPhotoLibraryUsageDescription: "Attach images from your library for AI card creation."
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.evyatar.ankiai
+        GENERATE_INFOPLIST_FILE: "NO"
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies: []
+
+  AnkiAITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: AnkiAITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.evyatar.ankiai.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: AnkiAI
+
+schemes:
+  AnkiAI:
+    build:
+      targets:
+        AnkiAI: all
+        AnkiAITests: [test]
+    test:
+      targets:
+        - AnkiAITests
+      gatherCoverageData: true

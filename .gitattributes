@@ -1,0 +1,10 @@
+# Enforce LF in the repository so the macOS CI runner gets valid shell scripts/YAML.
+* text=auto eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.swift text eol=lf
+*.plist text eol=lf
+*.png binary
+*.jpg binary
+*.ipa binary

@@ -1,0 +1,52 @@
+# Xcode / Swift
+build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+
+# Generated Xcode project (regenerated from project.yml via XcodeGen)
+AnkiAI.xcodeproj/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+
+# Build artifacts / packaging
+*.ipa
+*.app
+Payload/
+*.dSYM/
+*.dSYM.zip
+
+# Secrets & credentials — NEVER commit
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+*.keychain
+secrets.xcconfig
+.env
+.env.*
+
+# Local Claude / tooling settings
+.claude/settings.local.json
+
+# Rust backend build output (milestone 2)
+rust/target/
+*.xcframework.zip
+
+# macOS
+.DS_Store
