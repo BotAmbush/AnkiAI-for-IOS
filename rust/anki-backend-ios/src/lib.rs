@@ -837,11 +837,14 @@ pub extern "C" fn anki_backend_export_apkg(
             return 1;
         }
     };
-    // Default options (no media, current format); empty search = whole collection.
-    match handle
-        .col
-        .export_apkg(&out_path, ExportAnkiPackageOptions::default(), "", None)
-    {
+    // Include scheduling + deck configs so decks round-trip with their kinds.
+    let opts = ExportAnkiPackageOptions {
+        with_scheduling: true,
+        with_deck_configs: true,
+        with_media: false,
+        legacy: false,
+    };
+    match handle.col.export_apkg(&out_path, opts, "", None) {
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("export_apkg failed: {e}"));
@@ -870,10 +873,12 @@ pub extern "C" fn anki_backend_import_apkg(
             return 1;
         }
     };
-    match handle
-        .col
-        .import_apkg(&in_path, ImportAnkiPackageOptions::default())
-    {
+    let opts = ImportAnkiPackageOptions {
+        with_scheduling: true,
+        with_deck_configs: true,
+        ..Default::default()
+    };
+    match handle.col.import_apkg(&in_path, opts) {
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("import_apkg failed: {e}"));
