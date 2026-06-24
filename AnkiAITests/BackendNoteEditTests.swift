@@ -36,6 +36,24 @@ final class BackendNoteEditTests: XCTestCase {
         XCTAssertTrue(rendered.questionHTML.contains("Edited Q"))
     }
 
+    func testEditableNoteFlowFromCard() async throws {
+        // The manual editor loads a card's note (field names + values), edits, saves.
+        let gateway = try openFixture()
+        let ids = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")
+        let cid = try XCTUnwrap(ids.first)
+
+        var editable = try await gateway.editableNote(cardId: cid)
+        XCTAssertEqual(editable.notetypeName, "Basic")
+        XCTAssertEqual(editable.fieldNames.count, editable.fields.count)
+        XCTAssertEqual(editable.fieldNames, ["Front", "Back"])
+
+        editable.fields[0] = "<div>Edited via editor</div>"
+        try await gateway.updateNote(NoteData(id: editable.noteId, notetypeId: 0, fields: editable.fields))
+
+        let rendered = try await gateway.renderCard(cardId: cid)
+        XCTAssertTrue(rendered.questionHTML.contains("Edited via editor"))
+    }
+
     func testCardContextUsesRealRawNote() async throws {
         let gateway = try openFixture()
         let ids = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")

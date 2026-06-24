@@ -134,7 +134,7 @@ features:
       - AnkiDroid/src/main/java/com/ichi2/anki/NoteEditor.kt
       - libanki/src/main/java/com/ichi2/anki/libanki/Note.kt
     ios_paths:
-      - AnkiAI/Domain/DomainModels.swift
+      - AnkiAI/Features/Editor/NoteEditorView.swift
       - AnkiAI/Backend/BackendCollectionGateway.swift
       - rust/anki-backend-ios/src/lib.rs
     backend_components:
@@ -142,10 +142,10 @@ features:
     tests:
       - AnkiAITests/BackendAddNoteTests.swift
       - AnkiAITests/BackendNoteEditTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.5 add-note + M2.14 read/edit existing notes via NotesService get_note/update_notes (raw fields, undoable) — integration-tested. A dedicated full note-editor UI is still pending, but create + field edit work."
+    notes: "M2.15 — manual NoteEditorView (field names + values, save via update_notes) from the browser + reviewer; create (M2.5) + read/edit (M2.14) backend integration-tested. Raw-HTML field editing; a rich editor is a later refinement."
 
   - feature_id: reviewer
     description: Review screen showing question/answer with rendering.

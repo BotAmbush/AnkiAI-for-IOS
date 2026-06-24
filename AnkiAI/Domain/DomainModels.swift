@@ -60,6 +60,20 @@ public enum AnswerRating: Int, Sendable, CaseIterable {
     }
 }
 
+/// A note prepared for the manual editor (M2.15): field names + current values.
+public struct EditableNote: Equatable, Sendable {
+    public let noteId: Int64
+    public let notetypeName: String
+    public let fieldNames: [String]
+    public var fields: [String]
+    public init(noteId: Int64, notetypeName: String, fieldNames: [String], fields: [String]) {
+        self.noteId = noteId
+        self.notetypeName = notetypeName
+        self.fieldNames = fieldNames
+        self.fields = fields
+    }
+}
+
 /// Scheduling info for a card (M2.12). `dueDate` is set for review/learning
 /// cards; `duePosition` is the new-queue position for new cards.
 public struct CardInfo: Equatable, Sendable {
@@ -138,6 +152,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
 
     func note(id: Int64) async throws -> NoteData
     func updateNote(_ note: NoteData) async throws
+    /// Load a card's note for the manual editor (field names + values) (M2.15).
+    func editableNote(cardId: Int64) async throws -> EditableNote
     func basicNotetypeId() async throws -> Int64
     func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64
 }

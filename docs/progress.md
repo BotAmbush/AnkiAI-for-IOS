@@ -227,3 +227,9 @@ notifications, localization, accessibility, forced-study.
 
 ## Parity
 See `feature-parity-checklist.md` for the per-feature completed/partial/unsupported breakdown.
+
+### M2.15 — Manual note editor (IN PROGRESS)
+- [ ] Bridge `note_fields` now returns field names + notetype name; gateway
+  `editableNote(cardId:)`. NoteEditorView (edit fields, save via update_notes)
+  opened from the browser detail + reviewer menu. Integration test: load card →
+  edit field → save → render reflects.

@@ -17,6 +17,7 @@ struct ReviewerView: View {
     @State private var isAnswering = false
     @State private var error: String?
     @State private var showChat = false
+    @State private var showEditor = false
 
     private var leaf: String { deckName.components(separatedBy: "::").last ?? deckName }
 
@@ -47,6 +48,8 @@ struct ReviewerView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    Button { showEditor = true }
+                        label: { Label("Edit card", systemImage: "pencil") }
                     Button { Task { await mutateCurrent { try await env.gateway.buryCard(cardId: $0) }; await next() } }
                         label: { Label("Bury card", systemImage: "arrow.down.to.line") }
                     Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await next() } }
@@ -68,6 +71,13 @@ struct ReviewerView: View {
             }
         }
         .task { await loadDeck() }
+        .sheet(isPresented: $showEditor) {
+            if cardIds.indices.contains(index) {
+                NoteEditorView(cardId: cardIds[index]) {
+                    Task { try? await renderCurrent() }
+                }
+            }
+        }
         .sheet(isPresented: $showChat) {
             NavigationStack {
                 ChatView(viewModel: env.makeChatViewModel(cardId: cardIds.indices.contains(index) ? cardIds[index] : -2))

@@ -152,23 +152,33 @@ final class AnkiCollection {
 
     private struct NoteFieldsDTO: Decodable {
         let notetype_id: Int64
+        let notetype_name: String
         let fields: [String]
+        let field_names: [String]
         let tags: [String]
+    }
+
+    private func noteFieldsDTO(noteId: Int64) throws -> NoteFieldsDTO {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_note_fields(handle, noteId, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do { return try JSONDecoder().decode(NoteFieldsDTO.self, from: data) }
+        catch { throw AnkiBackendError.decode("\(error)") }
     }
 
     /// Raw note fields + notetype id (for editing existing notes).
     func note(id: Int64) throws -> NoteData {
-        var out: UnsafeMutablePointer<CChar>?
-        let rc = anki_backend_note_fields(handle, id, &out)
-        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
-        defer { anki_backend_string_free(cstr) }
-        let data = Data(String(cString: cstr).utf8)
-        do {
-            let d = try JSONDecoder().decode(NoteFieldsDTO.self, from: data)
-            return NoteData(id: id, notetypeId: d.notetype_id, fields: d.fields)
-        } catch {
-            throw AnkiBackendError.decode("\(error)")
-        }
+        let d = try noteFieldsDTO(noteId: id)
+        return NoteData(id: id, notetypeId: d.notetype_id, fields: d.fields)
+    }
+
+    /// A note prepared for the manual editor: field names + values.
+    func editableNote(noteId: Int64) throws -> EditableNote {
+        let d = try noteFieldsDTO(noteId: noteId)
+        return EditableNote(noteId: noteId, notetypeName: d.notetype_name,
+                            fieldNames: d.field_names, fields: d.fields)
     }
 
     func updateNote(_ note: NoteData) throws {

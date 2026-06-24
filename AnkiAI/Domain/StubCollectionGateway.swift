@@ -51,6 +51,9 @@ public actor StubCollectionGateway: CollectionGateway {
     public func cardInfo(cardId: Int64) async throws -> CardInfo {
         throw GatewayError.notImplementedInM21("cardInfo")
     }
+    public func editableNote(cardId: Int64) async throws -> EditableNote {
+        throw GatewayError.notImplementedInM21("editableNote")
+    }
 
     public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
         throw GatewayError.notImplementedInM21("answerCard")

@@ -807,9 +807,21 @@ pub extern "C" fn anki_backend_note_fields(
     }
     match handle.col.get_note(PbNoteId { nid: note_id }) {
         Ok(note) => {
+            let (field_names, notetype_name) = match handle
+                .col
+                .get_notetype(NotetypeId(note.notetype_id))
+            {
+                Ok(Some(nt)) => (
+                    nt.fields.iter().map(|f| f.name.clone()).collect::<Vec<_>>(),
+                    nt.name.clone(),
+                ),
+                _ => (Vec::new(), String::new()),
+            };
             let json = serde_json::json!({
                 "notetype_id": note.notetype_id,
+                "notetype_name": notetype_name,
                 "fields": note.fields,
+                "field_names": field_names,
                 "tags": note.tags,
             })
             .to_string();

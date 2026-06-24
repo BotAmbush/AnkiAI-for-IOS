@@ -107,4 +107,9 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func updateNote(_ note: NoteData) async throws {
         try opened().updateNote(note)
     }
+    public func editableNote(cardId: Int64) async throws -> EditableNote {
+        let col = try opened()
+        let info = try col.cardInfo(cardId: cardId)
+        return try col.editableNote(noteId: info.noteId)
+    }
 }

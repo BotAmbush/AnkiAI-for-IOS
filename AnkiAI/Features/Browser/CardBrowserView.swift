@@ -78,6 +78,7 @@ private struct CardDetailView: View {
     @State private var rendered: RenderedCard?
     @State private var info: CardInfo?
     @State private var error: String?
+    @State private var showEditor = false
 
     var body: some View {
         Group {
@@ -98,12 +99,22 @@ private struct CardDetailView: View {
         }
         .navigationTitle("Card")
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            do {
-                rendered = try await env.gateway.renderCard(cardId: cardId)
-                info = try? await env.gateway.cardInfo(cardId: cardId)
-            } catch { self.error = "\(error)" }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showEditor = true } label: { Label("Edit", systemImage: "pencil") }
+            }
         }
+        .sheet(isPresented: $showEditor) {
+            NoteEditorView(cardId: cardId) { Task { await reload() } }
+        }
+        .task { await reload() }
+    }
+
+    private func reload() async {
+        do {
+            rendered = try await env.gateway.renderCard(cardId: cardId)
+            info = try? await env.gateway.cardInfo(cardId: cardId)
+        } catch { self.error = "\(error)" }
     }
 
     @ViewBuilder
