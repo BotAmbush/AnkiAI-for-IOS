@@ -13,6 +13,7 @@ struct ReviewerView: View {
     @State private var rendered: RenderedCard?
     @State private var showAnswer = false
     @State private var isLoading = true
+    @State private var isAnswering = false
     @State private var error: String?
     @State private var showChat = false
 
@@ -52,14 +53,25 @@ struct ReviewerView: View {
     }
 
     private var controls: some View {
-        HStack {
-            Text("\(index + 1) / \(cardIds.count)").font(.caption).foregroundColor(.secondary)
-            Spacer()
+        VStack(spacing: 8) {
+            HStack {
+                Text("\(index + 1) / \(cardIds.count)").font(.caption).foregroundColor(.secondary)
+                Spacer()
+                Button("Ask Claude") { showChat = true }.buttonStyle(.bordered).font(.caption)
+            }
             if !showAnswer {
-                Button("Show Answer") { showAnswer = true }.buttonStyle(.borderedProminent)
+                Button("Show Answer") { showAnswer = true }
+                    .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
             } else {
-                Button("Ask Claude") { showChat = true }.buttonStyle(.bordered)
-                Button("Next card") { Task { await next() } }.buttonStyle(.borderedProminent)
+                // Real scheduler grading via the backend.
+                HStack(spacing: 8) {
+                    ForEach(AnswerRating.allCases, id: \.rawValue) { rating in
+                        Button(rating.label) { Task { await answer(rating) } }
+                            .buttonStyle(.bordered)
+                            .frame(maxWidth: .infinity)
+                            .disabled(isAnswering)
+                    }
+                }
             }
         }
         .padding()
@@ -86,5 +98,17 @@ struct ReviewerView: View {
         guard !cardIds.isEmpty else { return }
         index = (index + 1) % cardIds.count
         do { try await renderCurrent() } catch { self.error = "\(error)" }
+    }
+
+    private func answer(_ rating: AnswerRating) async {
+        guard cardIds.indices.contains(index) else { return }
+        isAnswering = true
+        do {
+            try await env.gateway.answerCard(cardId: cardIds[index], rating: rating)
+            await next()
+        } catch {
+            self.error = "\(error)"
+        }
+        isAnswering = false
     }
 }

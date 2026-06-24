@@ -279,6 +279,34 @@ pub extern "C" fn anki_backend_render_card(
     }
 }
 
+/// Answer (grade) a card now with `rating` (1=Again 2=Hard 3=Good 4=Easy),
+/// driving the real backend scheduler. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_answer_card(
+    handle: *mut Handle,
+    card_id: i64,
+    rating: i32,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if !(1..=4).contains(&rating) {
+        set_last_error(format!("invalid rating {rating} (expected 1..=4)"));
+        return 1;
+    }
+    match handle.col.grade_now(&[CardId(card_id)], rating) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("answer_card failed: {e}"));
+            2
+        }
+    }
+}
+
 // ─── Test support (used only by integration tests) ────────────────────────────
 
 /// Create a deterministic fixture collection at `path` (must not already exist).

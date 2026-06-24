@@ -45,6 +45,10 @@ public actor StubCollectionGateway: CollectionGateway {
         throw GatewayError.notImplementedInM21("renderCard")
     }
 
+    public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
+        throw GatewayError.notImplementedInM21("answerCard")
+    }
+
     public func allDecks() async throws -> [DeckNameId] { decks }
 
     public func deckName(id: Int64) async throws -> String? { decks.first { $0.id == id }?.name }

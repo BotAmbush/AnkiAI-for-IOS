@@ -46,6 +46,10 @@ public actor BackendCollectionGateway: CollectionGateway {
         try opened().renderCard(cardId: cardId)
     }
 
+    public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
+        try opened().answerCard(cardId: cardId, rating: Int32(rating.rawValue))
+    }
+
     // MARK: - Write/edit path (not in M2.1)
 
     public func resolveOrCreateDeck(name: String) async throws -> Int64 {

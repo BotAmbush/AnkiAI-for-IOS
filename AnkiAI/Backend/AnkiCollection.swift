@@ -6,6 +6,7 @@ enum AnkiBackendError: Error, CustomStringConvertible {
     case open(String)
     case deckTree(String)
     case render(String)
+    case answer(String)
     case decode(String)
     case createFixture(String)
 
@@ -14,6 +15,7 @@ enum AnkiBackendError: Error, CustomStringConvertible {
         case .open(let m): return "open collection failed: \(m)"
         case .deckTree(let m): return "deck tree failed: \(m)"
         case .render(let m): return "render failed: \(m)"
+        case .answer(let m): return "answer failed: \(m)"
         case .decode(let m): return "decode failed: \(m)"
         case .createFixture(let m): return "create fixture failed: \(m)"
         }
@@ -104,6 +106,12 @@ final class AnkiCollection {
         let question_html: String
         let answer_html: String
         let css: String
+    }
+
+    /// Answer/grade a card now via the scheduler (mutates the collection).
+    func answerCard(cardId: Int64, rating: Int32) throws {
+        let rc = anki_backend_answer_card(handle, cardId, rating)
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
     static func lastError() -> String {

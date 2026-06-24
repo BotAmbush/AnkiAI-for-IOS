@@ -47,6 +47,19 @@ public struct NotetypeNameId: Equatable, Sendable {
     public init(id: Int64, name: String) { self.id = id; self.name = name }
 }
 
+/// Answer rating for a reviewed card. Raw values match the backend (1..=4).
+public enum AnswerRating: Int, Sendable, CaseIterable {
+    case again = 1, hard = 2, good = 3, easy = 4
+    public var label: String {
+        switch self {
+        case .again: return "Again"
+        case .hard: return "Hard"
+        case .good: return "Good"
+        case .easy: return "Easy"
+        }
+    }
+}
+
 /// A card rendered by the backend (templates + CSS), ready for the WebView.
 public struct RenderedCard: Equatable, Sendable {
     public let questionHTML: String
@@ -69,6 +82,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func cardIds(inDeckNamed name: String) async throws -> [Int64]
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
     func renderCard(cardId: Int64) async throws -> RenderedCard
+    /// Answer/grade a card via the real backend scheduler (M2.3 write path).
+    func answerCard(cardId: Int64, rating: AnswerRating) async throws
     func allDecks() async throws -> [DeckNameId]
     func deckName(id: Int64) async throws -> String?
     /// Resolve an exact deck name to an id, creating it if necessary (mirrors `decks.id(name)`).
