@@ -136,15 +136,30 @@ Run `28123587961`, commit `b84313b`: **58 tests (0 failures)**.
 ### M2.8 — Live collection statistics (CI GREEN ✅, verified 2026-06-24)
 Run `28124399945`, commit `cb0e7a4`: **59 tests (0 failures)**. Live counts in Insights.
 
-### M2.9 — Flags + tags (IN PROGRESS)
-- [ ] Bridge `set_card_flag` + `add_tags_to_notes`; reviewer flag menu; tests via
-  `flag:` / `tag:` search.
+### M2.9 — Flags + tags (CI GREEN ✅, verified 2026-06-24)
+Run `28125950705`, commit `7f4b285`: **61 tests (0 failures)**.
+- [x] Bridge `set_card_flag` + `add_tags_to_notes`; reviewer Flag submenu; tests
+  via `flag:` / `tag:` search.
 
-### M2.10+ — remaining core (NOT STARTED)
-- [ ] Note edit/cardContext (needs backend get_note/get_card); full editor; media
-  serving; import/export; sync; full stats graphs.
+### M2.10+ — remaining core (NOT STARTED — larger slices)
+- [ ] Note edit/cardContext (blocked: backend `get_note`/`get_card` not public —
+  investigate a rendered-HTML workaround for AI card context).
+- [ ] Media serving (`<img>`) to the WebView; import/export (.apkg/.colpkg);
+  AnkiWeb sync; full statistics graphs; full note editor UI.
 
-## Session summary (2026-06-24) — M2.1 → M2.6, all CI-verified green
+## Session summary (2026-06-24) — M2.1 → M2.9, all CI-verified green
+
+Nine vertical slices landed green this session (latest run `28125950705`, **61
+tests, 0 failures**). On top of the M2.1–M2.6 summary below, M2.7–M2.9 added:
+card **browser** (arbitrary `deck:`/`tag:`/free-text search), live collection
+**statistics** in Insights, and card **flags** + note **tags**. Feature map:
+**18 completed**, 12 partial, 15 not_started, 1 blocked. Android unchanged
+throughout (`9bad8304`, 0 tracked changes). Still Mode A;
+`lastAndroidCommitFullyPortedToIOS` stays **null**.
+
+---
+
+### (earlier) M2.1 → M2.6 summary
 
 The real Anki collection path now covers, end-to-end through the Rust backend
 `AnkiCore.xcframework` (anki 25.09.2) with integration tests proving the canonical
