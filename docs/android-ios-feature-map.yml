@@ -297,10 +297,10 @@ features:
       - AnkiAI/Backend/AnkiCollection.swift
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: blocked
+    status: partial
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Handled by the backend; not yet explicitly exercised/verified for upgrades.
+    notes: "Schema migrations are handled automatically inside the Rust backend when opening an older collection — NOT blocked. Status partial only because it hasn't been explicitly verified against an old-schema fixture yet."
 
   - feature_id: templates_css
     description: Note type templates and styling.
