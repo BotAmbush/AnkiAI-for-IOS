@@ -1,17 +1,33 @@
 import Foundation
 
-/// Shared, app-wide dependencies. Milestone 1 wires the in-memory stub gateway;
-/// milestone 2 swaps in the Rust-backend-backed gateway without touching the UI.
+/// Shared, app-wide dependencies.
+///
+/// M2.1: the production collection gateway is the real `BackendCollectionGateway`
+/// (Rust backend) — `StubCollectionGateway` is no longer used in production
+/// (only previews / isolated unit tests). On first launch a real sample
+/// collection is seeded via the backend (real writes, not hardcoded data).
 @MainActor
 public final class AppEnvironment: ObservableObject {
     public let gateway: CollectionGateway
     public let database: AIDatabase
     public let settings: AISettingsStore
+    public let collectionPath: String
 
     public init() {
-        self.gateway = StubCollectionGateway()
+        let support = try? FileManager.default.url(
+            for: .applicationSupportDirectory, in: .userDomainMask,
+            appropriateFor: nil, create: true)
+        let colURL = (support ?? URL(fileURLWithPath: NSTemporaryDirectory()))
+            .appendingPathComponent("collection.anki2")
+        self.collectionPath = colURL.path
+
+        // First launch: seed a real sample collection through the backend.
+        if !FileManager.default.fileExists(atPath: colURL.path) {
+            try? AnkiCollection.createFixture(path: colURL.path)
+        }
+        self.gateway = BackendCollectionGateway(path: colURL.path)
+
         self.settings = AISettingsStore()
-        // Fall back to in-memory if the support directory is unavailable.
         if let db = try? AIDatabase.makeDefault() {
             self.database = db
         } else {
@@ -24,8 +40,6 @@ public final class AppEnvironment: ObservableObject {
     }
 
     private static func emptyMemoryDB() -> AIDatabase {
-        // Best-effort: a fresh in-memory DB. Force-unwrap is safe — opening
-        // ":memory:" cannot fail on a functioning system.
         try! AIDatabase(path: ":memory:")
     }
 }

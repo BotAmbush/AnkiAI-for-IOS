@@ -1,25 +1,29 @@
 import SwiftUI
 
-/// Deck picker. Mirrors `DeckPicker` — lists decks and exposes the AI card
-/// creator FAB. (Real deck stats/counts arrive with the backend in milestone 2.)
+/// Deck picker. M2.1: lists **real** decks and subdecks with **live**
+/// new/learn/review counts read from the Anki backend (no fake data). The AI
+/// card creator opens from here. Review/scheduling are later milestones.
 struct DeckListView: View {
     @EnvironmentObject private var env: AppEnvironment
-    @State private var decks: [DeckNameId] = []
+    @State private var decks: [DeckTreeEntry] = []
+    @State private var isLoading = true
+    @State private var loadError: String?
     @State private var showCreator = false
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    ForEach(decks) { deck in
-                        NavigationLink {
-                            ReviewerView(cardId: 1000) // sample card until backend supplies queues
-                        } label: {
-                            Label(deck.name, systemImage: "tray.full")
-                        }
-                    }
-                } footer: {
-                    Text("Deck counts and the review queue connect to the Anki collection in milestone 2.")
+            Group {
+                if isLoading {
+                    ProgressView("Opening collection…")
+                } else if let loadError {
+                    ContentUnavailableViewCompat(
+                        title: "Couldn't open collection",
+                        message: loadError,
+                        retry: { Task { await load() } })
+                } else if decks.isEmpty {
+                    Text("No decks yet.").foregroundColor(.secondary)
+                } else {
+                    List(decks) { deck in DeckRow(deck: deck) }
                 }
             }
             .navigationTitle("Decks")
@@ -40,7 +44,65 @@ struct DeckListView: View {
                         }
                 }
             }
-            .task { decks = (try? await env.gateway.allDecks()) ?? [] }
+            .task { await load() }
+            .refreshable { await load() }
         }
+    }
+
+    private func load() async {
+        isLoading = true
+        loadError = nil
+        do {
+            decks = try await env.gateway.deckTree()
+        } catch {
+            loadError = "\(error)"
+        }
+        isLoading = false
+    }
+}
+
+private struct DeckRow: View {
+    let deck: DeckTreeEntry
+    private var leaf: String { deck.name.components(separatedBy: "::").last ?? deck.name }
+
+    var body: some View {
+        HStack {
+            Image(systemName: deck.level == 0 ? "tray.full" : "tray")
+                .foregroundColor(.secondary)
+            Text(leaf)
+                .padding(.leading, CGFloat(deck.level) * 14)
+            Spacer()
+            CountChip(value: deck.newCount, color: .blue)
+            CountChip(value: deck.learnCount, color: .red)
+            CountChip(value: deck.reviewCount, color: .green)
+        }
+    }
+}
+
+private struct CountChip: View {
+    let value: Int
+    let color: Color
+    var body: some View {
+        Text("\(value)")
+            .font(.caption.monospacedDigit())
+            .foregroundColor(value == 0 ? .secondary : color)
+            .frame(minWidth: 22)
+    }
+}
+
+/// Minimal iOS 16-compatible "content unavailable" view with a retry action.
+private struct ContentUnavailableViewCompat: View {
+    let title: String
+    let message: String
+    let retry: () -> Void
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle").font(.largeTitle).foregroundColor(.orange)
+            Text(title).font(.headline)
+            Text(message).font(.caption).foregroundColor(.secondary)
+                .multilineTextAlignment(.center).padding(.horizontal)
+            Button("Retry", action: retry).buttonStyle(.borderedProminent)
+        }
+        .padding()
     }
 }

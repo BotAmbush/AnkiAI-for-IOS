@@ -27,6 +27,15 @@ public actor StubCollectionGateway: CollectionGateway {
         cardToNoteDeck = [1000: (noteId: 100, deckId: 3)]
     }
 
+    public func deckTree() async throws -> [DeckTreeEntry] {
+        // Preview/test only: zero counts. Production uses BackendCollectionGateway.
+        decks.map {
+            DeckTreeEntry(deckId: $0.id, name: $0.name,
+                          level: $0.name.components(separatedBy: "::").count - 1,
+                          newCount: 0, learnCount: 0, reviewCount: 0)
+        }
+    }
+
     public func allDecks() async throws -> [DeckNameId] { decks }
 
     public func deckName(id: Int64) async throws -> String? { decks.first { $0.id == id }?.name }

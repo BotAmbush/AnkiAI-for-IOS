@@ -47,7 +47,13 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.evyatar.ankiai
         GENERATE_INFOPLIST_FILE: "NO"
         TARGETED_DEVICE_FAMILY: "1,2"
-    dependencies: []
+    dependencies:
+      - framework: Frameworks/AnkiCore.xcframework
+        embed: false
+      - sdk: libc++.tbd
+      - sdk: libresolv.tbd
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
 
   AnkiAITests:
     type: bundle.unit-test
@@ -60,6 +66,12 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
     dependencies:
       - target: AnkiAI
+      - framework: Frameworks/AnkiCore.xcframework
+        embed: false
+      - sdk: libc++.tbd
+      - sdk: libresolv.tbd
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
 
 schemes:
   AnkiAI:
