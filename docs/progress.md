@@ -160,10 +160,15 @@ collection hits anki-internal `InvalidInput "decks have different kinds"` — wi
 deferred/documented (see known-issues). CI fix this round: `Section` header/footer; the
 import is the only piece not green.
 
-### M2.12+ — remaining core (NOT STARTED — larger slices)
-- [ ] Files-app/share-sheet UI for import/export; .colpkg; media serving (`<img>`);
-  AnkiWeb sync; full stats graphs; per-card next-due in browser; note editor
-  (blocked on backend get_note/get_card).
+### M2.12 — Per-card info / next-due (IN PROGRESS)
+Addresses user feedback (browser didn't show time-until-next).
+- [ ] Bridge `card_stats` → `anki_backend_card_info`; gateway `cardInfo`; browser
+  detail shows Due/Interval/Reviews/Lapses/Ease; integration tests (new vs reviewed).
+
+### M2.13+ — remaining core (NOT STARTED — larger slices)
+- [ ] Fix .apkg import (deck-kind conflict) or wire .colpkg backup/restore;
+  Files-app/share-sheet UI; media serving (`<img>`); AnkiWeb sync; full stats
+  graphs; note editor (blocked on backend get_note/get_card).
 
 ## Session summary (2026-06-24) — M2.1 → M2.9, all CI-verified green
 

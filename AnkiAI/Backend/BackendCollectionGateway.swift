@@ -49,6 +49,9 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func renderCard(cardId: Int64) async throws -> RenderedCard {
         try opened().renderCard(cardId: cardId)
     }
+    public func cardInfo(cardId: Int64) async throws -> CardInfo {
+        try opened().cardInfo(cardId: cardId)
+    }
 
     public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
         try opened().answerCard(cardId: cardId, rating: Int32(rating.rawValue))

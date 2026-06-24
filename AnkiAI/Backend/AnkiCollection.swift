@@ -119,6 +119,35 @@ final class AnkiCollection {
         let css: String
     }
 
+    private struct CardInfoDTO: Decodable {
+        let due_date: Int64?
+        let due_position: Int?
+        let interval: Int
+        let ease: Int
+        let reviews: Int
+        let lapses: Int
+        let card_type: String
+        let deck: String
+    }
+
+    func cardInfo(cardId: Int64) throws -> CardInfo {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_card_info(handle, cardId, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.render(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do {
+            let d = try JSONDecoder().decode(CardInfoDTO.self, from: data)
+            return CardInfo(
+                dueDate: d.due_date.map { Date(timeIntervalSince1970: TimeInterval($0)) },
+                duePosition: d.due_position,
+                interval: d.interval, ease: d.ease, reviews: d.reviews, lapses: d.lapses,
+                cardType: d.card_type, deck: d.deck)
+        } catch {
+            throw AnkiBackendError.decode("\(error)")
+        }
+    }
+
     /// Answer/grade a card now via the scheduler (mutates the collection).
     func answerCard(cardId: Int64, rating: Int32) throws {
         let rc = anki_backend_answer_card(handle, cardId, rating)

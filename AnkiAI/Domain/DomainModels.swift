@@ -60,6 +60,30 @@ public enum AnswerRating: Int, Sendable, CaseIterable {
     }
 }
 
+/// Scheduling info for a card (M2.12). `dueDate` is set for review/learning
+/// cards; `duePosition` is the new-queue position for new cards.
+public struct CardInfo: Equatable, Sendable {
+    public let dueDate: Date?
+    public let duePosition: Int?
+    public let interval: Int      // days
+    public let ease: Int          // per mille (e.g. 2500 = 250%)
+    public let reviews: Int
+    public let lapses: Int
+    public let cardType: String
+    public let deck: String
+    public init(dueDate: Date?, duePosition: Int?, interval: Int, ease: Int,
+                reviews: Int, lapses: Int, cardType: String, deck: String) {
+        self.dueDate = dueDate
+        self.duePosition = duePosition
+        self.interval = interval
+        self.ease = ease
+        self.reviews = reviews
+        self.lapses = lapses
+        self.cardType = cardType
+        self.deck = deck
+    }
+}
+
 /// A card rendered by the backend (templates + CSS), ready for the WebView.
 public struct RenderedCard: Equatable, Sendable {
     public let questionHTML: String
@@ -84,6 +108,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func searchCardIds(query: String) async throws -> [Int64]
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
     func renderCard(cardId: Int64) async throws -> RenderedCard
+    /// Scheduling info (due/interval/reviews/…) for a card (M2.12).
+    func cardInfo(cardId: Int64) async throws -> CardInfo
     /// Answer/grade a card via the real backend scheduler (M2.3 write path).
     func answerCard(cardId: Int64, rating: AnswerRating) async throws
     /// Interval labels for the answer buttons, [again, hard, good, easy] (M2.11).

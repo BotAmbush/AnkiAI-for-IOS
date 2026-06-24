@@ -281,6 +281,58 @@ pub extern "C" fn anki_backend_search_card_ids(
     }
 }
 
+/// Card info (scheduling stats) as JSON via `out_json`:
+/// `{due_date, due_position, interval, ease, reviews, lapses, card_type, deck}`.
+/// `due_date` is epoch seconds (review/learning) or null; `due_position` is the
+/// new-queue position or null.
+#[no_mangle]
+pub extern "C" fn anki_backend_card_info(
+    handle: *mut Handle,
+    card_id: i64,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.card_stats(CardId(card_id)) {
+        Ok(s) => {
+            let json = serde_json::json!({
+                "due_date": s.due_date,
+                "due_position": s.due_position,
+                "interval": s.interval,
+                "ease": s.ease,
+                "reviews": s.reviews,
+                "lapses": s.lapses,
+                "card_type": s.card_type,
+                "deck": s.deck,
+            })
+            .to_string();
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("card info json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("card_stats failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Render an existing card via the backend (templates + CSS). Returns JSON
 /// `{question_html, answer_html, css}` via `out_json`. Caller frees the string.
 #[no_mangle]

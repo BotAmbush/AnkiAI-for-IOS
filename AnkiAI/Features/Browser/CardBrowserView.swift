@@ -71,11 +71,12 @@ private struct CardRowView: View {
     }
 }
 
-/// Full card detail: backend-rendered question and answer.
+/// Full card detail: backend-rendered question and answer + scheduling info.
 private struct CardDetailView: View {
     @EnvironmentObject private var env: AppEnvironment
     let cardId: Int64
     @State private var rendered: RenderedCard?
+    @State private var info: CardInfo?
     @State private var error: String?
 
     var body: some View {
@@ -85,9 +86,10 @@ private struct CardDetailView: View {
             } else if let rendered {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        CardWebView(html: rendered.questionHTML, css: rendered.css).frame(minHeight: 160)
+                        CardWebView(html: rendered.questionHTML, css: rendered.css).frame(minHeight: 140)
                         Divider()
-                        CardWebView(html: rendered.answerHTML, css: rendered.css).frame(minHeight: 200)
+                        CardWebView(html: rendered.answerHTML, css: rendered.css).frame(minHeight: 160)
+                        if let info { infoSection(info) }
                     }
                 }
             } else {
@@ -97,8 +99,45 @@ private struct CardDetailView: View {
         .navigationTitle("Card")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            do { rendered = try await env.gateway.renderCard(cardId: cardId) }
-            catch { self.error = "\(error)" }
+            do {
+                rendered = try await env.gateway.renderCard(cardId: cardId)
+                info = try? await env.gateway.cardInfo(cardId: cardId)
+            } catch { self.error = "\(error)" }
         }
+    }
+
+    @ViewBuilder
+    private func infoSection(_ info: CardInfo) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider().padding(.vertical, 4)
+            Text("Card info").font(.headline)
+            row("Deck", info.deck)
+            row("Type", info.cardType)
+            row("Due", dueText(info))
+            if info.interval > 0 { row("Interval", "\(info.interval) day(s)") }
+            row("Reviews", "\(info.reviews)")
+            row("Lapses", "\(info.lapses)")
+            if info.ease > 0 { row("Ease", "\(info.ease / 10)%") }
+        }
+        .padding()
+    }
+
+    private func dueText(_ info: CardInfo) -> String {
+        if let date = info.dueDate {
+            let days = Int((date.timeIntervalSinceNow / 86400).rounded())
+            let when = RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
+            return days <= 0 ? "now / overdue" : "\(when) (\(date.formatted(date: .abbreviated, time: .omitted)))"
+        }
+        if let pos = info.duePosition { return "new (position \(pos))" }
+        return "—"
+    }
+
+    private func row(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).foregroundColor(.secondary)
+            Spacer()
+            Text(value).multilineTextAlignment(.trailing)
+        }
+        .font(.callout)
     }
 }
