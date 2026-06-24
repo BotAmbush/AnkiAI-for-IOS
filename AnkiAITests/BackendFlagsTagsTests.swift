@@ -14,15 +14,19 @@ final class BackendFlagsTagsTests: XCTestCase {
 
     func testSetAndClearFlag() async throws {
         let gateway = try openedFixture()
-        let id = try XCTUnwrap(try await gateway.cardIds(inDeckNamed: "Math").first)
+        let mathIds = try await gateway.cardIds(inDeckNamed: "Math")
+        let id = try XCTUnwrap(mathIds.first)
 
-        XCTAssertEqual(try await gateway.searchCardIds(query: "flag:1").count, 0)
+        let before = try await gateway.searchCardIds(query: "flag:1").count
+        XCTAssertEqual(before, 0)
+
         try await gateway.setFlag(cardId: id, flag: 1)
         let flagged = try await gateway.searchCardIds(query: "flag:1")
         XCTAssertTrue(flagged.contains(id), "card should be flag:1")
 
         try await gateway.setFlag(cardId: id, flag: 0)
-        XCTAssertEqual(try await gateway.searchCardIds(query: "flag:1").count, 0, "clearing the flag removes it")
+        let after = try await gateway.searchCardIds(query: "flag:1").count
+        XCTAssertEqual(after, 0, "clearing the flag removes it")
     }
 
     func testAddTagToNote() async throws {
@@ -31,8 +35,11 @@ final class BackendFlagsTagsTests: XCTestCase {
         let deckId = try await gateway.resolveOrCreateDeck(name: "Default")
         let noteId = try await gateway.addNote(notetypeId: ntid, fields: ["Q", "A"], deckId: deckId)
 
-        XCTAssertEqual(try await gateway.searchCardIds(query: "tag:m29tag").count, 0)
+        let before = try await gateway.searchCardIds(query: "tag:m29tag").count
+        XCTAssertEqual(before, 0)
+
         try await gateway.addTags(noteId: noteId, tags: "m29tag")
-        XCTAssertEqual(try await gateway.searchCardIds(query: "tag:m29tag").count, 1, "tag should be searchable")
+        let after = try await gateway.searchCardIds(query: "tag:m29tag").count
+        XCTAssertEqual(after, 1, "tag should be searchable")
     }
 }
