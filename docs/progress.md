@@ -239,7 +239,7 @@ See `feature-parity-checklist.md` for the per-feature completed/partial/unsuppor
   `notetypeId(named:)`. Integration test: create a Cloze note → render hides the
   deletion in the question, reveals it in the answer (cloze rendering verified).
 
-### M2.17 — Deck management: rename + delete (IN PROGRESS)
+### M2.17 — Deck management: rename + delete (CI GREEN ✅, run 28135314574)
 - [ ] Bridge `rename_deck` (DecksService) + `remove_deck`
   (remove_decks_and_child_decks); gateway methods; deck-list swipe actions
   (Rename via alert, Delete; Default protected). Integration tests via deck tree.
