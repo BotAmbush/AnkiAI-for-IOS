@@ -155,6 +155,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     /// Load a card's note for the manual editor (field names + values) (M2.15).
     func editableNote(cardId: Int64) async throws -> EditableNote
     func basicNotetypeId() async throws -> Int64
+    /// Look up a notetype id by name (e.g. "Basic", "Cloze") (M2.16).
+    func notetypeId(named name: String) async throws -> Int64
     func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64
 }
 

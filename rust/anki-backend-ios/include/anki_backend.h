@@ -77,6 +77,9 @@ int32_t anki_backend_import_apkg(AnkiHandle *handle, const char *in_path);
 /* Write the "Basic" notetype id to *out_id. */
 int32_t anki_backend_basic_notetype_id(AnkiHandle *handle, int64_t *out_id);
 
+/* Write the id of the notetype named `name` to *out_id (e.g. "Basic", "Cloze"). */
+int32_t anki_backend_notetype_id_by_name(AnkiHandle *handle, const char *name, int64_t *out_id);
+
 /* Resolve/create a deck by full human name; write its id to *out_id. */
 int32_t anki_backend_resolve_or_create_deck(AnkiHandle *handle, const char *name, int64_t *out_id);
 

@@ -388,13 +388,16 @@ features:
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/Notetypes.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendClozeTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.16 — cloze rendering verified end-to-end (create a Cloze note via notetypeId(named:) + addNote; render hides the deletion in the question and reveals it in the answer). Cloze authoring UI in the creator/editor is a later refinement."
 
   - feature_id: media
     description: Image/media files referenced by cards.

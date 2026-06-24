@@ -233,3 +233,8 @@ See `feature-parity-checklist.md` for the per-feature completed/partial/unsuppor
   `editableNote(cardId:)`. NoteEditorView (edit fields, save via update_notes)
   opened from the browser detail + reviewer menu. Integration test: load card →
   edit field → save → render reflects.
+
+### M2.16 — Cloze cards (IN PROGRESS)
+- [ ] Bridge `notetype_id_by_name` (generalizes Basic lookup); gateway
+  `notetypeId(named:)`. Integration test: create a Cloze note → render hides the
+  deletion in the question, reveals it in the answer (cloze rendering verified).

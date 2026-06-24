@@ -621,6 +621,48 @@ pub extern "C" fn anki_backend_basic_notetype_id(handle: *mut Handle, out_id: *m
     }
 }
 
+/// Write the id of the notetype named `name` to `out_id` (0 if not found, with
+/// an error set). Generalizes basic_notetype_id (e.g. "Basic", "Cloze").
+#[no_mangle]
+pub extern "C" fn anki_backend_notetype_id_by_name(
+    handle: *mut Handle,
+    name: *const c_char,
+    out_id: *mut i64,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let name = match unsafe { cstr_to_string(name) } {
+        Some(n) => n,
+        None => {
+            set_last_error("null name".into());
+            return 1;
+        }
+    };
+    if out_id.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.get_notetype_by_name(&name) {
+        Ok(Some(nt)) => {
+            unsafe { *out_id = nt.id.0 };
+            0
+        }
+        Ok(None) => {
+            set_last_error(format!("notetype '{name}' not found"));
+            2
+        }
+        Err(e) => {
+            set_last_error(format!("get_notetype_by_name failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Resolve a deck by full human name, creating it (and parents) if needed.
 /// Writes the deck id to `out_id`. Returns 0 on success.
 #[no_mangle]

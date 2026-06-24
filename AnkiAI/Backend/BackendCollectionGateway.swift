@@ -87,6 +87,9 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func basicNotetypeId() async throws -> Int64 {
         try opened().basicNotetypeId()
     }
+    public func notetypeId(named name: String) async throws -> Int64 {
+        try opened().notetypeId(named: name)
+    }
     public func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64 {
         try opened().addNote(notetypeId: notetypeId, fields: fields, deckId: deckId)
     }

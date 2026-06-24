@@ -245,6 +245,13 @@ final class AnkiCollection {
         return out
     }
 
+    func notetypeId(named name: String) throws -> Int64 {
+        var out: Int64 = 0
+        let rc = name.withCString { anki_backend_notetype_id_by_name(handle, $0, &out) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+        return out
+    }
+
     func resolveOrCreateDeck(name: String) throws -> Int64 {
         var out: Int64 = 0
         let rc = name.withCString { anki_backend_resolve_or_create_deck(handle, $0, &out) }
