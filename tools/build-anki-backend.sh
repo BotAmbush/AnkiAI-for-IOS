@@ -55,9 +55,14 @@ echo "protoc: $PROTOC ($($PROTOC --version))"
 echo "rustc:  $(rustc --version)"
 
 # ─── Fetch pinned anki (immutable tag) ────────────────────────────────────────
+# Submodules are required: rslib/i18n's build script reads Fluent translations
+# from the ftl/core-repo submodule (gather.rs). Clone shallow with submodules.
 if [ ! -d "$ANKI_DIR/.git" ]; then
-  echo "Cloning anki @ $ANKI_TAG ..."
-  git clone --depth 1 --branch "$ANKI_TAG" "$ANKI_REPO" "$ANKI_DIR"
+  echo "Cloning anki @ $ANKI_TAG (with submodules) ..."
+  git clone --depth 1 --branch "$ANKI_TAG" \
+    --recurse-submodules --shallow-submodules "$ANKI_REPO" "$ANKI_DIR"
+else
+  git -C "$ANKI_DIR" submodule update --init --recursive --depth 1
 fi
 GOT="$(git -C "$ANKI_DIR" rev-parse HEAD)"
 echo "anki HEAD: $GOT"
