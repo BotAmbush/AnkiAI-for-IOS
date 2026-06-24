@@ -87,10 +87,11 @@ features:
       - Frameworks/AnkiCore.xcframework
     tests:
       - AnkiAITests/BackendDeckTreeTests.swift
+      - AnkiAITests/BackendDeckMgmtTests.swift
     status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Real names + subdeck hierarchy (level). Deck create/rename/delete not yet.
+    notes: "Real names + subdeck hierarchy (level). M2.17 adds create/rename/delete (deck-list swipe actions; rename_deck + remove_decks_and_child_decks) — integration-tested."
 
   - feature_id: deck_counts
     description: Live new/learning/review due counts per deck.

@@ -136,6 +136,9 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func undo() async throws
     /// Move a card to another deck (M2.6).
     func moveCard(cardId: Int64, toDeckId: Int64) async throws
+    /// Rename / delete a deck (M2.17).
+    func renameDeck(deckId: Int64, newName: String) async throws
+    func removeDeck(deckId: Int64) async throws
     /// Set a card flag (0=none,1=red,2=orange,3=green,4=blue) / add note tags (M2.9).
     func setFlag(cardId: Int64, flag: Int) async throws
     func addTags(noteId: Int64, tags: String) async throws

@@ -26,8 +26,10 @@ use std::ptr;
 use anki::collection::{Collection, CollectionBuilder};
 use anki::prelude::*;
 use anki::search::SortMode;
+use anki::services::DecksService;
 use anki::services::NotesService;
 use anki_proto::decks::DeckTreeNode;
+use anki_proto::decks::RenameDeckRequest;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
 use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
@@ -543,6 +545,58 @@ pub extern "C" fn anki_backend_add_tags_to_note(
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("add_tags_to_notes failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Rename a deck to a new full human name. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_rename_deck(
+    handle: *mut Handle,
+    deck_id: i64,
+    new_name: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let new_name = match unsafe { cstr_to_string(new_name) } {
+        Some(n) => n,
+        None => {
+            set_last_error("null name".into());
+            return 1;
+        }
+    };
+    match DecksService::rename_deck(
+        &mut handle.col,
+        RenameDeckRequest { deck_id, new_name },
+    ) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("rename_deck failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Delete a deck and its child decks (and their cards). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_remove_deck(handle: *mut Handle, deck_id: i64) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.remove_decks_and_child_decks(&[DeckId(deck_id)]) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("remove_decks failed: {e}"));
             2
         }
     }

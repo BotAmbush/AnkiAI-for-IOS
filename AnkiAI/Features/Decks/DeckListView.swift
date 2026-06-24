@@ -9,6 +9,8 @@ struct DeckListView: View {
     @State private var isLoading = true
     @State private var loadError: String?
     @State private var showCreator = false
+    @State private var renameTarget: DeckTreeEntry?
+    @State private var renameText = ""
 
     var body: some View {
         NavigationStack {
@@ -28,6 +30,18 @@ struct DeckListView: View {
                             ReviewerView(deckName: deck.name)
                         } label: {
                             DeckRow(deck: deck)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            if deck.deckId != 1 { // never delete the Default deck
+                                Button(role: .destructive) {
+                                    Task { await remove(deck) }
+                                } label: { Label("Delete", systemImage: "trash") }
+                            }
+                            Button {
+                                renameText = deck.name
+                                renameTarget = deck
+                            } label: { Label("Rename", systemImage: "pencil") }
+                            .tint(.blue)
                         }
                     }
                 }
@@ -50,9 +64,34 @@ struct DeckListView: View {
                         }
                 }
             }
+            .alert("Rename deck", isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
+                TextField("Full name (use :: for subdecks)", text: $renameText)
+                Button("Cancel", role: .cancel) { renameTarget = nil }
+                Button("Rename") { Task { await rename() } }
+            } message: {
+                Text("Use \"Parent::Child\" to nest decks.")
+            }
             .task { await load() }
             .refreshable { await load() }
         }
+    }
+
+    private func rename() async {
+        guard let target = renameTarget else { return }
+        renameTarget = nil
+        let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name != target.name else { return }
+        do {
+            try await env.gateway.renameDeck(deckId: target.deckId, newName: name)
+            await load()
+        } catch { loadError = "\(error)" }
+    }
+
+    private func remove(_ deck: DeckTreeEntry) async {
+        do {
+            try await env.gateway.removeDeck(deckId: deck.deckId)
+            await load()
+        } catch { loadError = "\(error)" }
     }
 
     private func load() async {

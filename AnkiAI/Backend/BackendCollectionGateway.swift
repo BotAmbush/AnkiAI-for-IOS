@@ -66,6 +66,12 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func moveCard(cardId: Int64, toDeckId: Int64) async throws {
         try opened().setCardDeck(cardId: cardId, deckId: toDeckId)
     }
+    public func renameDeck(deckId: Int64, newName: String) async throws {
+        try opened().renameDeck(deckId: deckId, newName: newName)
+    }
+    public func removeDeck(deckId: Int64) async throws {
+        try opened().removeDeck(deckId: deckId)
+    }
     public func setFlag(cardId: Int64, flag: Int) async throws {
         try opened().setFlag(cardId: cardId, flag: UInt32(max(0, flag)))
     }

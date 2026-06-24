@@ -220,6 +220,15 @@ final class AnkiCollection {
         guard anki_backend_set_card_deck(handle, cardId, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func renameDeck(deckId: Int64, newName: String) throws {
+        let rc = newName.withCString { anki_backend_rename_deck(handle, deckId, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func removeDeck(deckId: Int64) throws {
+        guard anki_backend_remove_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func setFlag(cardId: Int64, flag: UInt32) throws {
         guard anki_backend_set_card_flag(handle, cardId, flag) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }

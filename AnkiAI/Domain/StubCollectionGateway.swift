@@ -66,6 +66,8 @@ public actor StubCollectionGateway: CollectionGateway {
     public func buryCard(cardId: Int64) async throws { throw GatewayError.notImplementedInM21("buryCard") }
     public func undo() async throws { throw GatewayError.notImplementedInM21("undo") }
     public func moveCard(cardId: Int64, toDeckId: Int64) async throws { throw GatewayError.notImplementedInM21("moveCard") }
+    public func renameDeck(deckId: Int64, newName: String) async throws { throw GatewayError.notImplementedInM21("renameDeck") }
+    public func removeDeck(deckId: Int64) async throws { throw GatewayError.notImplementedInM21("removeDeck") }
     public func setFlag(cardId: Int64, flag: Int) async throws { throw GatewayError.notImplementedInM21("setFlag") }
     public func addTags(noteId: Int64, tags: String) async throws { throw GatewayError.notImplementedInM21("addTags") }
     public func exportApkg(toPath path: String) async throws { throw GatewayError.notImplementedInM21("exportApkg") }
