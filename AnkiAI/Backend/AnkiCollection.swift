@@ -126,6 +126,27 @@ final class AnkiCollection {
         guard anki_backend_undo(handle) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func basicNotetypeId() throws -> Int64 {
+        var out: Int64 = 0
+        guard anki_backend_basic_notetype_id(handle, &out) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+        return out
+    }
+
+    func resolveOrCreateDeck(name: String) throws -> Int64 {
+        var out: Int64 = 0
+        let rc = name.withCString { anki_backend_resolve_or_create_deck(handle, $0, &out) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+        return out
+    }
+
+    func addNote(notetypeId: Int64, fields: [String], deckId: Int64) throws -> Int64 {
+        let fieldsJSON = String(data: try JSONEncoder().encode(fields), encoding: .utf8) ?? "[]"
+        var out: Int64 = 0
+        let rc = fieldsJSON.withCString { anki_backend_add_note(handle, notetypeId, deckId, $0, &out) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+        return out
+    }
+
     static func lastError() -> String {
         guard let c = anki_backend_last_error() else { return "unknown error" }
         return String(cString: c)

@@ -110,12 +110,18 @@ Run `28117704977`, commit `0e7ad03`: **48 tests (0 failures)**, 4.62 MB arm64 IP
 - CI fix: `grade_now` uses a 0-based rating scale (0=Again…3=Easy); bridge maps
   the external 1..=4 by subtracting 1.
 
-### M2.4 — Undo / bury / suspend (IN PROGRESS)
-- [ ] Bridge bury/suspend/undo; reviewer controls; integration tests.
+### M2.4 — Undo / bury / suspend (CI GREEN ✅, verified 2026-06-24)
+Run `28118887353`, commit `736d889`: **51 tests (0 failures)**, 4.65 MB arm64 IPA.
+- [x] Bridge bury/suspend (`bury_or_suspend_cards`) + undo (`col.undo`); reviewer
+  toolbar menu; integration tests (suspend/bury reduce new count; suspend→undo restores).
 
-### M2.5+ — remaining core (NOT STARTED)
-- [ ] Flags/tags; Swift wrappers for Notes/Cards/Notetypes write paths; media
-  serving; card browser; editor; statistics; import/export; sync.
+### M2.5 — Wire AI creator add-card to the backend (IN PROGRESS)
+- [ ] Backend gateway: `addNote` + `basicNotetypeId` + `resolveOrCreateDeck`; AI
+  creator adds real cards into the real collection.
+
+### M2.6+ — remaining core (NOT STARTED)
+- [ ] Note edit/cardContext (needs get_note/get_card); flags/tags; card browser;
+  full editor; media serving; statistics; import/export; sync.
 - [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
 - [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
 - [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).

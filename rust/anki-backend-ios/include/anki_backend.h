@@ -44,6 +44,15 @@ int32_t anki_backend_bury_card(AnkiHandle *handle, int64_t card_id);
 /* Undo the last undoable operation. Non-zero if nothing to undo. */
 int32_t anki_backend_undo(AnkiHandle *handle);
 
+/* Write the "Basic" notetype id to *out_id. */
+int32_t anki_backend_basic_notetype_id(AnkiHandle *handle, int64_t *out_id);
+
+/* Resolve/create a deck by full human name; write its id to *out_id. */
+int32_t anki_backend_resolve_or_create_deck(AnkiHandle *handle, const char *name, int64_t *out_id);
+
+/* Add a note (fields_json = JSON array of strings); write new note id to *out_note_id. */
+int32_t anki_backend_add_note(AnkiHandle *handle, int64_t notetype_id, int64_t deck_id, const char *fields_json, int64_t *out_note_id);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

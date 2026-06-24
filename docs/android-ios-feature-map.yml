@@ -180,26 +180,32 @@ features:
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/BackendUndo.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendBurySuspendUndoTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: M2.4 — col.undo via reviewer menu; integration test proves suspend→undo restores the deck new count (run 28118887353).
 
   - feature_id: bury_suspend
     description: Bury and suspend cards.
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendBurySuspendUndoTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: M2.4 — bury_or_suspend_cards via reviewer menu; integration test proves bury/suspend reduce the deck new count.
 
   - feature_id: flags_tags
     description: Card flags and note tags.

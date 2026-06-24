@@ -54,11 +54,19 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func buryCard(cardId: Int64) async throws { try opened().buryCard(cardId: cardId) }
     public func undo() async throws { try opened().undo() }
 
-    // MARK: - Write/edit path (not in M2.1)
+    // MARK: - Note write path (M2.5: add-card wired; edit/cardContext later)
 
     public func resolveOrCreateDeck(name: String) async throws -> Int64 {
-        throw GatewayError.notImplementedInM21("resolveOrCreateDeck")
+        try opened().resolveOrCreateDeck(name: name)
     }
+    public func basicNotetypeId() async throws -> Int64 {
+        try opened().basicNotetypeId()
+    }
+    public func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64 {
+        try opened().addNote(notetypeId: notetypeId, fields: fields, deckId: deckId)
+    }
+
+    // Not yet wired (need backend get_note/get_card): editing an existing note.
     public func cardContext(cardId: Int64) async throws -> (noteId: Int64, deckId: Int64, fields: [String])? {
         throw GatewayError.notImplementedInM21("cardContext")
     }
@@ -67,11 +75,5 @@ public actor BackendCollectionGateway: CollectionGateway {
     }
     public func updateNote(_ note: NoteData) async throws {
         throw GatewayError.notImplementedInM21("updateNote")
-    }
-    public func basicNotetypeId() async throws -> Int64 {
-        throw GatewayError.notImplementedInM21("basicNotetypeId")
-    }
-    public func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64 {
-        throw GatewayError.notImplementedInM21("addNote")
     }
 }

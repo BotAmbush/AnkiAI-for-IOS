@@ -364,6 +364,136 @@ pub extern "C" fn anki_backend_undo(handle: *mut Handle) -> c_int {
     }
 }
 
+/// Write the id of the "Basic" notetype to `out_id`. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_basic_notetype_id(handle: *mut Handle, out_id: *mut i64) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_id.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.get_notetype_by_name("Basic") {
+        Ok(Some(nt)) => {
+            unsafe { *out_id = nt.id.0 };
+            0
+        }
+        Ok(None) => {
+            set_last_error("Basic notetype not found".into());
+            2
+        }
+        Err(e) => {
+            set_last_error(format!("get_notetype_by_name failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Resolve a deck by full human name, creating it (and parents) if needed.
+/// Writes the deck id to `out_id`. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_resolve_or_create_deck(
+    handle: *mut Handle,
+    name: *const c_char,
+    out_id: *mut i64,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let name = match unsafe { cstr_to_string(name) } {
+        Some(n) => n,
+        None => {
+            set_last_error("null deck name".into());
+            return 1;
+        }
+    };
+    if out_id.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.get_or_create_normal_deck(&name) {
+        Ok(deck) => {
+            unsafe { *out_id = deck.id.0 };
+            0
+        }
+        Err(e) => {
+            set_last_error(format!("get_or_create_normal_deck failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Add a note of `notetype_id` to deck `deck_id` with `fields_json` (a JSON array
+/// of strings). Writes the new note id to `out_note_id`. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_add_note(
+    handle: *mut Handle,
+    notetype_id: i64,
+    deck_id: i64,
+    fields_json: *const c_char,
+    out_note_id: *mut i64,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let fields_json = match unsafe { cstr_to_string(fields_json) } {
+        Some(f) => f,
+        None => {
+            set_last_error("null fields".into());
+            return 1;
+        }
+    };
+    if out_note_id.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let fields: Vec<String> = match serde_json::from_str(&fields_json) {
+        Ok(f) => f,
+        Err(e) => {
+            set_last_error(format!("invalid fields json: {e}"));
+            1
+        }
+    };
+    match add_note_impl(&mut handle.col, notetype_id, deck_id, &fields) {
+        Ok(nid) => {
+            unsafe { *out_note_id = nid };
+            0
+        }
+        Err(e) => {
+            set_last_error(format!("add_note failed: {e}"));
+            2
+        }
+    }
+}
+
+fn add_note_impl(col: &mut Collection, notetype_id: i64, deck_id: i64, fields: &[String]) -> Result<i64> {
+    let nt = col
+        .get_notetype(NotetypeId(notetype_id))?
+        .or_invalid("no such notetype")?;
+    let mut note = nt.new_note();
+    let count = note.fields().len();
+    for (i, value) in fields.iter().enumerate() {
+        if i < count {
+            note.set_field(i, value.as_str())?;
+        }
+    }
+    col.add_note(&mut note, DeckId(deck_id))?;
+    Ok(note.id.0)
+}
+
 // ─── Test support (used only by integration tests) ────────────────────────────
 
 /// Create a deterministic fixture collection at `path` (must not already exist).
