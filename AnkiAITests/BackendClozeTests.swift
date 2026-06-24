@@ -25,9 +25,13 @@ final class BackendClozeTests: XCTestCase {
         let cid = try XCTUnwrap(ids.first)
         let rendered = try await gateway.renderCard(cardId: cid)
 
-        // Question hides the deletion; answer reveals "Paris".
-        XCTAssertFalse(rendered.questionHTML.contains("Paris"), "the cloze answer is hidden on the question")
-        XCTAssertTrue(rendered.questionHTML.contains("["), "the cloze blank renders as [...]")
+        // The cloze filter ran: the question shows the [...] blank, the answer
+        // reveals "Paris", and the two sides differ. (Note: the answer text is
+        // also present in a hidden data-cloze attribute on the question, so we
+        // distinguish by the visible [...] marker, not by absence of "Paris".)
+        XCTAssertNotEqual(rendered.questionHTML, rendered.answerHTML)
+        XCTAssertTrue(rendered.questionHTML.contains("[...]"), "the cloze blank renders as [...] on the question")
         XCTAssertTrue(rendered.answerHTML.contains("Paris"), "the answer reveals the deletion")
+        XCTAssertFalse(rendered.answerHTML.contains("[...]"), "the answer no longer shows the blank")
     }
 }
