@@ -149,11 +149,12 @@ features:
       - AnkiAI/Rendering/CardWebView.swift
     backend_components:
       - Frameworks/AnkiCore.xcframework
-    tests: []
+    tests:
+      - AnkiAITests/BackendRenderTests.swift
     status: partial
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Renders card HTML/MathJax; no real queue/answer flow yet (not wired to backend scheduler).
+    notes: M2.2 — loads REAL cards from a deck and renders backend question/answer + CSS, with paging. Read-only; answer buttons + scheduler mutations are the next slice.
 
   - feature_id: answer_buttons
     description: Again/Hard/Good/Easy answering through the scheduler.
@@ -284,13 +285,17 @@ features:
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/CardTemplate.kt
       - libanki/src/main/java/com/ichi2/anki/libanki/TemplateManager.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Backend/AnkiCollection.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendRenderTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Backend render_card not yet wired; M2.2+.
+    notes: M2.2 — backend render_existing_card returns question/answer HTML + note-type CSS; integration-tested (run 28114901645). Template editing not yet.
 
   - feature_id: html_rendering
     description: Render card HTML.
@@ -299,12 +304,14 @@ features:
       - AnkiDroid/src/main/java/com/ichi2/anki/ui/windows/reviewer/ReviewerFragment.kt
     ios_paths:
       - AnkiAI/Rendering/CardWebView.swift
-    backend_components: []
-    tests: []
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests:
+      - AnkiAITests/BackendRenderTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: WKWebView renders raw HTML; full template/CSS pipeline pending.
+    notes: M2.2 — reviewer renders backend question/answer HTML + CSS in WKWebView; media <img> resolution still pending.
 
   - feature_id: mathjax_rendering
     description: MathJax rendering with \( \) and \[ \] delimiters.

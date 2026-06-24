@@ -85,9 +85,25 @@ Build-repair loop for M2.1 took 6 runs (submodule → tokio io-util → cache po
 Write/edit paths (note add/update, card context) intentionally throw
 `GatewayError.notImplementedInM21` — they arrive with later M2 slices.
 
-### M2.2+ — remaining core (NOT STARTED)
-- [ ] Swift wrappers for Notes, Cards, Notetypes, templates/CSS rendering, media.
-- [ ] Reviewer queue + answer buttons + undo/bury/suspend; card browser; editor.
+### M2.2 — Real card read + backend rendering (CI GREEN ✅, verified 2026-06-24)
+Status: **green** (run `28114901645`, commit `9e6c2e2`): backend xcframework + app +
+**45 tests (0 failures)** incl. 4 new render integration tests + 4.61 MB arm64 IPA.
+- [x] Bridge: `anki_backend_deck_card_ids` (search cards by deck name),
+  `anki_backend_render_card` (`render_existing_card` → question/answer HTML + CSS).
+- [x] Swift: `AnkiCollection.cardIds(inDeckNamed:)` / `renderCard(cardId:)`,
+  `RenderedCard`, gateway methods (Backend real; Stub preview-only).
+- [x] `CardWebView` injects note-type CSS + wraps in `<div class="card">`.
+- [x] `ReviewerView` loads real cards from a deck → renders question → reveal
+  answer (backend HTML+CSS) → next-card paging; deck rows navigate into it.
+- [x] Integration tests: real card ids; Hebrew render keeps `dir="rtl"` + `.card`
+  CSS; Math keeps `\( \)`; answer ≠ question; canonical fixture byte-identical.
+- One CI fix this slice: `search_cards` needs `&str` (TryIntoSearch), not `String`.
+- Read-only: answer buttons, undo/bury/suspend, scheduler mutations, media `<img>`
+  resolution remain for the next slice.
+
+### M2.3+ — remaining core (NOT STARTED)
+- [ ] Review queue + answer buttons (`answer_card`) + undo/bury/suspend/flags/tags.
+- [ ] Swift wrappers for Notes/Cards/Notetypes write paths; media serving; card browser; editor.
 - [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
 - [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
 - [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).
