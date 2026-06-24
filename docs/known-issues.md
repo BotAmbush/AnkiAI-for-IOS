@@ -13,10 +13,11 @@ Updated 2026-06-24 (M1).
 - **Forced-study mode not ported.** iOS platform limits mean partial parity (see migration-risks R2). M3.
 
 ## Build / CI
-- **The macOS Xcode build has not been run yet** — the dev machine is Windows. The app is *not*
-  confirmed to compile, and no IPA exists, until the GitHub Actions workflow runs green and uploads
-  the artifact. This is the immediate next step and requires the user to trigger the workflow (or
-  authorize `gh`). Per CLAUDE.md, no "it compiles" / "IPA ready" claim is made before that.
+- **The macOS Xcode build is green** (run `28097004935`): build SUCCEEDED, 38 unit tests passed on
+  the Simulator, and an unsigned device IPA (`AnkiAI-unsigned.ipa`, Release `arm64`, in `Payload/`)
+  was packaged and uploaded as a GitHub Actions artifact alongside diagnostics (logs, `.xcresult`,
+  dSYMs). This is milestone 1 only — the IPA contains the AI layer + UI shell running against the
+  in-memory collection stub; the Anki core arrives at M2.
 
 ## Rendering
 - MathJax loads from a CDN (needs network) until bundled locally (DL-008).

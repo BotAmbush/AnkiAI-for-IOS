@@ -20,8 +20,18 @@ The AI fork features are genuinely native Swift and are independent of the Rust 
 
 ## Milestones
 
-### M1 — Native AI layer + app shell + CI (IN PROGRESS — first slice landed)
-Status: implemented locally; **awaiting first green macOS CI run** (Windows cannot build Xcode).
+### M1 — Native AI layer + app shell + CI (CI GREEN ✅)
+Status: **macOS GitHub Actions build is green** — Xcode build SUCCEEDED, 38 unit tests passed
+(0 failures) on the iOS Simulator, and `AnkiAI-unsigned.ipa` (Release `arm64` device build in
+`Payload/`) was packaged and uploaded with diagnostics.
+
+Verified run: `28097004935` (commit `a65dc65`). Build-repair loop took 3 runs:
+- Run 1 — failed: runner Xcode 15.4 could not read XcodeGen's format-77 project → moved CI to
+  macOS 15 + Xcode 16, added `mkdir build`, dynamic simulator selection.
+- Run 2 — failed: one Swift error (`(try? await …) ?? (try await …)` illegal in a `??`
+  autoclosure) → fixed; also abstracted `SecretStore` so the host-less test bundle doesn't need
+  Keychain entitlements.
+- Run 3 — **green**: build + 38 tests + unsigned IPA artifact.
 
 Done:
 - [x] Exhaustive read of the AI fork source (chat, creator, insights, forced-study, settings, API client, prompts, data layer).
