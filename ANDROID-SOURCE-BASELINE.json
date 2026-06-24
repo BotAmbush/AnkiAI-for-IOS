@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "migrationMode": "initial-full-migration",
+  "androidRepositoryPath": "C:\\Users\\Evyatar\\AndroidStudioProjects\\Anki-Android-AI",
+  "androidRemoteUrl": "https://github.com/BotAmbush/Anki-Android-AI.git",
+  "androidBranch": "main",
+  "androidSourceSnapshotCommit": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
+  "lastAndroidCommitReviewedForIOS": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
+  "lastAndroidCommitFullyPortedToIOS": null,
+  "iosRepositoryPath": "C:\\AnkiAI-for-IOS",
+  "iosCommitAtBaselineCreation": "1f0843c2265db4f7773acde25d7d48625580bf39",
+  "upstreamAnkiDroidRemoteUrl": "https://github.com/ankidroid/Anki-Android.git",
+  "upstreamAnkiDroidCommitOrTag": "v2.25.0alpha1",
+  "ankiBackendCommit": "3890e12c9e48c028c3f12aa58cb64bd9f8895e30",
+  "initialMigrationCompleted": false,
+  "incrementalUpdateModeEnabled": false,
+  "parityStatus": "partial-migration",
+  "capturedAtUtc": "2026-06-24T13:37:19Z",
+  "notes": [
+    "androidSourceSnapshotCommit is the Android HEAD used as the COMPLETE behavioral reference for the initial full migration. It is NOT a record of full parity.",
+    "lastAndroidCommitFullyPortedToIOS is intentionally null: the iOS app is not yet a complete functional copy of the Android app. Future sessions must continue the initial full migration (see CONTINUE-INITIAL-MIGRATION.md), not diff-only synchronization.",
+    "Differential (commit-to-commit) synchronization is NOT authoritative until FINALIZE-INITIAL-MIGRATION.md is run with explicit user confirmation and this file flips initialMigrationCompleted/incrementalUpdateModeEnabled to true and records a verified fully-ported commit.",
+    "upstreamAnkiDroidCommitOrTag records the customized fork's base (v2.25.0alpha1 / upstream 711510ff per OUR_FORK_CHANGES.md in the Android repo); the customized Android fork — not upstream AnkiDroid — is the behavioral source of truth.",
+    "ankiBackendCommit is the pinned upstream anki Rust backend (tag 25.09.2) used by the iOS app (docs/anki-backend-pin.md); the Android fork depends on anki-android-backend 0.1.64-anki25.09.2 sharing this upstream base.",
+    "Implemented so far (M1 + M2.1, CI-verified): native AI layer (Claude client, prompts, parsing, chat/creator view models, insights tip engine, AI SQLite, Keychain), SwiftUI shell, MathJax/Hebrew rendering, and the REAL Anki collection read path (deck tree + counts via the Rust backend xcframework).",
+    "Major areas still missing: reviewer queue + answer buttons, scheduler/FSRS UI, undo/bury/suspend/flags/tags, card browser, editor, statistics, filtered decks/custom study, import/export, backups, AnkiWeb sync, collection write paths, media, notifications, localization, accessibility, forced-study, and wiring AI write features + live insights to the backend.",
+    "Android repository is strictly read-only; this baseline was captured with read-only Git commands only."
+  ]
+}

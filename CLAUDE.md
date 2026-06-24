@@ -445,3 +445,98 @@ The project is not complete until:
 
 Begin by inspecting the source, capturing its baseline Git state and creating
 the analysis documents. Then proceed through the implementation roadmap.
+
+# Mandatory Android-to-iOS Lifecycle Protocol
+
+This section is authoritative and permanent. It coexists with the unfinished
+initial migration above; it does not replace, finalize, or shortcut it.
+
+## Canonical product chain (source of truth)
+
+```
+Original AnkiDroid upstream  →  customized Android fork  →  native iOS implementation
+   (ankidroid/Anki-Android)      (BotAmbush/Anki-Android-AI)     (this repository)
+```
+
+The **customized Android fork is the behavioral source of truth** for iOS.
+The iOS app must NEVER update directly from upstream AnkiDroid while ignoring the
+customizations present in the Android fork. Upstream changes reach iOS only after
+they have first been merged into the customized Android fork.
+
+## Project modes
+
+The current mode is recorded in `ANDROID-SOURCE-BASELINE.json`. Determine the mode
+before doing any "update" work.
+
+### Mode A — Initial full migration (CURRENT)
+
+Active while `lastAndroidCommitFullyPortedToIOS` is `null`
+(equivalently `initialMigrationCompleted: false`). In this mode Claude MUST:
+
+* continue implementing ALL missing functionality from the canonical customized
+  Android application;
+* use the current Android source **snapshot** (`androidSourceSnapshotCommit`) as
+  the complete behavioral reference — the whole app, not a diff;
+* drive work from `docs/feature-parity-checklist.md`,
+  `docs/implementation-roadmap.md`, and `docs/android-ios-feature-map.yml`;
+* NEVER restrict work to only the Git changes made after the snapshot;
+* NEVER treat an unchanged Android file as already implemented in iOS — "unchanged
+  since the snapshot" does NOT mean "ported";
+* preserve and continue existing milestones, tests, CI, backend work, and history;
+* run tests and GitHub Actions after coherent implementation milestones;
+* keep synchronization metadata current WITHOUT declaring full parity.
+
+In Mode A, a request to "update from Android" means **continue the initial full
+migration** (see `CONTINUE-INITIAL-MIGRATION.md`), NOT a narrow diff update.
+
+### Mode B — Incremental synchronization (NOT YET ACTIVE)
+
+May be entered ONLY when all of the following hold and an explicit finalization
+task (`FINALIZE-INITIAL-MIGRATION.md`) has been run with explicit user
+confirmation:
+
+* the initial full port is genuinely complete;
+* every discovered Android feature has a documented parity status;
+* required tests pass; GitHub Actions is green; a physical-device iOS build
+  succeeds; an unsigned IPA is verified;
+* `lastAndroidCommitFullyPortedToIOS` contains a verified Android commit
+  (`initialMigrationCompleted: true`, `incrementalUpdateModeEnabled: true`).
+
+In Mode B Claude MUST:
+
+1. compare `lastAndroidCommitFullyPortedToIOS` with current Android HEAD;
+2. analyze the new Android changes (see `tools/audit-android-update.ps1`);
+3. port relevant behavioral changes to the native iOS implementation;
+4. ignore changes that are genuinely Android-platform-only;
+5. update tests, documentation, the feature map, backend pins, and CI as required;
+6. advance the baseline ONLY after successful completion (atomic with history).
+
+## Finalization invariants (never violate)
+
+* `lastAndroidCommitFullyPortedToIOS` stays `null` until explicit finalization.
+* `initialMigrationCompleted` and `incrementalUpdateModeEnabled` stay `false` until
+  explicit finalization.
+* A green compile alone CANNOT finalize. An IPA alone CANNOT finalize. A feature
+  map full of "completed" based only on filenames CANNOT finalize.
+* The current Android snapshot is a reference source, NOT a synchronized baseline.
+* A failed or partial future update must NEVER advance the fully-ported commit.
+* Baseline advancement must be atomic with `docs/android-update-history.md`.
+* Never discard the last known successful full-synchronization baseline.
+
+## Trigger phrases
+
+When the user writes any of: "update the iOS app", "update from Android",
+"synchronize with Android", "port the latest Android changes", "עדכן את האפליקציה",
+"תעדכן לפי אנדרואיד" (or similar):
+
+1. Inspect the project mode in `ANDROID-SOURCE-BASELINE.json`.
+2. If the initial migration is incomplete (Mode A) → continue the initial full
+   migration (`CONTINUE-INITIAL-MIGRATION.md`); do NOT perform a diff-only update.
+3. If finalized (Mode B) → run the incremental update workflow
+   (`UPDATE-FROM-ANDROID.md`).
+
+The Android source at `C:\Users\Evyatar\AndroidStudioProjects\Anki-Android-AI`
+remains strictly read-only in all modes (see "Critical filesystem boundary").
+
+See `docs/android-ios-lifecycle-workflow.md` for the full workflows and edge-case
+handling.

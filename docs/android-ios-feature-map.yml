@@ -1,0 +1,696 @@
+# Android (customized fork) → native iOS feature map.
+#
+# Source of truth: the customized Android fork at the snapshot commit recorded in
+# ANDROID-SOURCE-BASELINE.json (androidSourceSnapshotCommit). This map is a living
+# document maintained during the initial full migration and, later, incremental
+# synchronization.
+#
+# IMPORTANT (Mode A / initial-full-migration):
+#  - A feature is NOT "completed" merely because an iOS file exists or the app
+#    compiles. "completed" requires real behavioral parity + verification.
+#  - Paths are verified to exist at the time of writing; never invent paths.
+#  - status: completed | partial | blocked | not_started | unsupported
+#  - verification flags reflect what is actually proven (CI compile, unit tests,
+#    integration tests, physical device). physical_device_verified is false for
+#    every feature (no device testing has occurred yet).
+
+meta:
+  schema_version: 1
+  android_snapshot_commit: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+  migration_mode: initial-full-migration
+  generated_utc: "2026-06-24T13:37:19Z"
+  note: >
+    Statuses mirror docs/feature-parity-checklist.md. Backend-dependent core
+    features are blocked/partial until their Swift wrappers over AnkiCore.xcframework
+    (pinned anki 25.09.2) are implemented.
+
+features:
+  - feature_id: app_lifecycle
+    description: Application launch, scene lifecycle, dependency wiring.
+    category: shell
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/AnkiDroidApp.kt
+    ios_paths:
+      - AnkiAI/App/AnkiAIApp.swift
+      - AnkiAI/App/AppEnvironment.swift
+    backend_components: []
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: SwiftUI App + AppEnvironment exist and run; not a full lifecycle parity (background, state restoration) yet.
+
+  - feature_id: navigation
+    description: Top-level navigation shell between primary screens.
+    category: shell
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/DeckPicker.kt
+    ios_paths:
+      - AnkiAI/App/RootView.swift
+    backend_components: []
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: TabView shell (Decks/Insights/Settings); reviewer/browser navigation incomplete.
+
+  - feature_id: collection_open_close
+    description: Open and cleanly close a real collection.anki2 via the backend.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Collection.kt
+      - libanki/src/main/java/com/ichi2/anki/libanki/Storage.kt
+    ios_paths:
+      - AnkiAI/Backend/AnkiCollection.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
+    backend_components:
+      - Frameworks/AnkiCore.xcframework (pinned anki 25.09.2, 3890e12c)
+      - rust/anki-backend-ios (C-ABI bridge)
+    tests:
+      - AnkiAITests/BackendDeckTreeTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.1 verified in CI (run 28101322821). Read path only.
+
+  - feature_id: decks_and_subdecks
+    description: List decks and subdecks with hierarchy.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Decks.kt
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/DeckNode.kt
+    ios_paths:
+      - AnkiAI/Features/Decks/DeckListView.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests:
+      - AnkiAITests/BackendDeckTreeTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Real names + subdeck hierarchy (level). Deck create/rename/delete not yet.
+
+  - feature_id: deck_counts
+    description: Live new/learning/review due counts per deck.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths:
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - AnkiAI/Domain/DomainModels.swift
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests:
+      - AnkiAITests/BackendDeckTreeTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Counts computed by the backend deck_tree; verified via fixture integration test.
+
+  - feature_id: card_browser
+    description: Browse/search cards and notes.
+    category: core
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/CardBrowser.kt
+    ios_paths: []
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: card_note_editor
+    description: Create/edit notes and cards.
+    category: core
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/NoteEditor.kt
+      - libanki/src/main/java/com/ichi2/anki/libanki/Note.kt
+    ios_paths:
+      - AnkiAI/Domain/DomainModels.swift
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Gateway write methods currently throw notImplementedInM21; full editor M2.2+.
+
+  - feature_id: reviewer
+    description: Review screen showing question/answer with rendering.
+    category: core
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ui/windows/reviewer/ReviewerFragment.kt
+    ios_paths:
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
+      - AnkiAI/Rendering/CardWebView.swift
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Renders card HTML/MathJax; no real queue/answer flow yet (not wired to backend scheduler).
+
+  - feature_id: answer_buttons
+    description: Again/Hard/Good/Easy answering through the scheduler.
+    category: core
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ui/windows/reviewer/ReviewerFragment.kt
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components:
+      - Frameworks/AnkiCore.xcframework
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Backend answer_card exists; not surfaced in iOS.
+
+  - feature_id: undo
+    description: Undo of collection operations.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/BackendUndo.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: bury_suspend
+    description: Bury and suspend cards.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: flags_tags
+    description: Card flags and note tags.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Note.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: scheduler
+    description: Queue building and scheduling logic.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests:
+      - AnkiAITests/BackendDeckTreeTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Scheduler runs inside the linked backend (due counts verified); not yet surfaced for reviewing.
+
+  - feature_id: fsrs
+    description: FSRS parameters and scheduling.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: FSRS is compiled into the backend (fixture observed FSRS graduation); no iOS config/UI surface.
+
+  - feature_id: learning_review_relearning_steps
+    description: Learning, review, and relearning step transitions.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+ (answering not surfaced).
+
+  - feature_id: collection_database
+    description: collection.anki2 schema compatibility and integrity.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Storage.kt
+    ios_paths:
+      - AnkiAI/Backend/AnkiCollection.swift
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests:
+      - AnkiAITests/BackendDeckTreeTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Real DB opens; integration test proves the fixture is byte-identical after read (no destructive write).
+
+  - feature_id: migrations
+    description: Collection schema migrations.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Storage.kt
+    ios_paths:
+      - AnkiAI/Backend/AnkiCollection.swift
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: blocked
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Handled by the backend; not yet explicitly exercised/verified for upgrades.
+
+  - feature_id: templates_css
+    description: Note type templates and styling.
+    category: rendering
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/CardTemplate.kt
+      - libanki/src/main/java/com/ichi2/anki/libanki/TemplateManager.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Backend render_card not yet wired; M2.2+.
+
+  - feature_id: html_rendering
+    description: Render card HTML.
+    category: rendering
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ui/windows/reviewer/ReviewerFragment.kt
+    ios_paths:
+      - AnkiAI/Rendering/CardWebView.swift
+    backend_components: []
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: WKWebView renders raw HTML; full template/CSS pipeline pending.
+
+  - feature_id: mathjax_rendering
+    description: MathJax rendering with \( \) and \[ \] delimiters.
+    category: rendering
+    android_paths:
+      - AnkiDroid/src/main/assets
+    ios_paths:
+      - AnkiAI/Rendering/CardWebView.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/HTMLTextTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Delimiters/markers unit-tested; MathJax loads from CDN (bundle locally pending).
+
+  - feature_id: hebrew_rtl
+    description: Hebrew and right-to-left text handling.
+    category: rendering
+    android_paths:
+      - AnkiDroid/src/main/res/values-iw/ai_strings.xml
+    ios_paths:
+      - AnkiAI/AI/HTMLText.swift
+      - AnkiAI/Rendering/CardWebView.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/HTMLTextTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: dir preserved end-to-end; strip helpers tested. UI string localization still pending.
+
+  - feature_id: mixed_rtl_ltr
+    description: Mixed RTL/LTR content (Hebrew with inline LTR terms/formulas).
+    category: rendering
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+    ios_paths:
+      - AnkiAI/AI/Prompts.swift
+      - AnkiAI/Rendering/CardWebView.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/HTMLTextTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Per-span dir honored in prompts + renderer.
+
+  - feature_id: cloze_cards
+    description: Cloze deletion cards.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Notetypes.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: media
+    description: Image/media files referenced by cards.
+    category: media
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Media.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: audio
+    description: Audio playback/recording for cards.
+    category: media
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/Media.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: statistics
+    description: Study statistics.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/stats
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+ (distinct from AI insights).
+
+  - feature_id: import_export
+    description: Import/export of collections and notes.
+    category: io
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/BackendImportExport.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: apkg_colpkg
+    description: APKG / collection package handling.
+    category: io
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/BackendImportExport.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: backups_restore
+    description: Collection backups and restoration.
+    category: io
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/BackendBackups.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: synchronization
+    description: AnkiWeb / self-hosted sync.
+    category: sync
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Backend sync compiled but not surfaced; credentials will use Keychain.
+
+  - feature_id: filtered_decks
+    description: Filtered/dynamic decks.
+    category: core
+    android_paths:
+      - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: custom_study
+    description: Custom study sessions.
+    category: core
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/CustomStudyDialog.kt
+    ios_paths: []
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M2.2+.
+
+  - feature_id: settings
+    description: App and collection preferences.
+    category: shell
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/preferences/Preferences.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/settings/AiSettingsFragment.kt
+    ios_paths:
+      - AnkiAI/Features/Settings/AISettingsView.swift
+    backend_components: []
+    tests: []
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: AI settings (key/test/budget) done; collection preferences pending.
+
+  - feature_id: notifications
+    description: Reminders / notifications.
+    category: platform
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/services
+    ios_paths: []
+    backend_components: []
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M3.
+
+  - feature_id: background_behavior
+    description: Background tasks / scheduling.
+    category: platform
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/update/UpstreamCheckWorker.kt
+    ios_paths: []
+    backend_components: []
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: iOS-constrained; M3.
+
+  - feature_id: localization
+    description: UI string localization (incl. Hebrew).
+    category: platform
+    android_paths:
+      - AnkiDroid/src/main/res/values-iw/ai_strings.xml
+      - AnkiDroid/src/main/res/values/ai_strings.xml
+    ios_paths:
+      - AnkiAI/AI/Insights/AITipEngine.swift
+    backend_components: []
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: English literals only; no .strings localization yet.
+
+  - feature_id: accessibility
+    description: Accessibility (VoiceOver, Dynamic Type).
+    category: platform
+    android_paths:
+      - AnkiDroid/src/main
+    ios_paths: []
+    backend_components: []
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: M3.
+
+  - feature_id: ai_reviewer_chat
+    description: Ask Claude chat during review (explain, edit/add-card proposals).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatBottomSheetFragment.kt
+    ios_paths:
+      - AnkiAI/AI/Chat/AIChatViewModel.swift
+      - AnkiAI/Features/Chat/ChatView.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/AIChatViewModelTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Chat logic + proposals unit-tested against stub gateway; write-to-backend (apply edit/add) pending (throws notImplementedInM21).
+
+  - feature_id: ai_card_creator
+    description: AI card creator — generate flashcards from a prompt/material.
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiCardCreatorStaticPrompt.kt
+    ios_paths:
+      - AnkiAI/AI/Chat/AIChatViewModel.swift
+      - AnkiAI/AI/Prompts.swift
+      - AnkiAI/Features/Chat/ChatView.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/AIChatViewModelTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Generation + parsing tested; adding cards needs backend write path.
+
+  - feature_id: ai_insights
+    description: AI study-pattern insights/tips dashboard.
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/insights/AiTipEngine.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/analytics/RevlogAnalyzer.kt
+    ios_paths:
+      - AnkiAI/AI/Insights/AITipEngine.swift
+      - AnkiAI/Features/Insights/InsightsView.swift
+    backend_components: [Frameworks/AnkiCore.xcframework]
+    tests:
+      - AnkiAITests/PricingAndTipsTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Tip engine ported + tested; live revlog stats need backend reads (M2.2+).
+
+  - feature_id: ai_response_parsing
+    description: Parse Claude replies (edit/add actions, creator JSON array).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+    ios_paths:
+      - AnkiAI/AI/AIModels.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/AIResponseParserTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Edit/add/creator parsing + malformed fallback unit-tested.
+
+  - feature_id: prompt_management
+    description: System/user prompt construction (RTL, MathJax, tag rules, JSON protocol).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiCardCreatorStaticPrompt.kt
+    ios_paths:
+      - AnkiAI/AI/Prompts.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/AIChatViewModelTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Ported verbatim; presence in system prompt asserted by VM test.
+
+  - feature_id: claude_api_integration
+    description: Anthropic Messages API client (prompt caching, images, usage).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/api/ClaudeApiClient.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/api/LlmApiClient.kt
+    ios_paths:
+      - AnkiAI/AI/Provider/ClaudeAPIClient.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/ClaudeAPIClientTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Request shaping, caching header, image blocks, usage, error mapping tested via fake transport.
+
+  - feature_id: api_key_storage
+    description: Secure storage of the Claude API key.
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+    ios_paths:
+      - AnkiAI/Security/KeychainStore.swift
+    backend_components: []
+    tests: []
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Keychain (upgrade over Android SharedPreferences). On-device Keychain behavior not yet device-verified; tests use InMemorySecretStore.
+
+  - feature_id: ai_image_pdf_attachments
+    description: Attach photos/PDFs to the AI creator (base64 image blocks).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
+    ios_paths:
+      - AnkiAI/AI/Provider/ClaudeAPIClient.swift
+    backend_components: []
+    tests:
+      - AnkiAITests/ClaudeAPIClientTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: Image transport supported + tested; capture UI (PhotosPicker) and PDF rasterization (PDFKit) not yet built.
+
+  - feature_id: forced_study
+    description: Forced/enforced study mode (overlay + scheduling).
+    category: ai
+    android_paths:
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/ForcedStudyService.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/AiChatLauncherActivity.kt
+      - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/ForcedStudyAlarmManager.kt
+    ios_paths: []
+    backend_components: []
+    tests: []
+    status: not_started
+    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: iOS lacks always-on overlays/foreground service; will be partial-parity (notifications + in-app session). M3.

@@ -51,5 +51,8 @@ rust/.work/
 Frameworks/*.xcframework
 *.xcframework.zip
 
+# Generated Android-update audit reports (reproducible via tools/audit-android-update.ps1)
+docs/updates/*-audit.md
+
 # macOS
 .DS_Store
