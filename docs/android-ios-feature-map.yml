@@ -228,7 +228,7 @@ features:
     status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.9 — set_card_flag (reviewer flag menu, verified via flag: search) + add_tags_to_notes (verified via tag: search). Per-card tagging UI needs card→note resolution (deferred).
+    notes: "M2.9 — set_card_flag (reviewer flag menu, verified via the flag: search operator) + add_tags_to_notes (verified via the tag: search operator). Per-card tagging UI needs card→note resolution (deferred)."
 
   - feature_id: scheduler
     description: Queue building and scheduling logic.
