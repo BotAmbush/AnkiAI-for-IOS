@@ -44,6 +44,9 @@ int32_t anki_backend_bury_card(AnkiHandle *handle, int64_t card_id);
 /* Undo the last undoable operation. Non-zero if nothing to undo. */
 int32_t anki_backend_undo(AnkiHandle *handle);
 
+/* Move a card to another deck. */
+int32_t anki_backend_set_card_deck(AnkiHandle *handle, int64_t card_id, int64_t deck_id);
+
 /* Write the "Basic" notetype id to *out_id. */
 int32_t anki_backend_basic_notetype_id(AnkiHandle *handle, int64_t *out_id);
 

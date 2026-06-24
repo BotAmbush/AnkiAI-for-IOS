@@ -115,13 +115,19 @@ Run `28118887353`, commit `736d889`: **51 tests (0 failures)**, 4.65 MB arm64 IP
 - [x] Bridge bury/suspend (`bury_or_suspend_cards`) + undo (`col.undo`); reviewer
   toolbar menu; integration tests (suspend/bury reduce new count; suspend→undo restores).
 
-### M2.5 — Wire AI creator add-card to the backend (IN PROGRESS)
-- [ ] Backend gateway: `addNote` + `basicNotetypeId` + `resolveOrCreateDeck`; AI
-  creator adds real cards into the real collection.
+### M2.5 — Wire AI creator add-card to the backend (CI GREEN ✅, verified 2026-06-24)
+Run `28120838056`, commit `ae8533d`: **53 tests (0 failures)**.
+- [x] Backend gateway `addNote` + `basicNotetypeId` + `resolveOrCreateDeck` real;
+  AI creator adds REAL cards. Integration test: add note → real deck shows 1 new
+  card → searchable + renders the added front/back. CI fix: `return 1;` in the
+  add_note JSON-parse error arm.
 
-### M2.6+ — remaining core (NOT STARTED)
-- [ ] Note edit/cardContext (needs get_note/get_card); flags/tags; card browser;
-  full editor; media serving; statistics; import/export; sync.
+### M2.6 — Move card between decks (IN PROGRESS)
+- [ ] Backend `set_deck`; reviewer "move card"; integration test (counts shift).
+
+### M2.7+ — remaining core (NOT STARTED)
+- [ ] Note edit/cardContext (needs backend get_note/get_card); flags/tags; card
+  browser; full editor; media serving; statistics; import/export; sync.
 - [ ] Scheduler/FSRS surfacing; statistics; filtered decks/custom study.
 - [ ] Import/export (.apkg/.colpkg); backups; AnkiWeb sync.
 - [ ] Wire AI write features (edit/add card) to the backend; live AI insights (revlog).

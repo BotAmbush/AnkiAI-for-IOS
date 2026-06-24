@@ -344,6 +344,29 @@ fn bury_or_suspend(
     }
 }
 
+/// Move a card to another deck. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_set_card_deck(
+    handle: *mut Handle,
+    card_id: i64,
+    deck_id: i64,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.set_deck(&[CardId(card_id)], DeckId(deck_id)) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("set_deck failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Undo the last undoable operation. Returns 0 on success, non-zero if there is
 /// nothing to undo (message in last_error).
 #[no_mangle]

@@ -48,6 +48,8 @@ struct ReviewerView: View {
                         label: { Label("Bury card", systemImage: "arrow.down.to.line") }
                     Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await next() } }
                         label: { Label("Suspend card", systemImage: "pause.circle") }
+                    Button { Task { await moveCurrentToDefault(); await next() } }
+                        label: { Label("Move to Default deck", systemImage: "tray.and.arrow.down") }
                     Divider()
                     Button { Task { await undoLast() } }
                         label: { Label("Undo", systemImage: "arrow.uturn.backward") }
@@ -129,6 +131,16 @@ struct ReviewerView: View {
     private func mutateCurrent(_ op: (Int64) async throws -> Void) async {
         guard cardIds.indices.contains(index) else { return }
         do { try await op(cardIds[index]) } catch { self.error = "\(error)" }
+    }
+
+    private func moveCurrentToDefault() async {
+        guard cardIds.indices.contains(index) else { return }
+        do {
+            let deckId = try await env.gateway.resolveOrCreateDeck(name: "Default")
+            try await env.gateway.moveCard(cardId: cardIds[index], toDeckId: deckId)
+        } catch {
+            self.error = "\(error)"
+        }
     }
 
     private func undoLast() async {

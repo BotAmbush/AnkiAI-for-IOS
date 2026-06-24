@@ -131,13 +131,15 @@ features:
       - libanki/src/main/java/com/ichi2/anki/libanki/Note.kt
     ios_paths:
       - AnkiAI/Domain/DomainModels.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
     backend_components:
       - Frameworks/AnkiCore.xcframework
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendAddNoteTests.swift
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Gateway write methods currently throw notImplementedInM21; full editor M2.2+.
+    notes: M2.5 — add-note (create card) wired + integration-tested. Editing an existing note (update/cardContext) still throws notImplementedInM21 (needs backend get_note/get_card); full editor UI pending.
 
   - feature_id: reviewer
     description: Review screen showing question/answer with rendering.
@@ -597,13 +599,15 @@ features:
       - AnkiAI/AI/Chat/AIChatViewModel.swift
       - AnkiAI/AI/Prompts.swift
       - AnkiAI/Features/Chat/ChatView.swift
-    backend_components: []
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+    backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/AIChatViewModelTests.swift
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+      - AnkiAITests/BackendAddNoteTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Generation + parsing tested; adding cards needs backend write path.
+    notes: M2.5 — generation + parsing unit-tested; the add-card path now writes REAL cards via the backend (integration-tested, run 28120838056). Live Claude generation needs a user API key (not CI-tested).
 
   - feature_id: ai_insights
     description: AI study-pattern insights/tips dashboard.

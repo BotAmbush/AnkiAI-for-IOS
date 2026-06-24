@@ -88,6 +88,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func suspendCard(cardId: Int64) async throws
     func buryCard(cardId: Int64) async throws
     func undo() async throws
+    /// Move a card to another deck (M2.6).
+    func moveCard(cardId: Int64, toDeckId: Int64) async throws
     func allDecks() async throws -> [DeckNameId]
     func deckName(id: Int64) async throws -> String?
     /// Resolve an exact deck name to an id, creating it if necessary (mirrors `decks.id(name)`).

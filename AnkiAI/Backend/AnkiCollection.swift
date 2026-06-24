@@ -126,6 +126,10 @@ final class AnkiCollection {
         guard anki_backend_undo(handle) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func setCardDeck(cardId: Int64, deckId: Int64) throws {
+        guard anki_backend_set_card_deck(handle, cardId, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func basicNotetypeId() throws -> Int64 {
         var out: Int64 = 0
         guard anki_backend_basic_notetype_id(handle, &out) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
