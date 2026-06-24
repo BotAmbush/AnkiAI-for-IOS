@@ -26,6 +26,12 @@ int32_t anki_backend_close(AnkiHandle *handle);
    Writes a heap string to *out_json (free with anki_backend_string_free). */
 int32_t anki_backend_deck_tree_json(AnkiHandle *handle, char **out_json);
 
+/* Card ids in a deck (and subdecks) as a JSON array of integers. */
+int32_t anki_backend_deck_card_ids(AnkiHandle *handle, const char *deck_name, char **out_json);
+
+/* Render a card: JSON {question_html, answer_html, css}. */
+int32_t anki_backend_render_card(AnkiHandle *handle, int64_t card_id, char **out_json);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

@@ -4,8 +4,13 @@ import WebKit
 /// Renders Anki card HTML with MathJax, mirroring AnkiDroid's WebView-based
 /// rendering. Math uses the `\( \)` / `\[ \]` delimiters the AI prompts enforce.
 /// RTL/Hebrew is preserved because the HTML carries its own `dir` attributes.
+///
+/// When `css` is non-empty (a backend-rendered card's note-type CSS), the body is
+/// wrapped in `<div class="card">…</div>` and the CSS is injected — matching how
+/// Anki applies note-type styling.
 struct CardWebView: UIViewRepresentable {
     let html: String
+    var css: String = ""
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -17,14 +22,16 @@ struct CardWebView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(Self.wrap(html), baseURL: nil)
+        webView.loadHTMLString(Self.wrap(html, css: css), baseURL: nil)
     }
 
-    /// Wraps card HTML in a document that loads MathJax v3 locally-configured to
-    /// use the same delimiters as the cards. Bundled MathJax is added in a later
-    /// slice; for now it loads from a CDN so rendering is correct on a network.
-    static func wrap(_ body: String) -> String {
-        """
+    /// Wraps card HTML in a document that loads MathJax v3 configured to use the
+    /// same delimiters as the cards. Bundled MathJax is a later slice; for now it
+    /// loads from a CDN so rendering is correct on a network.
+    static func wrap(_ body: String, css: String = "") -> String {
+        let noteCSS = css.isEmpty ? "" : "\n<style>\n\(css)\n</style>"
+        let content = css.isEmpty ? body : "<div class=\"card\">\(body)</div>"
+        return """
         <!DOCTYPE html>
         <html>
         <head>
@@ -32,7 +39,7 @@ struct CardWebView: UIViewRepresentable {
         <style>
           body { font-family: -apple-system, sans-serif; font-size: 18px; margin: 16px; color: #1a1a1a; background: transparent; }
           @media (prefers-color-scheme: dark) { body { color: #f2f2f2; } }
-        </style>
+        </style>\(noteCSS)
         <script>
           window.MathJax = {
             tex: { inlineMath: [['\\\\(', '\\\\)']], displayMath: [['\\\\[', '\\\\]']] },
@@ -42,7 +49,7 @@ struct CardWebView: UIViewRepresentable {
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
         </head>
         <body>
-        \(body)
+        \(content)
         </body>
         </html>
         """

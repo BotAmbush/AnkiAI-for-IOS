@@ -47,12 +47,28 @@ public struct NotetypeNameId: Equatable, Sendable {
     public init(id: Int64, name: String) { self.id = id; self.name = name }
 }
 
+/// A card rendered by the backend (templates + CSS), ready for the WebView.
+public struct RenderedCard: Equatable, Sendable {
+    public let questionHTML: String
+    public let answerHTML: String
+    public let css: String
+    public init(questionHTML: String, answerHTML: String, css: String) {
+        self.questionHTML = questionHTML
+        self.answerHTML = answerHTML
+        self.css = css
+    }
+}
+
 /// The minimal collection surface the AI features need. Implemented by:
 ///  - `StubCollectionGateway` (milestone 1, in-memory, lets the UI run on CI)
 ///  - `BackendCollectionGateway` (milestone 2, backed by the Rust anki backend)
 public protocol CollectionGateway: AnyObject, Sendable {
     /// Real deck tree with live new/learn/review counts (M2.1 read path).
     func deckTree() async throws -> [DeckTreeEntry]
+    /// Card ids in a deck (and its subdecks), by full deck name (M2.2 read path).
+    func cardIds(inDeckNamed name: String) async throws -> [Int64]
+    /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
+    func renderCard(cardId: Int64) async throws -> RenderedCard
     func allDecks() async throws -> [DeckNameId]
     func deckName(id: Int64) async throws -> String?
     /// Resolve an exact deck name to an id, creating it if necessary (mirrors `decks.id(name)`).

@@ -23,7 +23,13 @@ struct DeckListView: View {
                 } else if decks.isEmpty {
                     Text("No decks yet.").foregroundColor(.secondary)
                 } else {
-                    List(decks) { deck in DeckRow(deck: deck) }
+                    List(decks) { deck in
+                        NavigationLink {
+                            ReviewerView(deckName: deck.name)
+                        } label: {
+                            DeckRow(deck: deck)
+                        }
+                    }
                 }
             }
             .navigationTitle("Decks")

@@ -1,51 +1,90 @@
 import SwiftUI
 
-/// Minimal reviewer surface for milestone 1: renders a card's front/back with
-/// MathJax and exposes "Ask Claude". The scheduling/answer-button behaviour is
-/// supplied by the Rust backend in milestone 2; this proves the AI + rendering
-/// path end-to-end.
+/// Reviewer (M2.2 read slice): loads REAL cards from a deck and renders their
+/// question/answer + note-type CSS via the Anki backend. Read-only — answer
+/// buttons, undo, and scheduler mutations are the next slice. "Ask Claude" opens
+/// the AI chat (card-context wiring to the backend comes later).
 struct ReviewerView: View {
     @EnvironmentObject private var env: AppEnvironment
-    let cardId: Int64
+    let deckName: String
 
+    @State private var cardIds: [Int64] = []
+    @State private var index = 0
+    @State private var rendered: RenderedCard?
     @State private var showAnswer = false
+    @State private var isLoading = true
+    @State private var error: String?
     @State private var showChat = false
-    @State private var front = ""
-    @State private var back = ""
+
+    private var leaf: String { deckName.components(separatedBy: "::").last ?? deckName }
 
     var body: some View {
         VStack(spacing: 0) {
-            CardWebView(html: showAnswer ? "\(front)<hr>\(back)" : front)
-                .frame(maxHeight: .infinity)
-            Divider()
-            HStack {
-                if !showAnswer {
-                    Button("Show Answer") { showAnswer = true }
-                        .buttonStyle(.borderedProminent)
-                } else {
-                    Button("Ask Claude") { showChat = true }
-                        .buttonStyle(.bordered)
+            if isLoading {
+                Spacer(); ProgressView("Loading cards…"); Spacer()
+            } else if let error {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle").font(.largeTitle).foregroundColor(.orange)
+                    Text(error).font(.caption).foregroundColor(.secondary).multilineTextAlignment(.center).padding()
                 }
+                Spacer()
+            } else if cardIds.isEmpty {
+                Spacer(); Text("No cards in this deck.").foregroundColor(.secondary); Spacer()
+            } else if let rendered {
+                CardWebView(html: showAnswer ? rendered.answerHTML : rendered.questionHTML, css: rendered.css)
+                    .frame(maxHeight: .infinity)
+                Divider()
+                controls
             }
-            .padding()
         }
-        .navigationTitle("Review")
+        .navigationTitle(leaf)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await loadDeck() }
         .sheet(isPresented: $showChat) {
             NavigationStack {
-                ChatView(viewModel: env.makeChatViewModel(cardId: cardId))
+                ChatView(viewModel: env.makeChatViewModel(cardId: cardIds.indices.contains(index) ? cardIds[index] : -2))
                     .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") { showChat = false }
-                        }
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showChat = false } }
                     }
             }
         }
-        .task {
-            if let ctx = try? await env.gateway.cardContext(cardId: cardId) {
-                front = ctx.fields.first ?? ""
-                back = ctx.fields.count > 1 ? ctx.fields[1] : ""
+    }
+
+    private var controls: some View {
+        HStack {
+            Text("\(index + 1) / \(cardIds.count)").font(.caption).foregroundColor(.secondary)
+            Spacer()
+            if !showAnswer {
+                Button("Show Answer") { showAnswer = true }.buttonStyle(.borderedProminent)
+            } else {
+                Button("Ask Claude") { showChat = true }.buttonStyle(.bordered)
+                Button("Next card") { Task { await next() } }.buttonStyle(.borderedProminent)
             }
         }
+        .padding()
+    }
+
+    private func loadDeck() async {
+        isLoading = true; error = nil
+        do {
+            cardIds = try await env.gateway.cardIds(inDeckNamed: deckName)
+            index = 0
+            if !cardIds.isEmpty { try await renderCurrent() }
+        } catch {
+            self.error = "\(error)"
+        }
+        isLoading = false
+    }
+
+    private func renderCurrent() async throws {
+        showAnswer = false
+        rendered = try await env.gateway.renderCard(cardId: cardIds[index])
+    }
+
+    private func next() async {
+        guard !cardIds.isEmpty else { return }
+        index = (index + 1) % cardIds.count
+        do { try await renderCurrent() } catch { self.error = "\(error)" }
     }
 }

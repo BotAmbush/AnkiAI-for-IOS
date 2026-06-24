@@ -181,6 +181,104 @@ fn flatten_tree(node: &DeckTreeNode, parent_full: &str, out: &mut Vec<serde_json
     }
 }
 
+/// Return the card ids in a deck (and its subdecks) as a JSON array of integers,
+/// via `out_json`. Caller frees the string with `anki_backend_string_free`.
+#[no_mangle]
+pub extern "C" fn anki_backend_deck_card_ids(
+    handle: *mut Handle,
+    deck_name: *const c_char,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let name = match unsafe { cstr_to_string(deck_name) } {
+        Some(n) => n,
+        None => {
+            set_last_error("null deck name".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let escaped = name.replace('\\', "\\\\").replace('"', "\\\"");
+    let search = format!("deck:\"{escaped}\"");
+    match handle.col.search_cards(search, SortMode::NoOrder) {
+        Ok(cids) => {
+            let ids: Vec<i64> = cids.iter().map(|c| c.0).collect();
+            let json = serde_json::to_string(&ids).unwrap_or_else(|_| "[]".into());
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("card ids json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("search_cards failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Render an existing card via the backend (templates + CSS). Returns JSON
+/// `{question_html, answer_html, css}` via `out_json`. Caller frees the string.
+#[no_mangle]
+pub extern "C" fn anki_backend_render_card(
+    handle: *mut Handle,
+    card_id: i64,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_json.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.render_existing_card(CardId(card_id), false, false) {
+        Ok(out) => {
+            let question = out.question().into_owned();
+            let answer = out.answer().into_owned();
+            let css = out.css;
+            let json = serde_json::json!({
+                "question_html": question,
+                "answer_html": answer,
+                "css": css,
+            })
+            .to_string();
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out_json = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("render json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("render_existing_card failed: {e}"));
+            2
+        }
+    }
+}
+
 // ─── Test support (used only by integration tests) ────────────────────────────
 
 /// Create a deterministic fixture collection at `path` (must not already exist).

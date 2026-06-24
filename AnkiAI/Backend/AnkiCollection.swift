@@ -5,6 +5,7 @@ import AnkiCore
 enum AnkiBackendError: Error, CustomStringConvertible {
     case open(String)
     case deckTree(String)
+    case render(String)
     case decode(String)
     case createFixture(String)
 
@@ -12,6 +13,7 @@ enum AnkiBackendError: Error, CustomStringConvertible {
         switch self {
         case .open(let m): return "open collection failed: \(m)"
         case .deckTree(let m): return "deck tree failed: \(m)"
+        case .render(let m): return "render failed: \(m)"
         case .decode(let m): return "decode failed: \(m)"
         case .createFixture(let m): return "create fixture failed: \(m)"
         }
@@ -70,6 +72,38 @@ final class AnkiCollection {
         } catch {
             throw AnkiBackendError.decode("\(error)")
         }
+    }
+
+    /// Card ids in a deck (and subdecks) by full deck name.
+    func cardIds(inDeckNamed name: String) throws -> [Int64] {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = name.withCString { anki_backend_deck_card_ids(handle, $0, &out) }
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.deckTree(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do { return try JSONDecoder().decode([Int64].self, from: data) }
+        catch { throw AnkiBackendError.decode("\(error)") }
+    }
+
+    /// Backend-rendered question/answer HTML + CSS for a card.
+    func renderCard(cardId: Int64) throws -> RenderedCard {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_render_card(handle, cardId, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.render(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        do {
+            let dto = try JSONDecoder().decode(RenderDTO.self, from: data)
+            return RenderedCard(questionHTML: dto.question_html, answerHTML: dto.answer_html, css: dto.css)
+        } catch {
+            throw AnkiBackendError.decode("\(error)")
+        }
+    }
+
+    private struct RenderDTO: Decodable {
+        let question_html: String
+        let answer_html: String
+        let css: String
     }
 
     static func lastError() -> String {

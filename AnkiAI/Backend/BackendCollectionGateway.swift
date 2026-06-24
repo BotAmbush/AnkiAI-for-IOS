@@ -38,6 +38,14 @@ public actor BackendCollectionGateway: CollectionGateway {
         try opened().deckTree().first { $0.deckId == id }?.name
     }
 
+    public func cardIds(inDeckNamed name: String) async throws -> [Int64] {
+        try opened().cardIds(inDeckNamed: name)
+    }
+
+    public func renderCard(cardId: Int64) async throws -> RenderedCard {
+        try opened().renderCard(cardId: cardId)
+    }
+
     // MARK: - Write/edit path (not in M2.1)
 
     public func resolveOrCreateDeck(name: String) async throws -> Int64 {

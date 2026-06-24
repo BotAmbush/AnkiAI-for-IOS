@@ -12,8 +12,8 @@ A feature is **not** marked complete just because a similarly-named Swift file e
 | Collection open/close | ✅ | **Real Rust backend** (`AnkiCore.xcframework`, anki 25.09.2). `AnkiCollection` open/close; verified by integration tests + CI (run 28101322821) |
 | Decks & subdecks | ✅ (read) | **Real** deck + subdeck names and live new/learn/review counts via `BackendCollectionGateway.deckTree()`; shown in deck list. Deck create/rename = later slice |
 | Notes / cards / note types | 🔬 ◑ | Read path open; full CRUD = M2.2 (writes throw `notImplementedInM21`) |
-| Card templates & CSS | 🔬 ☐ | Template rendering is backend `render_card` |
-| Front/back & HTML rendering | ◑ | `CardWebView` renders raw HTML now; template/qfmt via backend |
+| Card templates & CSS | ✅ (read) | **Real backend `render_existing_card`** — question/answer HTML + note-type CSS; integration-tested (M2.2). Template editing not yet. |
+| Front/back & HTML rendering | ✅ (read) | Reviewer renders backend-produced question/answer HTML + CSS in `CardWebView`; media `<img>` resolution still pending |
 | MathJax rendering | ✅ | WKWebView + `\( \)`/`\[ \]`; bundle locally (M1 tail) |
 | Hebrew / RTL | ✅ | `dir` preserved end-to-end; strip helpers tested |
 | Mixed RTL/LTR | ✅ | per-span `dir` honored |

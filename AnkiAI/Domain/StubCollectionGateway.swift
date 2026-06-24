@@ -36,6 +36,15 @@ public actor StubCollectionGateway: CollectionGateway {
         }
     }
 
+    public func cardIds(inDeckNamed name: String) async throws -> [Int64] {
+        // Preview/test only.
+        cardToNoteDeck.keys.sorted()
+    }
+
+    public func renderCard(cardId: Int64) async throws -> RenderedCard {
+        throw GatewayError.notImplementedInM21("renderCard")
+    }
+
     public func allDecks() async throws -> [DeckNameId] { decks }
 
     public func deckName(id: Int64) async throws -> String? { decks.first { $0.id == id }?.name }
