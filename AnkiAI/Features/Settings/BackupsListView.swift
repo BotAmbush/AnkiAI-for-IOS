@@ -6,7 +6,7 @@ struct ColpkgFile: FileDocument {
     static var readableContentTypes: [UTType] { [UTType(filenameExtension: "colpkg") ?? .data] }
     let url: URL
     init(url: URL) { self.url = url }
-    init(configuration: ReadConfiguration) throws { throw CocoaError(.fileReadUnsupported) }
+    init(configuration: ReadConfiguration) throws { throw CocoaError(.fileReadUnknown) }
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { try FileWrapper(url: url) }
 }
 
