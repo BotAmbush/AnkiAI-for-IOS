@@ -72,6 +72,9 @@ int32_t anki_backend_set_due_date(AnkiHandle *handle, int64_t card_id, const cha
 /* Forget a card: reset it to "new". */
 int32_t anki_backend_forget_card(AnkiHandle *handle, int64_t card_id);
 
+/* Read-only deck scheduling options (limits + desired retention) for a deck, JSON. */
+int32_t anki_backend_deck_config_json(AnkiHandle *handle, int64_t deck_id, char **out);
+
 /* Statistics graphs (reviews / future_due / added) for `search` over `days`, JSON. */
 int32_t anki_backend_graphs(AnkiHandle *handle, const char *search, uint32_t days, char **out);
 

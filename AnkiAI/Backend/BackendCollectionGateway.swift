@@ -57,6 +57,9 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func statsGraphs(search: String, days: Int) async throws -> StatsGraphs {
         try opened().statsGraphs(search: search, days: days)
     }
+    public func deckOptions(deckId: Int64) async throws -> DeckOptions {
+        try opened().deckOptions(deckId: deckId)
+    }
 
     public func renderCard(cardId: Int64) async throws -> RenderedCard {
         try opened().renderCard(cardId: cardId)

@@ -28,6 +28,7 @@ use anki::prelude::*;
 use anki::import_export::package::import_colpkg;
 use anki::import_export::ImportProgress;
 use anki::search::SortMode;
+use anki::services::DeckConfigService;
 use anki::services::DecksService;
 use anki::services::NotesService;
 use anki::services::SchedulerService;
@@ -577,6 +578,73 @@ pub extern "C" fn anki_backend_forget_card(handle: *mut Handle, card_id: i64) ->
         Err(e) => {
             set_last_error(format!("forget_card failed: {e}"));
             2
+        }
+    }
+}
+
+/// READ-ONLY deck scheduling options for `deck_id`, as JSON:
+/// { "config_name", "new_per_day", "reviews_per_day", "desired_retention", "fsrs" }.
+/// Writes the JSON to `out` (free with anki_backend_string_free). 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_deck_config_json(
+    handle: *mut Handle,
+    deck_id: i64,
+    out: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let resp = match DeckConfigService::get_deck_configs_for_update(
+        &mut handle.col,
+        PbDeckId { did: deck_id },
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("get_deck_configs_for_update failed: {e}"));
+            return 2;
+        }
+    };
+    let config_id = resp.current_deck.as_ref().map(|c| c.config_id).unwrap_or(1);
+    let selected = resp
+        .all_config
+        .iter()
+        .find(|c| c.config.as_ref().map(|d| d.id) == Some(config_id))
+        .and_then(|c| c.config.as_ref());
+    let name = selected.map(|d| d.name.clone()).unwrap_or_default();
+    let inner = selected.and_then(|d| d.config.as_ref());
+    let new_per_day = inner.map(|c| c.new_per_day).unwrap_or(0);
+    let reviews_per_day = inner.map(|c| c.reviews_per_day).unwrap_or(0);
+    let desired_retention = resp
+        .current_deck
+        .as_ref()
+        .and_then(|c| c.limits.as_ref())
+        .and_then(|l| l.desired_retention)
+        .or_else(|| inner.map(|c| c.desired_retention))
+        .unwrap_or(0.0);
+    let json = serde_json::json!({
+        "config_name": name,
+        "new_per_day": new_per_day,
+        "reviews_per_day": reviews_per_day,
+        "desired_retention": desired_retention,
+        "fsrs": resp.fsrs,
+    })
+    .to_string();
+    match CString::new(json) {
+        Ok(c) => {
+            unsafe { *out = c.into_raw() };
+            0
+        }
+        Err(_) => {
+            set_last_error("deck config json contained NUL".into());
+            3
         }
     }
 }

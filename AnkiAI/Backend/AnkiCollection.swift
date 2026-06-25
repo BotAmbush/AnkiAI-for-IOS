@@ -246,6 +246,22 @@ final class AnkiCollection {
         guard anki_backend_forget_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func deckOptions(deckId: Int64) throws -> DeckOptions {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = anki_backend_deck_config_json(handle, deckId, &out)
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        struct DTO: Decodable {
+            let config_name: String; let new_per_day: Int; let reviews_per_day: Int
+            let desired_retention: Double; let fsrs: Bool
+        }
+        do {
+            let d = try JSONDecoder().decode(DTO.self, from: Data(String(cString: cstr).utf8))
+            return DeckOptions(configName: d.config_name, newPerDay: d.new_per_day,
+                               reviewsPerDay: d.reviews_per_day, desiredRetention: d.desired_retention, fsrs: d.fsrs)
+        } catch { throw AnkiBackendError.decode("\(error)") }
+    }
+
     func statsGraphs(search: String, days: Int) throws -> StatsGraphs {
         var out: UnsafeMutablePointer<CChar>?
         let rc = search.withCString { anki_backend_graphs(handle, $0, UInt32(max(1, days)), &out) }

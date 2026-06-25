@@ -14,6 +14,7 @@ struct DeckListView: View {
     @State private var renameText = ""
     @State private var showNewDeck = false
     @State private var newDeckName = ""
+    @State private var optionsDeck: DeckTreeEntry?
 
     var body: some View {
         NavigationStack {
@@ -46,6 +47,10 @@ struct DeckListView: View {
                             } label: { Label("Rename", systemImage: "pencil") }
                             .tint(.blue)
                         }
+                        .swipeActions(edge: .leading) {
+                            Button { optionsDeck = deck } label: { Label("Options", systemImage: "gearshape") }
+                                .tint(.gray)
+                        }
                     }
                 }
             }
@@ -69,6 +74,9 @@ struct DeckListView: View {
             }
             .sheet(isPresented: $showCustomStudy) {
                 CustomStudyView { Task { await load() } }
+            }
+            .sheet(item: $optionsDeck) { deck in
+                DeckOptionsView(deckId: deck.deckId, deckName: deck.name)
             }
             .alert("New deck", isPresented: $showNewDeck) {
                 TextField("Name (use :: for subdecks)", text: $newDeckName)

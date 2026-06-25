@@ -417,3 +417,9 @@ Device feedback fixes:
 - [ ] AppResSchemeHandler.mediaFileURL(in:requestURL:): pure, traversal-guarded
   resolution (last path component only; reject ../ , embedded slashes, empty/dot;
   verify the resolved file sits directly under the media folder). Unit-tested.
+
+### M2.44 — Deck options (READ-ONLY) (IN PROGRESS)
+- [ ] Bridge anki_backend_deck_config_json (get_deck_configs_for_update → the deck's
+  effective config: new/day, reviews/day, desired retention, FSRS on/off). Gateway
+  deckOptions; DeckOptionsView (deck-list leading swipe "Options"). READ-ONLY by
+  design — writing deck config to a live synced collection is risky. Integration-tested.

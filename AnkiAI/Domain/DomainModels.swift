@@ -119,6 +119,23 @@ public struct DueQueueState: Equatable, Sendable {
     }
 }
 
+/// Read-only deck scheduling options (M2.44). Editing is intentionally not exposed
+/// (risky to write on a live synced collection); values come down with sync.
+public struct DeckOptions: Equatable, Sendable {
+    public let configName: String
+    public let newPerDay: Int
+    public let reviewsPerDay: Int
+    public let desiredRetention: Double
+    public let fsrs: Bool
+    public init(configName: String, newPerDay: Int, reviewsPerDay: Int, desiredRetention: Double, fsrs: Bool) {
+        self.configName = configName
+        self.newPerDay = newPerDay
+        self.reviewsPerDay = reviewsPerDay
+        self.desiredRetention = desiredRetention
+        self.fsrs = fsrs
+    }
+}
+
 /// A single (dayOffset, count) point in a statistics graph (M2.33).
 public struct GraphPoint: Equatable, Sendable, Identifiable {
     public let day: Int
@@ -168,6 +185,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func searchCardIds(query: String) async throws -> [Int64]
     /// Statistics graph series (reviews/future-due/added) for the collection (M2.33).
     func statsGraphs(search: String, days: Int) async throws -> StatsGraphs
+    /// Read-only deck scheduling options (limits + desired retention) (M2.44).
+    func deckOptions(deckId: Int64) async throws -> DeckOptions
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
     func renderCard(cardId: Int64) async throws -> RenderedCard
     /// Scheduling info (due/interval/reviews/…) for a card (M2.12).

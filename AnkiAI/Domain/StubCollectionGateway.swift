@@ -47,6 +47,9 @@ public actor StubCollectionGateway: CollectionGateway {
     public func statsGraphs(search: String, days: Int) async throws -> StatsGraphs {
         StatsGraphs(reviews: [], futureDue: [], added: [])
     }
+    public func deckOptions(deckId: Int64) async throws -> DeckOptions {
+        DeckOptions(configName: "Default", newPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9, fsrs: true)
+    }
     public func setStudyDeck(named name: String) async throws {}
     public func nextDueCard() async throws -> DueQueueState {
         DueQueueState(cardId: cardToNoteDeck.keys.sorted().first, newCount: 1, learnCount: 0, reviewCount: 0)
