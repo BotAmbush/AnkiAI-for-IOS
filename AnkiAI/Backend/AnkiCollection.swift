@@ -268,7 +268,10 @@ final class AnkiCollection {
         guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
         defer { anki_backend_string_free(cstr) }
         let data = Data(String(cString: cstr).utf8)
-        struct DTO: Decodable { let reviews: [[Int]]; let future_due: [[Int]]; let added: [[Int]] }
+        struct DTO: Decodable {
+            let reviews: [[Int]]; let future_due: [[Int]]; let added: [[Int]]
+            let total_reviews: Int; let total_time_ms: Int
+        }
         do {
             let d = try JSONDecoder().decode(DTO.self, from: data)
             func points(_ pairs: [[Int]]) -> [GraphPoint] {
@@ -276,7 +279,8 @@ final class AnkiCollection {
             }
             return StatsGraphs(reviews: points(d.reviews),
                                futureDue: points(d.future_due),
-                               added: points(d.added))
+                               added: points(d.added),
+                               totalReviews: d.total_reviews, totalTimeMs: d.total_time_ms)
         } catch {
             throw AnkiBackendError.decode("\(error)")
         }

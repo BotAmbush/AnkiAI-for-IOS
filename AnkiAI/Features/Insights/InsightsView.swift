@@ -45,7 +45,7 @@ struct InsightsView: View {
                 } header: {
                     Text("AI tips")
                 } footer: {
-                    Text("Live from your collection: card counts, weak cards (≥3 lapses), today's reviews, and 30-day retention. Streak history and per-card timing need the full revlog graph data (a documented follow-up).")
+                    Text("Live from your collection + revlog: card counts, weak cards (≥3 lapses), today's reviews, 30-day retention, study streak, average reviews/day, and average time/card. (Average ease and per-deck retention are not yet computed.)")
                 }
             }
             .navigationTitle("Insights")
@@ -65,13 +65,23 @@ struct InsightsView: View {
         let reviewed30 = (try? await env.gateway.searchCardIds(query: "rated:30").count) ?? 0
         let again30 = (try? await env.gateway.searchCardIds(query: "rated:30:1").count) ?? 0
         let retention: Float = reviewed30 > 0 ? max(0, 1 - Float(again30) / Float(reviewed30)) : 0.85
+        let g = try? await env.gateway.statsGraphs(search: "", days: 365)
+        graphs = g
+        // REAL revlog-derived metrics (no placeholders): streak, daily reviews,
+        // seconds/card, and today's count come from the backend graph data.
         let real = InsightStats(
-            streak: 0, todayCount: today, retention30d: retention, weakCardCount: weak,
-            avgEaseFactor: 2500, avgDailyReviews: 0,
-            matureCards: s?.mature ?? 0, totalCards: s?.total ?? 0,
-            worstDeck: nil, deckRetentions: [], avgSecPerCard: 0)
-        tips = AITipEngine.generateTips(real, includeStreak: false)
-        graphs = try? await env.gateway.statsGraphs(search: "", days: Self.window + 1)
+            streak: g?.streak ?? 0,
+            todayCount: g?.todayReviews ?? today,
+            retention30d: retention,
+            weakCardCount: weak,
+            avgEaseFactor: 2500,                 // ease tip suppressed (not yet computed — see note)
+            avgDailyReviews: Float(g?.avgReviewsPerStudiedDay ?? 0),
+            matureCards: s?.mature ?? 0,
+            totalCards: s?.total ?? 0,
+            worstDeck: nil,                      // per-deck retention not yet computed (see note)
+            deckRetentions: [],
+            avgSecPerCard: Float(g?.avgSecondsPerCard ?? 0))
+        tips = AITipEngine.generateTips(real, includeStreak: true)
     }
 
     @ViewBuilder private func barChart(_ points: [GraphPoint], color: Color) -> some View {

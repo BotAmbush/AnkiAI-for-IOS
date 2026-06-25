@@ -683,19 +683,30 @@ pub extern "C" fn anki_backend_graphs(
             }
             let future_due = sorted_pairs(g.future_due.map(|f| f.future_due).unwrap_or_default());
             let added = sorted_pairs(g.added.map(|a| a.added).unwrap_or_default());
-            let reviews: Vec<(i32, u32)> = {
-                let count = g.reviews.map(|r| r.count).unwrap_or_default();
-                let mut v: Vec<(i32, u32)> = count
-                    .into_iter()
-                    .map(|(day, r)| (day, r.learn + r.relearn + r.young + r.mature + r.filtered))
-                    .collect();
-                v.sort_by_key(|(k, _)| *k);
-                v
-            };
+            let (reviews, total_reviews, total_time_ms): (Vec<(i32, u32)>, u64, u64) =
+                if let Some(r) = g.reviews {
+                    let mut v: Vec<(i32, u32)> = r
+                        .count
+                        .iter()
+                        .map(|(day, c)| (*day, c.learn + c.relearn + c.young + c.mature + c.filtered))
+                        .collect();
+                    v.sort_by_key(|(k, _)| *k);
+                    let total_reviews: u64 = v.iter().map(|(_, c)| *c as u64).sum();
+                    let total_time_ms: u64 = r
+                        .time
+                        .values()
+                        .map(|t| (t.learn + t.relearn + t.young + t.mature + t.filtered) as u64)
+                        .sum();
+                    (v, total_reviews, total_time_ms)
+                } else {
+                    (Vec::new(), 0, 0)
+                };
             let json = serde_json::json!({
                 "reviews": reviews,
                 "future_due": future_due,
                 "added": added,
+                "total_reviews": total_reviews,
+                "total_time_ms": total_time_ms,
             })
             .to_string();
             match CString::new(json) {

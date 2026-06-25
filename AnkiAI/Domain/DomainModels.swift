@@ -150,11 +150,43 @@ public struct StatsGraphs: Equatable, Sendable {
     public let reviews: [GraphPoint]
     public let futureDue: [GraphPoint]
     public let added: [GraphPoint]
-    public init(reviews: [GraphPoint], futureDue: [GraphPoint], added: [GraphPoint]) {
+    public let totalReviews: Int
+    public let totalTimeMs: Int
+    public init(reviews: [GraphPoint], futureDue: [GraphPoint], added: [GraphPoint],
+                totalReviews: Int = 0, totalTimeMs: Int = 0) {
         self.reviews = reviews
         self.futureDue = futureDue
         self.added = added
+        self.totalReviews = totalReviews
+        self.totalTimeMs = totalTimeMs
     }
+
+    /// Real consecutive-day study streak ending today or yesterday (from the
+    /// reviews series; day 0 = today, -1 = yesterday, …). No placeholder.
+    public var streak: Int {
+        let days = Set(reviews.filter { $0.count > 0 }.map { $0.day })
+        guard !days.isEmpty else { return 0 }
+        // Streak only counts if studied today (0) or yesterday (-1).
+        let start = days.contains(0) ? 0 : (days.contains(-1) ? -1 : nil)
+        guard let s = start else { return 0 }
+        var n = 0, d = s
+        while days.contains(d) { n += 1; d -= 1 }
+        return n
+    }
+
+    /// Average reviews per studied day (real; 0 if no reviews).
+    public var avgReviewsPerStudiedDay: Double {
+        let studiedDays = reviews.filter { $0.count > 0 }.count
+        return studiedDays > 0 ? Double(totalReviews) / Double(studiedDays) : 0
+    }
+
+    /// Average seconds per reviewed card (real; 0 if no reviews).
+    public var avgSecondsPerCard: Double {
+        totalReviews > 0 ? (Double(totalTimeMs) / 1000.0) / Double(totalReviews) : 0
+    }
+
+    /// Reviews recorded today (day 0).
+    public var todayReviews: Int { reviews.first { $0.day == 0 }?.count ?? 0 }
 }
 
 /// A card rendered by the backend (templates + CSS), ready for the WebView.

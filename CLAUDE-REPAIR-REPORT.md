@@ -16,7 +16,7 @@ independent audit** verifies completion.
 | M1 | Sync hardening (BackgroundSync error persistence; full-download atomic/backup; device retest) | **Partial** — BackgroundSync now persists outcomes (full-sync-required / auth / media / network) and surfaces them on next launch; never auto-resolves full-sync. full_download already does temp+integrity+atomic; pre-upload backup added (R1). Device retest still required. |
 | M2 | `.apkg` import/export real verification + rollback | Pending |
 | M3 | Remove silent production failures; CardBrowser bulk per-item reporting | **Fixed (R2)** — runBulk reports total/succeeded/failed + first error; selection kept on partial/failure; no false success |
-| M4 | AI Insights real revlog metrics (no placeholders) | Pending |
+| M4 | AI Insights real revlog metrics (no placeholders) | **Partial (R3)** — real streak / avg reviews-per-day / avg seconds-per-card / today (from graphs) + retention/weak/mature; streak tip enabled. avg-ease + per-deck/worst-deck retention not yet computed (no placeholder shown). |
 | M5 | forced-study classified partial/platform-limited + strongest iOS equivalent | Reclassified (R1); enforcement strengthening pending |
 | M6 | Broader integration fixtures + production-path tests | Pending |
 
