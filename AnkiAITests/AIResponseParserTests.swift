@@ -59,7 +59,7 @@ final class AIResponseParserTests: XCTestCase {
           {"front":"F2","back":"B2","deckName":"Physics"}
         ]
         """
-        let cards = AIResponseParser.parseGeneratedCards(reply)
+        let cards = AIResponseParser.parseGeneratedCards(reply)?.cards
         XCTAssertEqual(cards?.count, 2)
         XCTAssertEqual(cards?[0].front, "<b>F1</b>")
         XCTAssertEqual(cards?[1].front, "F2")
@@ -67,7 +67,7 @@ final class AIResponseParserTests: XCTestCase {
     }
 
     func testParseGeneratedCardsDefaultsDeck() {
-        let cards = AIResponseParser.parseGeneratedCards(#"[{"front":"a","back":"b"}]"#)
+        let cards = AIResponseParser.parseGeneratedCards(#"[{"front":"a","back":"b"}]"#)?.cards
         XCTAssertEqual(cards?.first?.deckName, "Default")
     }
 

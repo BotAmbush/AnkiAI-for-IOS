@@ -143,6 +143,12 @@ public final class AISettingsStore {
         set { defaults.set(newValue, forKey: "ai_total_spent_usd") }
     }
 
+    /// Default output language for the AI reviewer + creator (Issue 2).
+    public var aiLanguage: AILanguage {
+        get { AILanguage(rawValue: defaults.string(forKey: "ai_language") ?? "") ?? .automatic }
+        set { defaults.set(newValue.rawValue, forKey: "ai_language") }
+    }
+
     /// Provenance of the local collection. Defaults to `.unknown` (the safe value:
     /// upload to AnkiWeb is hard-blocked until provenance is proven).
     public var collectionProvenance: CollectionProvenance {

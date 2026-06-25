@@ -137,24 +137,76 @@ public enum AIResponseParser {
         public let deckName: String
     }
 
-    /// Parse the creator JSON array into raw cards (deck resolution happens later
-    /// against the live collection).
-    public static func parseGeneratedCards(_ reply: String) -> [RawGeneratedCard]? {
-        guard let jsonText = extractJSONArray(reply),
-              let data = jsonText.data(using: .utf8),
-              let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return nil
-        }
-        return arr.map { obj in
-            let front = nonEmpty(obj["front_html"]) ?? (obj["front"] as? String ?? "")
-            let back = nonEmpty(obj["back_html"]) ?? (obj["back"] as? String ?? "")
-            let deck = nonEmpty(obj["deckName"]) ?? "Default"
-            return RawGeneratedCard(front: front, back: back, deckName: deck)
+    /// Result of parsing a creator response: the valid cards, a list of human-readable
+    /// reasons for any skipped/invalid cards, and the recovery stage that matched
+    /// (sanitized diagnostics — never the card content itself).
+    public struct CardParseOutcome: Equatable {
+        public let cards: [RawGeneratedCard]
+        public let skipped: [String]
+        public let stage: String
+        public init(cards: [RawGeneratedCard], skipped: [String], stage: String) {
+            self.cards = cards; self.skipped = skipped; self.stage = stage
         }
     }
 
+    /// Robust local recovery from the common valid model variations: a top-level
+    /// array, a `{ "cards": [...] }` envelope, a single card object, JSON inside
+    /// Markdown fences, prose before/after the JSON, a leading BOM, and one malformed
+    /// card among otherwise valid ones (skipped + reported, valid ones preserved).
+    /// Returns `nil` only when NO card can be safely recovered.
+    public static func parseGeneratedCards(_ reply: String) -> CardParseOutcome? {
+        var text = reply
+        if text.hasPrefix("\u{FEFF}") { text.removeFirst() }          // strip BOM
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+
+        // Candidate JSON strings in priority order (stage label = diagnostics).
+        var candidates: [(String, String)] = []
+        if let fenced = fencedBlock(in: text) { candidates.append((fenced, "fenced")) }
+        candidates.append((text, "whole"))
+        if let s = text.firstIndex(of: "["), let e = text.lastIndex(of: "]"), s < e {
+            candidates.append((String(text[s...e]), "array-slice"))
+        }
+        if let s = text.firstIndex(of: "{"), let e = text.lastIndex(of: "}"), s < e {
+            candidates.append((String(text[s...e]), "object-slice"))
+        }
+        for (candidate, stage) in candidates {
+            if let outcome = cardsFromJSONString(candidate, stage: stage) { return outcome }
+        }
+        return nil
+    }
+
+    private static func cardsFromJSONString(_ s: String, stage: String) -> CardParseOutcome? {
+        guard let data = s.data(using: .utf8),
+              let any = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]) else { return nil }
+        var elements: [Any]?
+        if let a = any as? [Any] {
+            elements = a
+        } else if let obj = any as? [String: Any] {
+            if let c = obj["cards"] as? [Any] { elements = c }
+            else if obj["front"] != nil || obj["front_html"] != nil { elements = [obj] }  // single card
+        }
+        guard let items = elements else { return nil }
+
+        var cards: [RawGeneratedCard] = []
+        var skipped: [String] = []
+        for (i, el) in items.enumerated() {
+            guard let obj = el as? [String: Any] else {
+                skipped.append("Card \(i + 1): not a JSON object"); continue
+            }
+            let front = nonEmpty(obj["front_html"]) ?? (obj["front"] as? String ?? "")
+            let back = nonEmpty(obj["back_html"]) ?? (obj["back"] as? String ?? "")
+            let deck = nonEmpty(obj["deckName"]) ?? nonEmpty(obj["deck"]) ?? "Default"
+            guard !front.isEmpty else { skipped.append("Card \(i + 1): missing front/front_html"); continue }
+            cards.append(RawGeneratedCard(front: front, back: back, deckName: deck))
+        }
+        guard !cards.isEmpty else { return nil }
+        return CardParseOutcome(cards: cards, skipped: skipped, stage: stage)
+    }
+
     private static func nonEmpty(_ any: Any?) -> String? {
-        guard let s = any as? String, !s.isEmpty else { return nil }
-        return s
+        guard let s = any as? String else { return nil }
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : s
     }
 }

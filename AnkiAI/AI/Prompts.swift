@@ -60,9 +60,11 @@ Applies to: kg, m/s, J·s, F/m, H/m, J/K, V, A, Ω, C, N, Pa, Hz, W, T, and all 
 """#
 
     /// Exact port of `AiChatViewModel.buildSystemPrompt(context)`.
-    static func reviewerSystemPrompt(context: CardChatContext) -> String {
+    static func reviewerSystemPrompt(context: CardChatContext, language: AILanguage = .automatic) -> String {
         """
         You are a helpful study assistant integrated into AnkiDroid.
+
+        OUTPUT LANGUAGE: \(language.promptInstruction)
 
         CARD BEING REVIEWED:
         Deck: \(context.deckName)
@@ -142,12 +144,34 @@ Applies to: kg, m/s, J·s, F/m, H/m, J/K, V, A, Ω, C, N, Pa, Hz, W, T, and all 
         """
     }
 
-    static func creatorDynamicSystemSuffix(deckHierarchy: String, defaultDeck: String) -> String {
+    static func creatorDynamicSystemSuffix(deckHierarchy: String, defaultDeck: String,
+                                           language: AILanguage = .automatic) -> String {
         """
         DEFAULT DECK: \(defaultDeck)
 
         AVAILABLE DECKS (use exact names including :: separators):
         \(deckHierarchy)
+
+        OUTPUT LANGUAGE: \(language.promptInstruction)
+        """
+    }
+
+    /// Repair prompt (Issue 5): ask the model to re-emit ONLY a valid JSON array.
+    static func repairSystemPrompt() -> String {
+        """
+        You convert a previous flashcard response into STRICTLY valid JSON.
+        Output ONLY a JSON array of objects with keys "front", "back", "deckName".
+        No prose, no Markdown fences, no labels. Preserve the original HTML field
+        content (including dir="rtl"/dir="ltr" and \\( \\) / \\[ \\] math) exactly.
+        """
+    }
+
+    static func repairUserMessage(brokenResponse: String) -> String {
+        """
+        The following response could not be parsed as a JSON card array. Re-emit the
+        SAME cards as a strictly valid JSON array only:
+
+        \(brokenResponse)
         """
     }
 

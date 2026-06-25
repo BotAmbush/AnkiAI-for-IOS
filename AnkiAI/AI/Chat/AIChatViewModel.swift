@@ -24,6 +24,20 @@ public final class AIChatViewModel: ObservableObject {
     @Published public private(set) var totalSpentUSD: Double
     @Published public private(set) var generationProposals: [CardProposal] = []
     @Published public private(set) var addedCount = 0
+    /// Output language for this chat (overrides the global default; persisted).
+    @Published public var language: AILanguage = .automatic
+    /// Human-readable reasons for cards skipped during parsing (partial-success).
+    @Published public private(set) var skippedCards: [String] = []
+    /// True when the last generation produced a response we could not parse — the
+    /// session is preserved and the user can retry/repair/regenerate.
+    @Published public private(set) var parseFailed = false
+
+    // Preserved for retry without re-calling the API (Issue 5).
+    private var lastRawResponse: String?
+    private var lastPrompt: String?
+    private var lastAttachments: [ImagePayload] = []
+    private var lastAllDecks: [DeckNameId] = []
+    private var repairAttempted = false
 
     private let gateway: CollectionGateway
     private let db: AIDatabase
@@ -46,6 +60,13 @@ public final class AIChatViewModel: ObservableObject {
         self.clientFactory = clientFactory
         self.hasAPIKey = settings.hasAPIKey
         self.totalSpentUSD = settings.totalSpentUSD
+        self.language = settings.aiLanguage
+    }
+
+    /// Change the chat's output language and persist it as the new default (Issue 2).
+    public func setLanguage(_ lang: AILanguage) {
+        language = lang
+        settings.aiLanguage = lang
     }
 
     public func load() async {
@@ -129,7 +150,7 @@ public final class AIChatViewModel: ObservableObject {
         guard let ctx = cardContext else { return }
         let client = clientFactory(apiKey, ClaudeAPIClient.defaultChatModel)
         let result = await client.chat(
-            systemPrompt: Prompts.reviewerSystemPrompt(context: ctx),
+            systemPrompt: Prompts.reviewerSystemPrompt(context: ctx, language: language),
             history: history, dynamicSystemSuffix: "",
             onTokensUsed: { [weak self] usage in
                 Task { @MainActor in self?.recordSpend(AIPricing.costHaiku(input: usage.inputTokens, output: usage.outputTokens)) }
@@ -227,9 +248,12 @@ public final class AIChatViewModel: ObservableObject {
     public func generateCards(_ userPrompt: String, defaultDeckName: String = "",
                               attachments: [ImagePayload] = []) async {
         guard let apiKey = settings.apiKey else { error = "Please enter your API key first."; return }
-        isLoading = true; error = nil; generationProposals = []
+        isLoading = true; error = nil; generationProposals = []; skippedCards = []; parseFailed = false
+        repairAttempted = false
+        lastPrompt = userPrompt; lastAttachments = attachments   // preserve for retry
         do {
             let allDecks = try await gateway.allDecks()
+            lastAllDecks = allDecks
             let hierarchy = allDecks.map { $0.name }.joined(separator: "\n")
             let resolvedDefault = defaultDeckName.isEmpty ? (allDecks.first?.name ?? "Default") : defaultDeckName
             let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
@@ -237,13 +261,17 @@ public final class AIChatViewModel: ObservableObject {
             let result = await client.chatWithImages(
                 systemPrompt: Prompts.creatorStaticSystemPrompt(),
                 history: [ChatTurnWithImage(role: "user", text: userMessage, images: attachments)],
-                dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: resolvedDefault),
+                dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: resolvedDefault,
+                                                                        language: language),
                 onTokensUsed: { [weak self] usage in
                     Task { @MainActor in self?.recordSpend(AIPricing.costSonnet(input: usage.inputTokens, output: usage.outputTokens)) }
                 })
             switch result {
-            case .success(let reply): try await parseGenerationProposals(reply, allDecks: allDecks)
-            case .failure(let e): error = AIErrorPresenter.message(for: e)
+            case .success(let reply):
+                lastRawResponse = reply
+                applyParse(reply, allDecks: allDecks)
+            case .failure(let e):
+                error = AIErrorPresenter.message(for: e)
             }
         } catch {
             self.error = AIErrorPresenter.message(for: .underlying("\(error)"))
@@ -251,13 +279,58 @@ public final class AIChatViewModel: ObservableObject {
         isLoading = false
     }
 
-    private func parseGenerationProposals(_ reply: String, allDecks: [DeckNameId]) async throws {
-        guard let raw = AIResponseParser.parseGeneratedCards(reply) else {
-            error = "Could not parse Claude response as card list."; return
+    /// Re-parse the LAST raw response locally — no API call, no cost (Issue 5).
+    public func tryParseAgain() {
+        guard let reply = lastRawResponse else { return }
+        applyParse(reply, allDecks: lastAllDecks)
+    }
+
+    /// Ask Claude ONCE to repair its previous response into valid JSON. This is a
+    /// paid API call (recorded in spend); allowed at most once per failure.
+    public func repairResponse() async {
+        guard !repairAttempted, let apiKey = settings.apiKey, let raw = lastRawResponse else { return }
+        repairAttempted = true
+        isLoading = true; error = nil
+        let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
+        let result = await client.chat(
+            systemPrompt: Prompts.repairSystemPrompt(),
+            history: [ChatTurn(role: AIChatMessage.roleUser, content: Prompts.repairUserMessage(brokenResponse: raw))],
+            dynamicSystemSuffix: "",
+            onTokensUsed: { [weak self] usage in
+                Task { @MainActor in self?.recordSpend(AIPricing.costSonnet(input: usage.inputTokens, output: usage.outputTokens)) }
+            })
+        switch result {
+        case .success(let reply): lastRawResponse = reply; applyParse(reply, allDecks: lastAllDecks)
+        case .failure(let e): error = AIErrorPresenter.message(for: e)
         }
-        generationProposals = raw.map { card in
-            let deckId = resolveDeckId(card.deckName, in: allDecks)
-            return CardProposal(front: card.front, back: card.back, deckName: card.deckName, deckId: deckId)
+        isLoading = false
+    }
+
+    /// Regenerate from the preserved prompt + attachments (a fresh paid call).
+    public func regenerate() async {
+        guard let prompt = lastPrompt else { return }
+        await generateCards(prompt, attachments: lastAttachments)
+    }
+
+    private func applyParse(_ reply: String, allDecks: [DeckNameId]) {
+        guard let outcome = AIResponseParser.parseGeneratedCards(reply) else {
+            parseFailed = true
+            // Sanitized diagnostics only (never the card content).
+            AIDiagnostics.log(stage: "parse-failed", model: ClaudeAPIClient.defaultCreatorModel,
+                              responseLength: reply.count, recovered: 0)
+            error = "Could not parse Claude's response as a card list. Your prompt and attachment are kept — try parsing again, ask Claude to repair it, or regenerate."
+            return
+        }
+        parseFailed = false
+        skippedCards = outcome.skipped
+        generationProposals = outcome.cards.map { card in
+            CardProposal(front: card.front, back: card.back, deckName: card.deckName,
+                         deckId: resolveDeckId(card.deckName, in: allDecks))
+        }
+        AIDiagnostics.log(stage: outcome.stage, model: ClaudeAPIClient.defaultCreatorModel,
+                          responseLength: reply.count, recovered: outcome.cards.count)
+        if !outcome.skipped.isEmpty {
+            error = "Added \(outcome.cards.count) card(s); \(outcome.skipped.count) could not be read: " + outcome.skipped.joined(separator: "; ")
         }
     }
 
