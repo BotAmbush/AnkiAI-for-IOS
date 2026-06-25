@@ -397,6 +397,6 @@ Device feedback fixes:
 - [ ] Browser bulk bar gains a "Move" deck menu (loops the integration-tested
   moveCard op across selected cards). Swift-only.
 
-### M2.40 — Note editor: move card to deck (IN PROGRESS)
+### M2.40 — Note editor: move card to deck (CI GREEN, run 28152051839)
 - [ ] NoteEditorView gains a Deck picker (current deck from cardInfo, all decks);
   on save, moves the card if changed (moveCard). Swift-only.
