@@ -412,3 +412,8 @@ Device feedback fixes:
   answered now is within today (rated:1). Cancellation: a cancelled/CancellationError
   AI request returns a graceful failure (no crash). Closes the remaining
   testing-requirements gaps.
+
+### M2.43 — Media path-traversal hardening (CLAUDE.md security) (IN PROGRESS)
+- [ ] AppResSchemeHandler.mediaFileURL(in:requestURL:): pure, traversal-guarded
+  resolution (last path component only; reject ../ , embedded slashes, empty/dot;
+  verify the resolved file sits directly under the media folder). Unit-tested.

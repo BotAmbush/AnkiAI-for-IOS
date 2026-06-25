@@ -19,13 +19,12 @@ final class AppResSchemeHandler: NSObject, WKURLSchemeHandler {
             task.didFailWithError(URLError(.badURL)); return
         }
         if url.host == "media", let dir = mediaDirectory {
-            let name = url.lastPathComponent.removingPercentEncoding ?? url.lastPathComponent
-            let fileURL = dir.appendingPathComponent(name)
-            if let data = try? Data(contentsOf: fileURL) {
-                respond(task, url: url, data: data, mime: Self.mime(forExtension: fileURL.pathExtension))
-                return
+            guard let fileURL = Self.mediaFileURL(in: dir, requestURL: url),
+                  let data = try? Data(contentsOf: fileURL) else {
+                task.didFailWithError(URLError(.fileDoesNotExist)); return
             }
-            task.didFailWithError(URLError(.fileDoesNotExist)); return
+            respond(task, url: url, data: data, mime: Self.mime(forExtension: fileURL.pathExtension))
+            return
         }
         if let data = Self.mathjaxData {
             respond(task, url: url, data: data, mime: "application/javascript")
@@ -43,6 +42,26 @@ final class AppResSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+
+    /// Resolve an `appres://media/<name>` request to a file STRICTLY inside `dir`.
+    /// Guards against path traversal: the request's last path component is taken
+    /// (so embedded `/` and `..` segments are dropped) and the resolved path is
+    /// verified to remain within the media folder. Returns nil if it would escape
+    /// or the name is empty. Pure + testable.
+    static func mediaFileURL(in dir: URL, requestURL: URL) -> URL? {
+        let raw = requestURL.lastPathComponent
+        let name = raw.removingPercentEncoding ?? raw
+        // Reject empties and anything that still tries to traverse.
+        guard !name.isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains("\\") else { return nil }
+        let base = dir.standardizedFileURL
+        let candidate = base.appendingPathComponent(name).standardizedFileURL
+        // Final containment check: the candidate must sit directly under base.
+        guard candidate.deletingLastPathComponent().standardizedFileURL.path == base.path else {
+            return nil
+        }
+        return candidate
+    }
 
     static func mime(forExtension ext: String) -> String {
         switch ext.lowercased() {
