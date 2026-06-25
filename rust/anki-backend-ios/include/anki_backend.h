@@ -62,6 +62,9 @@ int32_t anki_backend_undo(AnkiHandle *handle);
 /* Move a card to another deck. */
 int32_t anki_backend_set_card_deck(AnkiHandle *handle, int64_t card_id, int64_t deck_id);
 
+/* Statistics graphs (reviews / future_due / added) for `search` over `days`, JSON. */
+int32_t anki_backend_graphs(AnkiHandle *handle, const char *search, uint32_t days, char **out);
+
 /* Set the deck whose scheduler queue is studied. */
 int32_t anki_backend_set_current_deck(AnkiHandle *handle, int64_t deck_id);
 

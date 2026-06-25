@@ -115,6 +115,27 @@ public struct DueQueueState: Equatable, Sendable {
     }
 }
 
+/// A single (dayOffset, count) point in a statistics graph (M2.33).
+public struct GraphPoint: Equatable, Sendable, Identifiable {
+    public let day: Int
+    public let count: Int
+    public var id: Int { day }
+    public init(day: Int, count: Int) { self.day = day; self.count = count }
+}
+
+/// Backend statistics graph series. `reviews`/`added` use negative day offsets
+/// (days ago); `futureDue` uses 0,1,2… (days ahead).
+public struct StatsGraphs: Equatable, Sendable {
+    public let reviews: [GraphPoint]
+    public let futureDue: [GraphPoint]
+    public let added: [GraphPoint]
+    public init(reviews: [GraphPoint], futureDue: [GraphPoint], added: [GraphPoint]) {
+        self.reviews = reviews
+        self.futureDue = futureDue
+        self.added = added
+    }
+}
+
 /// A card rendered by the backend (templates + CSS), ready for the WebView.
 public struct RenderedCard: Equatable, Sendable {
     public let questionHTML: String
@@ -141,6 +162,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func nextDueCard() async throws -> DueQueueState
     /// Card ids matching an arbitrary Anki search string (M2.7 card browser).
     func searchCardIds(query: String) async throws -> [Int64]
+    /// Statistics graph series (reviews/future-due/added) for the collection (M2.33).
+    func statsGraphs(search: String, days: Int) async throws -> StatsGraphs
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).
     func renderCard(cardId: Int64) async throws -> RenderedCard
     /// Scheduling info (due/interval/reviews/…) for a card (M2.12).

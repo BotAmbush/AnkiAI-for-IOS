@@ -1,13 +1,15 @@
 import SwiftUI
+import Charts
 
-/// AI Insights dashboard. Mirrors `AiInsightsDashboardFragment` — surfaces
-/// study-pattern tips from `AITipEngine`. Live stats come from the revlog
-/// analyzer once the backend is connected (milestone 2); milestone 1 shows the
-/// engine working against representative sample stats.
+/// AI Insights + statistics dashboard. Surfaces live collection counts, AI study
+/// tips from `AITipEngine`, and backend statistics graphs (reviews / forecast).
 struct InsightsView: View {
     @EnvironmentObject private var env: AppEnvironment
     @State private var tips: [AITip] = []
     @State private var stats: CollectionStats?
+    @State private var graphs: StatsGraphs?
+
+    private static let window = 30
 
     var body: some View {
         NavigationStack {
@@ -22,6 +24,14 @@ struct InsightsView: View {
                         statRow("Suspended", stats.suspended)
                     } else {
                         ProgressView()
+                    }
+                }
+                if let graphs {
+                    Section("Reviews (last \(Self.window) days)") {
+                        barChart(graphs.reviews.filter { $0.day >= -Self.window }, color: .green)
+                    }
+                    Section("Due forecast (next \(Self.window) days)") {
+                        barChart(graphs.futureDue.filter { $0.day >= 0 && $0.day <= Self.window }, color: .blue)
                     }
                 }
                 Section {
@@ -61,6 +71,20 @@ struct InsightsView: View {
             matureCards: s?.mature ?? 0, totalCards: s?.total ?? 0,
             worstDeck: nil, deckRetentions: [], avgSecPerCard: 0)
         tips = AITipEngine.generateTips(real, includeStreak: false)
+        graphs = try? await env.gateway.statsGraphs(search: "", days: Self.window + 1)
+    }
+
+    @ViewBuilder private func barChart(_ points: [GraphPoint], color: Color) -> some View {
+        if points.contains(where: { $0.count > 0 }) {
+            Chart(points) { p in
+                BarMark(x: .value("Day", p.day), y: .value("Cards", p.count))
+                    .foregroundStyle(color)
+            }
+            .frame(height: 140)
+            .padding(.vertical, 4)
+        } else {
+            Text("No data yet.").font(.caption).foregroundColor(.secondary)
+        }
     }
 
     private func statRow(_ label: String, _ value: Int, _ color: Color = .primary) -> some View {

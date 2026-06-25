@@ -226,6 +226,26 @@ final class AnkiCollection {
         guard anki_backend_set_current_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func statsGraphs(search: String, days: Int) throws -> StatsGraphs {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = search.withCString { anki_backend_graphs(handle, $0, UInt32(max(1, days)), &out) }
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.answer(Self.lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        let data = Data(String(cString: cstr).utf8)
+        struct DTO: Decodable { let reviews: [[Int]]; let future_due: [[Int]]; let added: [[Int]] }
+        do {
+            let d = try JSONDecoder().decode(DTO.self, from: data)
+            func points(_ pairs: [[Int]]) -> [GraphPoint] {
+                pairs.compactMap { $0.count == 2 ? GraphPoint(day: $0[0], count: $0[1]) : nil }
+            }
+            return StatsGraphs(reviews: points(d.reviews),
+                               futureDue: points(d.future_due),
+                               added: points(d.added))
+        } catch {
+            throw AnkiBackendError.decode("\(error)")
+        }
+    }
+
     func nextDueCard() throws -> DueQueueState {
         var cid: Int64 = -1
         var n: Int32 = 0, l: Int32 = 0, r: Int32 = 0

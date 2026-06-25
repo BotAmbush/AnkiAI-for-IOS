@@ -357,3 +357,9 @@ Device feedback fixes:
   phone and AnkiWeb differ, instead of unconditionally downloading (#1).
 - Integration tests: queue returns a due card; suspended card excluded; an answered
   (Easy) card leaves today's queue.
+
+### M2.33 — Statistics graphs (Swift Charts) (IN PROGRESS)
+- [ ] Bridge anki_backend_graphs (StatsService.graphs → reviews/future_due/added
+  JSON). Gateway statsGraphs; StatsGraphs/GraphPoint models. InsightsView now shows
+  Reviews (last 30d) + Due forecast (next 30d) bar charts (Swift Charts). Read-only
+  (safe for the live collection). Integration-tested.

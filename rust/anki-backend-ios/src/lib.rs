@@ -31,7 +31,9 @@ use anki::search::SortMode;
 use anki::services::DecksService;
 use anki::services::NotesService;
 use anki::services::SchedulerService;
+use anki::services::StatsService;
 use anki_proto::scheduler::GetQueuedCardsRequest;
+use anki_proto::stats::GraphsRequest;
 use anki_proto::decks::deck::filtered::SearchTerm as FilteredSearchTerm;
 use anki_proto::decks::DeckId as PbDeckId;
 use anki_proto::decks::DeckTreeNode;
@@ -521,6 +523,73 @@ pub extern "C" fn anki_backend_answer_card(
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("answer_card failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Backend statistics graphs for `search` over the last `days` days, as compact
+/// JSON: { "reviews":[[dayOffset,count],…], "future_due":[[dayOffset,count],…],
+/// "added":[[dayOffset,count],…] } (day offsets sorted ascending; reviews/added use
+/// negative offsets = days ago, future_due uses 0,1,2… = days ahead). Read-only.
+/// Writes the JSON to `out` (free with anki_backend_string_free). Returns 0 on ok.
+#[no_mangle]
+pub extern "C" fn anki_backend_graphs(
+    handle: *mut Handle,
+    search: *const c_char,
+    days: u32,
+    out: *mut *mut c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let search = unsafe { cstr_to_string(search) }.unwrap_or_default();
+    if out.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let req = GraphsRequest { search, days };
+    match StatsService::graphs(&mut handle.col, req) {
+        Ok(g) => {
+            fn sorted_pairs(map: std::collections::HashMap<i32, u32>) -> Vec<(i32, u32)> {
+                let mut v: Vec<_> = map.into_iter().collect();
+                v.sort_by_key(|(k, _)| *k);
+                v
+            }
+            let future_due = sorted_pairs(g.future_due.map(|f| f.future_due).unwrap_or_default());
+            let added = sorted_pairs(g.added.map(|a| a.added).unwrap_or_default());
+            let reviews: Vec<(i32, u32)> = {
+                let count = g.reviews.map(|r| r.count).unwrap_or_default();
+                let mut v: Vec<(i32, u32)> = count
+                    .into_iter()
+                    .map(|(day, r)| (day, r.learn + r.relearn + r.young + r.mature + r.filtered))
+                    .collect();
+                v.sort_by_key(|(k, _)| *k);
+                v
+            };
+            let json = serde_json::json!({
+                "reviews": reviews,
+                "future_due": future_due,
+                "added": added,
+            })
+            .to_string();
+            match CString::new(json) {
+                Ok(c) => {
+                    unsafe { *out = c.into_raw() };
+                    0
+                }
+                Err(_) => {
+                    set_last_error("graphs json contained NUL".into());
+                    3
+                }
+            }
+        }
+        Err(e) => {
+            set_last_error(format!("graphs failed: {e}"));
             2
         }
     }
