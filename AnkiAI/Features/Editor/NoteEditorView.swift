@@ -14,6 +14,9 @@ struct NoteEditorView: View {
     @State private var fieldNames: [String] = []
     @State private var fields: [String] = []
     @State private var tagsText = ""
+    @State private var decks: [DeckNameId] = []
+    @State private var currentDeckId: Int64 = 0
+    @State private var selectedDeckId: Int64 = 0
     @State private var loaded = false
     @State private var saving = false
     @State private var error: String?
@@ -41,6 +44,13 @@ struct NoteEditorView: View {
                             TextField("space-separated tags", text: $tagsText)
                                 .autocorrectionDisabled().textInputAutocapitalization(.never)
                         } header: { Text("Tags") }
+                        if !decks.isEmpty {
+                            Section("Deck") {
+                                Picker("Deck", selection: $selectedDeckId) {
+                                    ForEach(decks) { Text($0.name).tag($0.id) }
+                                }
+                            }
+                        }
                     }
                     .scrollDismissesKeyboard(.interactively)
                 } else {
@@ -67,6 +77,12 @@ struct NoteEditorView: View {
             fieldNames = note.fieldNames
             fields = note.fields
             tagsText = note.tags.joined(separator: " ")
+            decks = (try? await env.gateway.allDecks()) ?? []
+            if let info = try? await env.gateway.cardInfo(cardId: cardId),
+               let deck = decks.first(where: { $0.name == info.deck }) {
+                currentDeckId = deck.id
+                selectedDeckId = deck.id
+            }
             loaded = true
         } catch {
             self.error = "\(error)"
@@ -78,6 +94,9 @@ struct NoteEditorView: View {
         do {
             let tags = tagsText.split(whereSeparator: { $0 == " " || $0 == "\n" }).map(String.init)
             try await env.gateway.updateNote(NoteData(id: noteId, notetypeId: 0, fields: fields, tags: tags))
+            if selectedDeckId != 0, selectedDeckId != currentDeckId {
+                try await env.gateway.moveCard(cardId: cardId, toDeckId: selectedDeckId)
+            }
             onSaved?()
             dismiss()
         } catch {
