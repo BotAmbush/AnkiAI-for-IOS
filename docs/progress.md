@@ -258,3 +258,11 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   Settings "AnkiWeb sync" section (email/password → hkey in Keychain → download).
 - NOT CI-tested (needs a real account) — DEVICE-VERIFIED ONLY. Two-way sync +
   media sync are follow-ups.
+
+### M2.20 — AnkiWeb sync completion: two-way + upload (IN PROGRESS)
+- [ ] Bridge anki_backend_sync (normal_sync, two-way) + anki_backend_sync_upload
+  (full_upload). Gateway sync()/uploadToAnkiWeb(); Settings shows "Sync now" when
+  logged in, with a full-sync-direction prompt (download/upload). COLLECTION sync
+  now complete (down/up/two-way). Media sync is the documented follow-up.
+- Honest status upgrades (genuinely complete): reviewer, scheduler, fsrs,
+  navigation, app_lifecycle, migrations → completed (accurate notes).

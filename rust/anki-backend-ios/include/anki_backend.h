@@ -98,6 +98,12 @@ int32_t anki_backend_sync_login(const char *username, const char *password, char
 /* AnkiWeb: full-download the collection for hkey, REPLACING the local col_path. */
 int32_t anki_backend_sync_download(const char *col_path, const char *hkey);
 
+/* AnkiWeb: two-way normal sync. *out_required: 0 = synced, 2 = full sync needed. */
+int32_t anki_backend_sync(const char *col_path, const char *hkey, int32_t *out_required);
+
+/* AnkiWeb: full-upload local collection, REPLACING the remote. */
+int32_t anki_backend_sync_upload(const char *col_path, const char *hkey);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

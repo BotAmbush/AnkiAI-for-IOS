@@ -32,6 +32,7 @@ use anki_proto::decks::DeckTreeNode;
 use anki_proto::decks::RenameDeckRequest;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
 use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
+use anki::sync::collection::normal::SyncActionRequired;
 use anki::sync::login::{sync_login, SyncAuth};
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
@@ -1105,6 +1106,119 @@ pub extern "C" fn anki_backend_sync_download(
         Ok(()) => 0,
         Err(e) => {
             set_last_error(format!("sync_download failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Two-way normal sync of the collection at `col_path` for `hkey`. Writes the
+/// outcome to `out_required`: 0 = synced/no-changes, 2 = a full sync is required
+/// (the caller must choose download or upload). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_sync(
+    col_path: *const c_char,
+    hkey: *const c_char,
+    out_required: *mut i32,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let hkey = match unsafe { cstr_to_string(hkey) } {
+        Some(h) => h,
+        None => {
+            set_last_error("null hkey".into());
+            return 1;
+        }
+    };
+    if out_required.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let mut col = match CollectionBuilder::new(PathBuf::from(&col_path)).build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    let auth = SyncAuth {
+        hkey,
+        endpoint: None,
+        io_timeout_secs: None,
+    };
+    let rt = match sync_runtime() {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("runtime: {e}"));
+            return 2;
+        }
+    };
+    let result = rt.block_on(col.normal_sync(auth, sync_client()));
+    let _ = col.close(None);
+    match result {
+        Ok(out) => {
+            let required = match out.required {
+                SyncActionRequired::FullSyncRequired { .. } => 2,
+                _ => 0,
+            };
+            unsafe { *out_required = required };
+            0
+        }
+        Err(e) => {
+            set_last_error(format!("sync failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Full-upload the local collection at `col_path` to AnkiWeb for `hkey`,
+/// REPLACING the remote collection. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_sync_upload(
+    col_path: *const c_char,
+    hkey: *const c_char,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let hkey = match unsafe { cstr_to_string(hkey) } {
+        Some(h) => h,
+        None => {
+            set_last_error("null hkey".into());
+            return 1;
+        }
+    };
+    let col = match CollectionBuilder::new(PathBuf::from(&col_path)).build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    let auth = SyncAuth {
+        hkey,
+        endpoint: None,
+        io_timeout_secs: None,
+    };
+    let rt = match sync_runtime() {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("runtime: {e}"));
+            return 2;
+        }
+    };
+    match rt.block_on(col.full_upload(auth, sync_client())) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("sync_upload failed: {e:?}"));
             2
         }
     }

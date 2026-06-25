@@ -303,6 +303,25 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
     }
 
+    /// AnkiWeb: two-way normal sync. Returns true if a full sync is required
+    /// (caller must then download or upload). No handle may be open on `path`.
+    static func sync(path: String, hkey: String) throws -> Bool {
+        var required: Int32 = 0
+        let rc = path.withCString { p in
+            hkey.withCString { h in anki_backend_sync(p, h, &required) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
+        return required == 2
+    }
+
+    /// AnkiWeb: full-upload the local collection, REPLACING the remote.
+    static func syncUpload(path: String, hkey: String) throws {
+        let rc = path.withCString { p in
+            hkey.withCString { h in anki_backend_sync_upload(p, h) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
+    }
+
     /// Test/seed support: create a deterministic sample collection at `path`
     /// (real backend writes — not hardcoded data). Used by integration tests and
     /// for first-launch seeding of the app's collection.

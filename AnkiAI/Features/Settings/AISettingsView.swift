@@ -14,6 +14,7 @@ struct AISettingsView: View {
     @State private var ankiPass = ""
     @State private var syncing = false
     @State private var syncStatus: String?
+    @State private var fullSyncNeeded = false
 
     var body: some View {
         NavigationStack {
@@ -56,24 +57,34 @@ struct AISettingsView: View {
                 }
 
                 Section {
-                    TextField("AnkiWeb email", text: $ankiUser)
-                        .textContentType(.username).keyboardType(.emailAddress)
-                        .autocorrectionDisabled().textInputAutocapitalization(.never)
-                    SecureField("AnkiWeb password", text: $ankiPass)
-                    Button {
-                        Task { await syncDownload() }
-                    } label: {
-                        HStack {
-                            Text("Log in & download collection")
-                            if syncing { Spacer(); ProgressView() }
+                    if let hkey = env.settings.ankiWebHKey {
+                        Label(env.settings.ankiWebUsername ?? "Logged in", systemImage: "person.crop.circle.badge.checkmark")
+                            .foregroundColor(.green)
+                        Button { Task { await syncNow(hkey) } } label: {
+                            HStack { Text("Sync now"); if syncing { Spacer(); ProgressView() } }
+                        }.disabled(syncing)
+                        if fullSyncNeeded {
+                            Text("A one-way full sync is required. Choose a direction:").font(.caption).foregroundColor(.orange)
+                            Button("⬇︎ Download from AnkiWeb (replace local)") { Task { await runFull(hkey, upload: false) } }.disabled(syncing)
+                            Button("⬆︎ Upload to AnkiWeb (replace remote)", role: .destructive) { Task { await runFull(hkey, upload: true) } }.disabled(syncing)
                         }
+                        Button("Log out", role: .destructive) {
+                            env.settings.ankiWebHKey = nil; syncStatus = nil; fullSyncNeeded = false
+                        }
+                    } else {
+                        TextField("AnkiWeb email", text: $ankiUser)
+                            .textContentType(.username).keyboardType(.emailAddress)
+                            .autocorrectionDisabled().textInputAutocapitalization(.never)
+                        SecureField("AnkiWeb password", text: $ankiPass)
+                        Button { Task { await loginAndDownload() } } label: {
+                            HStack { Text("Log in & download collection"); if syncing { Spacer(); ProgressView() } }
+                        }.disabled(syncing || ankiUser.isEmpty || ankiPass.isEmpty)
                     }
-                    .disabled(syncing || ankiUser.isEmpty || ankiPass.isEmpty)
                     if let syncStatus { Text(syncStatus).font(.caption) }
                 } header: {
                     Text("AnkiWeb sync")
                 } footer: {
-                    Text("Downloads your AnkiWeb collection and REPLACES the local one. Your password is sent only to AnkiWeb; only the session key is stored (Keychain). Card import from files is not finished yet — use this to load your real cards.")
+                    Text("\"Sync now\" is a two-way sync. The first time, download REPLACES the local sample with your collection. Your password is sent only to AnkiWeb; only the session key is stored (Keychain). Media (images) sync is a follow-up.")
                 }
 
                 Section {
@@ -109,7 +120,7 @@ struct AISettingsView: View {
         }
     }
 
-    private func syncDownload() async {
+    private func loginAndDownload() async {
         syncing = true
         syncStatus = "Logging in to AnkiWeb…"
         do {
@@ -120,6 +131,35 @@ struct AISettingsView: View {
             syncStatus = "Downloading collection…"
             try await env.gateway.downloadFromAnkiWeb(hkey: hkey)
             syncStatus = "✓ Collection downloaded. Open the Decks tab."
+        } catch {
+            syncStatus = "✗ \(error)"
+        }
+        syncing = false
+    }
+
+    private func syncNow(_ hkey: String) async {
+        syncing = true; syncStatus = "Syncing…"; fullSyncNeeded = false
+        do {
+            let needsFull = try await env.gateway.sync(hkey: hkey)
+            if needsFull {
+                fullSyncNeeded = true
+                syncStatus = "Full sync required — choose a direction below."
+            } else {
+                syncStatus = "✓ Synced."
+            }
+        } catch {
+            syncStatus = "✗ \(error)"
+        }
+        syncing = false
+    }
+
+    private func runFull(_ hkey: String, upload: Bool) async {
+        syncing = true; syncStatus = upload ? "Uploading…" : "Downloading…"
+        do {
+            if upload { try await env.gateway.uploadToAnkiWeb(hkey: hkey) }
+            else { try await env.gateway.downloadFromAnkiWeb(hkey: hkey) }
+            fullSyncNeeded = false
+            syncStatus = upload ? "✓ Uploaded to AnkiWeb." : "✓ Downloaded. Open the Decks tab."
         } catch {
             syncStatus = "✗ \(error)"
         }

@@ -160,6 +160,9 @@ public protocol CollectionGateway: AnyObject, Sendable {
     /// AnkiWeb: log in (returns hkey); full-download the collection (M2.19).
     func syncLogin(username: String, password: String) async throws -> String
     func downloadFromAnkiWeb(hkey: String) async throws
+    /// Two-way sync (returns true if a full sync is required); full-upload (M2.20).
+    func sync(hkey: String) async throws -> Bool
+    func uploadToAnkiWeb(hkey: String) async throws
     func basicNotetypeId() async throws -> Int64
     /// Look up a notetype id by name (e.g. "Basic", "Cloze") (M2.16).
     func notetypeId(named name: String) async throws -> Int64

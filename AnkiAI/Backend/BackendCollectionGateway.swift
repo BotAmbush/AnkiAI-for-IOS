@@ -135,4 +135,18 @@ public actor BackendCollectionGateway: CollectionGateway {
         try AnkiCollection.syncDownload(path: path, hkey: hkey)
         _ = try opened()  // reopen the replaced collection
     }
+
+    /// Two-way normal sync. Returns true if a full sync is required.
+    public func sync(hkey: String) async throws -> Bool {
+        collection = nil
+        let fullRequired = try AnkiCollection.sync(path: path, hkey: hkey)
+        _ = try opened()
+        return fullRequired
+    }
+
+    public func uploadToAnkiWeb(hkey: String) async throws {
+        collection = nil
+        try AnkiCollection.syncUpload(path: path, hkey: hkey)
+        _ = try opened()
+    }
 }

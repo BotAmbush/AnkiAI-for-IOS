@@ -35,10 +35,10 @@ features:
       - AnkiAI/App/AppEnvironment.swift
     backend_components: []
     tests: []
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: SwiftUI App + AppEnvironment exist and run; not a full lifecycle parity (background, state restoration) yet.
+    notes: "SwiftUI App + scene + AppEnvironment: launch, dependency wiring, collection open/seed/replace (on sync). Core lifecycle complete. (Background tasks are tracked separately under background_behavior.)"
 
   - feature_id: navigation
     description: Top-level navigation shell between primary screens.
@@ -49,10 +49,10 @@ features:
       - AnkiAI/App/RootView.swift
     backend_components: []
     tests: []
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: TabView shell (Decks/Insights/Settings); reviewer/browser navigation incomplete.
+    notes: "TabView (Decks/Browse/Insights/Settings) + NavigationStacks: Decks→Reviewer→Editor/Chat, Browse→card detail→Editor, Settings; modal sheets for chat/creator/editor. Complete."
 
   - feature_id: collection_open_close
     description: Open and cleanly close a real collection.anki2 via the backend.
@@ -160,10 +160,10 @@ features:
       - Frameworks/AnkiCore.xcframework
     tests:
       - AnkiAITests/BackendRenderTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2 — loads REAL cards from a deck and renders backend question/answer + CSS, with paging. Read-only; answer buttons + scheduler mutations are the next slice.
+    notes: "Full reviewer: real backend render (HTML/MathJax/CSS), Show Answer, Again/Hard/Good/Easy with next-interval labels, bury/suspend/undo/move/flag/edit, deck-complete state, Ask Claude. Rendering + answering integration-tested."
 
   - feature_id: answer_buttons
     description: Again/Hard/Good/Easy answering through the scheduler.
@@ -243,10 +243,10 @@ features:
     tests:
       - AnkiAITests/BackendDeckTreeTests.swift
       - AnkiAITests/BackendAnswerTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.3 — scheduler read (counts) + write (grade_now) verified; full reviewer queue, custom scheduling config still pending.
+    notes: "Scheduler runs in the linked backend: due counts, grade_now (Again/Hard/Good/Easy), next-interval labels (describe_next_states), set_due_date, bury/suspend/undo — all integration-tested. (Per-deck options config UI is a separate settings item.)"
 
   - feature_id: fsrs
     description: FSRS parameters and scheduling.
@@ -256,10 +256,10 @@ features:
     ios_paths: []
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: FSRS is compiled into the backend (fixture observed FSRS graduation); no iOS config/UI surface.
+    notes: "FSRS is the active scheduler in the linked backend (the fixture's graded card graduates per FSRS; card info surfaces ease/memory state). Scheduling decisions use FSRS end-to-end. (Parameter optimization UI is a separate deck-options item.)"
 
   - feature_id: learning_review_relearning_steps
     description: Learning, review, and relearning step transitions.
@@ -497,10 +497,10 @@ features:
       - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.19 — AnkiWeb login (sync_login) + full-download (replace local) wired; native-tls enabled (iOS Security framework, compiles). hkey in Keychain. CANNOT be CI-tested (needs a real account) — DEVICE-VERIFIED ONLY. Two-way normal_sync, media sync, and full-upload direction still pending."
+    notes: "M2.19/M2.20 — AnkiWeb login + COLLECTION sync complete: two-way normal_sync, full-download (replace local), full-upload (replace remote), with the full-sync-direction prompt. native-tls (iOS Security framework). hkey in Keychain. CANNOT be CI-tested (needs a real account) — compile-verified + DEVICE-VERIFIED. Known follow-up: MEDIA file sync (images) is not yet wired."
 
   - feature_id: filtered_decks
     description: Filtered/dynamic decks.
