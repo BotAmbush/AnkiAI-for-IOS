@@ -593,12 +593,14 @@ features:
       - AnkiDroid/src/main/res/values-iw/ai_strings.xml
       - AnkiDroid/src/main/res/values/ai_strings.xml
     ios_paths:
-      - AnkiAI/AI/Insights/AITipEngine.swift
+      - AnkiAI/Localization/Localization.swift
     backend_components: []
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/LocalizationTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: "M2.30 — locale-driven localization (Loc.t / String.loc): English keys with a Hebrew catalog ported from the fork's values-iw/ai_strings.xml; SwiftUI applies RTL automatically for Hebrew devices. The most visible UI (tabs, reviewer controls, answer buttons, deck-list/chat/settings/forced-study labels) is wired; the catalog is iterative. Unit-tested (he/iw/en/fallback)."
     notes: English literals only; no .strings localization yet.
 
   - feature_id: accessibility

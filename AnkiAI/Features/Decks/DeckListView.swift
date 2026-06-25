@@ -51,12 +51,12 @@ struct DeckListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { showCustomStudy = true } label: {
-                        Label("Custom Study", systemImage: "slider.horizontal.3")
+                        Label("Custom Study".loc, systemImage: "slider.horizontal.3")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showCreator = true } label: {
-                        Label("Create Cards with AI", systemImage: "sparkles")
+                        Label("Create Cards with AI".loc, systemImage: "sparkles")
                     }
                 }
             }

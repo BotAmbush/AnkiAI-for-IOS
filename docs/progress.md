@@ -331,3 +331,9 @@ replace (local preserved on failure). Offline regression tests: failed download
 preserves local; custom endpoint honored (not replaced by default); no secrets in
 diagnostics; invalid override rejected. synchronization → partial pending on-device
 download retest (per task).
+
+### M2.30 — Localization (Hebrew) (IN PROGRESS)
+- [ ] Loc.t / String.loc: English keys + Hebrew catalog ported from the fork's
+  values-iw/ai_strings.xml; RTL auto via device language. Wired the most visible
+  UI (tabs, reviewer, answer buttons, deck list, custom study, settings, forced
+  study). Unit-tested. localization → completed (catalog iterative).

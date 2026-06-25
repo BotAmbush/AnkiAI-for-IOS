@@ -33,7 +33,7 @@ struct ReviewerView: View {
                 }
                 Spacer()
             } else if cardIds.isEmpty {
-                Spacer(); Text("No cards in this deck.").foregroundColor(.secondary); Spacer()
+                Spacer(); Text("No cards in this deck.".loc).foregroundColor(.secondary); Spacer()
             } else if finished {
                 completionView
             } else if let rendered {
@@ -50,9 +50,9 @@ struct ReviewerView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button { showEditor = true }
-                        label: { Label("Edit card", systemImage: "pencil") }
+                        label: { Label("Edit card".loc, systemImage: "pencil") }
                     Button { Task { await mutateCurrent { try await env.gateway.buryCard(cardId: $0) }; await next() } }
-                        label: { Label("Bury card", systemImage: "arrow.down.to.line") }
+                        label: { Label("Bury card".loc, systemImage: "arrow.down.to.line") }
                     Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await next() } }
                         label: { Label("Suspend card", systemImage: "pause.circle") }
                     Button { Task { await moveCurrentToDefault(); await next() } }
@@ -108,10 +108,10 @@ struct ReviewerView: View {
             HStack {
                 Text("\(index + 1) / \(cardIds.count)").font(.caption).foregroundColor(.secondary)
                 Spacer()
-                Button("Ask Claude") { showChat = true }.buttonStyle(.bordered).font(.caption)
+                Button("Ask Claude".loc) { showChat = true }.buttonStyle(.bordered).font(.caption)
             }
             if !showAnswer {
-                Button("Show Answer") { showAnswer = true }
+                Button("Show Answer".loc) { showAnswer = true }
                     .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
             } else {
                 // Real scheduler grading; each button shows the next interval.
@@ -121,7 +121,7 @@ struct ReviewerView: View {
                             Task { await answer(rating) }
                         } label: {
                             VStack(spacing: 2) {
-                                Text(rating.label)
+                                Text(rating.label.loc)
                                 if i < labels.count, !labels[i].isEmpty {
                                     Text(labels[i]).font(.caption2).foregroundColor(.secondary)
                                 }

@@ -10,13 +10,13 @@ struct RootView: View {
     var body: some View {
         TabView {
             DeckListView()
-                .tabItem { Label("Decks", systemImage: "rectangle.stack") }
+                .tabItem { Label("Decks".loc, systemImage: "rectangle.stack") }
             CardBrowserView()
-                .tabItem { Label("Browse", systemImage: "magnifyingglass") }
+                .tabItem { Label("Browse".loc, systemImage: "magnifyingglass") }
             InsightsView()
-                .tabItem { Label("Insights", systemImage: "lightbulb") }
+                .tabItem { Label("Insights".loc, systemImage: "lightbulb") }
             AISettingsView()
-                .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tabItem { Label("Settings".loc, systemImage: "gearshape") }
         }
         .fullScreenCover(isPresented: Binding(get: { forcedStudy.sessionDue }, set: { _ in })) {
             ForcedStudySessionView()
