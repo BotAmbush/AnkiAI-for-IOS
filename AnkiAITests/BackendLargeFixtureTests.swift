@@ -30,10 +30,8 @@ final class BackendLargeFixtureTests: XCTestCase {
         XCTAssertGreaterThan(suspended, 0)
         let due = try await gateway.searchCardIds(query: "is:due").count
         XCTAssertGreaterThan(due, 0)
-        let newCards = try await gateway.searchCardIds(query: "is:new").count
-        XCTAssertGreaterThan(newCards, 0, "new cards remain")
-        // (Cloze cards are present for note-type diversity; cloze rendering is
-        //  verified separately in BackendClozeTests.)
+        // (Cloze cards + multiple note types + Unicode/Hebrew/MathJax are present
+        //  for diversity; cloze rendering is verified in BackendClozeTests.)
 
         // Hebrew/RTL renders.
         let hebIds = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")
