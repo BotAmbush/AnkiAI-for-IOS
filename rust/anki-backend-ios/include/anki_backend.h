@@ -42,7 +42,8 @@ int32_t anki_backend_card_info(AnkiHandle *handle, int64_t card_id, char **out_j
 int32_t anki_backend_note_fields(AnkiHandle *handle, int64_t note_id, char **out_json);
 
 /* Replace a note's fields (fields_json = JSON array of strings); save (undoable). */
-int32_t anki_backend_update_note(AnkiHandle *handle, int64_t note_id, const char *fields_json);
+int32_t anki_backend_update_note(AnkiHandle *handle, int64_t note_id,
+                                 const char *fields_json, const char *tags_json);
 
 /* Answer/grade a card now via the scheduler. rating: 1=Again 2=Hard 3=Good 4=Easy. */
 int32_t anki_backend_answer_card(AnkiHandle *handle, int64_t card_id, int32_t rating);

@@ -36,8 +36,10 @@ public struct NoteData: Equatable, Sendable {
     public let id: Int64
     public let notetypeId: Int64
     public var fields: [String]
-    public init(id: Int64, notetypeId: Int64, fields: [String]) {
-        self.id = id; self.notetypeId = notetypeId; self.fields = fields
+    /// When non-nil, replaces the note's tags on update; nil keeps existing tags.
+    public var tags: [String]?
+    public init(id: Int64, notetypeId: Int64, fields: [String], tags: [String]? = nil) {
+        self.id = id; self.notetypeId = notetypeId; self.fields = fields; self.tags = tags
     }
 }
 
@@ -66,11 +68,13 @@ public struct EditableNote: Equatable, Sendable {
     public let notetypeName: String
     public let fieldNames: [String]
     public var fields: [String]
-    public init(noteId: Int64, notetypeName: String, fieldNames: [String], fields: [String]) {
+    public var tags: [String]
+    public init(noteId: Int64, notetypeName: String, fieldNames: [String], fields: [String], tags: [String] = []) {
         self.noteId = noteId
         self.notetypeName = notetypeName
         self.fieldNames = fieldNames
         self.fields = fields
+        self.tags = tags
     }
 }
 

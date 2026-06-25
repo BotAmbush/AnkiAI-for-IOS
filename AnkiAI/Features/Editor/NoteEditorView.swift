@@ -13,6 +13,7 @@ struct NoteEditorView: View {
     @State private var notetypeName = ""
     @State private var fieldNames: [String] = []
     @State private var fields: [String] = []
+    @State private var tagsText = ""
     @State private var loaded = false
     @State private var saving = false
     @State private var error: String?
@@ -36,6 +37,10 @@ struct NoteEditorView: View {
                                     .font(.system(.body, design: .monospaced))
                             }
                         }
+                        Section {
+                            TextField("space-separated tags", text: $tagsText)
+                                .autocorrectionDisabled().textInputAutocapitalization(.never)
+                        } header: { Text("Tags") }
                     }
                     .scrollDismissesKeyboard(.interactively)
                 } else {
@@ -61,6 +66,7 @@ struct NoteEditorView: View {
             notetypeName = note.notetypeName
             fieldNames = note.fieldNames
             fields = note.fields
+            tagsText = note.tags.joined(separator: " ")
             loaded = true
         } catch {
             self.error = "\(error)"
@@ -70,7 +76,8 @@ struct NoteEditorView: View {
     private func save() async {
         saving = true
         do {
-            try await env.gateway.updateNote(NoteData(id: noteId, notetypeId: 0, fields: fields))
+            let tags = tagsText.split(whereSeparator: { $0 == " " || $0 == "\n" }).map(String.init)
+            try await env.gateway.updateNote(NoteData(id: noteId, notetypeId: 0, fields: fields, tags: tags))
             onSaved?()
             dismiss()
         } catch {

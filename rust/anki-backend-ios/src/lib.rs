@@ -1269,12 +1269,14 @@ pub extern "C" fn anki_backend_note_fields(
 }
 
 /// Replace a note's fields with `fields_json` (a JSON array of strings) and save
-/// it (undoable). Returns 0 on success.
+/// it (undoable). If `tags_json` is non-null (a JSON array of strings) the note's
+/// tags are replaced too; if null the existing tags are kept. Returns 0 on success.
 #[no_mangle]
 pub extern "C" fn anki_backend_update_note(
     handle: *mut Handle,
     note_id: i64,
     fields_json: *const c_char,
+    tags_json: *const c_char,
 ) -> c_int {
     let handle = match unsafe { handle.as_mut() } {
         Some(h) => h,
@@ -1297,6 +1299,16 @@ pub extern "C" fn anki_backend_update_note(
             return 1;
         }
     };
+    let tags: Option<Vec<String>> = match unsafe { cstr_to_string(tags_json) } {
+        Some(s) => match serde_json::from_str(&s) {
+            Ok(t) => Some(t),
+            Err(e) => {
+                set_last_error(format!("invalid tags json: {e}"));
+                return 1;
+            }
+        },
+        None => None,
+    };
     let mut note = match handle.col.get_note(PbNoteId { nid: note_id }) {
         Ok(n) => n,
         Err(e) => {
@@ -1305,6 +1317,9 @@ pub extern "C" fn anki_backend_update_note(
         }
     };
     note.fields = fields;
+    if let Some(tags) = tags {
+        note.tags = tags;
+    }
     match handle.col.update_notes(UpdateNotesRequest {
         notes: vec![note],
         skip_undo_entry: false,

@@ -176,16 +176,23 @@ final class AnkiCollection {
         return NoteData(id: id, notetypeId: d.notetype_id, fields: d.fields)
     }
 
-    /// A note prepared for the manual editor: field names + values.
+    /// A note prepared for the manual editor: field names + values + tags.
     func editableNote(noteId: Int64) throws -> EditableNote {
         let d = try noteFieldsDTO(noteId: noteId)
         return EditableNote(noteId: noteId, notetypeName: d.notetype_name,
-                            fieldNames: d.field_names, fields: d.fields)
+                            fieldNames: d.field_names, fields: d.fields, tags: d.tags)
     }
 
     func updateNote(_ note: NoteData) throws {
         let fieldsJSON = String(data: try JSONEncoder().encode(note.fields), encoding: .utf8) ?? "[]"
-        let rc = fieldsJSON.withCString { anki_backend_update_note(handle, note.id, $0) }
+        let tagsJSON = note.tags.flatMap { String(data: (try? JSONEncoder().encode($0)) ?? Data(), encoding: .utf8) }
+        let rc = fieldsJSON.withCString { f -> Int32 in
+            if let tagsJSON {
+                return tagsJSON.withCString { t in anki_backend_update_note(handle, note.id, f, t) }
+            } else {
+                return anki_backend_update_note(handle, note.id, f, nil)
+            }
+        }
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
