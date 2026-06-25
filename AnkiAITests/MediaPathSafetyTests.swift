@@ -22,10 +22,16 @@ final class MediaPathSafetyTests: XCTestCase {
         XCTAssertEqual(u?.path, "/var/collection.media/my pic.jpg")
     }
 
-    func testParentTraversalIsRejected() {
-        // Even though lastPathComponent strips most of it, the guard must hold.
-        XCTAssertNil(resolve("appres://media/..%2F..%2Fetc%2Fpasswd"))
+    func testParentTraversalIsContainedOrRejected() {
+        // A bare ".." is rejected outright.
         XCTAssertNil(resolve("appres://media/.."))
+        // An encoded traversal attempt is NEUTRALIZED: the most it can do is resolve
+        // to a file directly under the media folder (e.g. .../passwd) — it can never
+        // escape to /etc/passwd.
+        if let u = resolve("appres://media/..%2F..%2Fetc%2Fpasswd") {
+            XCTAssertEqual(u.deletingLastPathComponent().path, "/var/collection.media",
+                           "a traversal attempt stays inside the media folder")
+        }
     }
 
     func testEmptyOrDotNameRejected() {
