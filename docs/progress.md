@@ -279,7 +279,7 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   attachment chip; generateCards(attachments:) sends via chatWithImages.
   Added chatWithImages to AIChatAPIClient protocol (text-only default).
 
-### M2.23 — Offline MathJax (bundled SVG build) (IN PROGRESS)
+### M2.23 — Offline MathJax (bundled SVG build) (CI GREEN ✅, run 28140271267)
 - [ ] Bundle MathJax v3 tex-mml-svg.js (self-contained SVG, 2.1MB) as an app
   resource; CardWebView serves it over an appres:// WKURLSchemeHandler (SVG
   output, fontCache global). CDN fallback only if the bundle is missing. Math now
