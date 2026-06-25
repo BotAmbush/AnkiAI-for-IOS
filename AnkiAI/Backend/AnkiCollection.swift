@@ -233,6 +233,10 @@ final class AnkiCollection {
         guard anki_backend_set_current_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func unsuspendCard(cardId: Int64) throws {
+        guard anki_backend_unsuspend_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func setDueDate(cardId: Int64, spec: String) throws {
         let rc = spec.withCString { anki_backend_set_due_date(handle, cardId, $0) }
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }

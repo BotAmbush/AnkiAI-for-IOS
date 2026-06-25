@@ -12,6 +12,8 @@ struct DeckListView: View {
     @State private var showCustomStudy = false
     @State private var renameTarget: DeckTreeEntry?
     @State private var renameText = ""
+    @State private var showNewDeck = false
+    @State private var newDeckName = ""
 
     var body: some View {
         NavigationStack {
@@ -54,6 +56,11 @@ struct DeckListView: View {
                         Label("Custom Study".loc, systemImage: "slider.horizontal.3")
                     }
                 }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button { newDeckName = ""; showNewDeck = true } label: {
+                        Label("New deck", systemImage: "folder.badge.plus")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showCreator = true } label: {
                         Label("Create Cards with AI".loc, systemImage: "sparkles")
@@ -62,6 +69,11 @@ struct DeckListView: View {
             }
             .sheet(isPresented: $showCustomStudy) {
                 CustomStudyView { Task { await load() } }
+            }
+            .alert("New deck", isPresented: $showNewDeck) {
+                TextField("Name (use :: for subdecks)", text: $newDeckName)
+                Button("Cancel", role: .cancel) {}
+                Button("Create") { Task { await createDeck() } }
             }
             .sheet(isPresented: $showCreator) {
                 NavigationStack {
@@ -92,6 +104,15 @@ struct DeckListView: View {
         guard !name.isEmpty, name != target.name else { return }
         do {
             try await env.gateway.renameDeck(deckId: target.deckId, newName: name)
+            await load()
+        } catch { loadError = "\(error)" }
+    }
+
+    private func createDeck() async {
+        let name = newDeckName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        do {
+            _ = try await env.gateway.resolveOrCreateDeck(name: name)
             await load()
         } catch { loadError = "\(error)" }
     }

@@ -63,6 +63,9 @@ int32_t anki_backend_undo(AnkiHandle *handle);
 /* Move a card to another deck. */
 int32_t anki_backend_set_card_deck(AnkiHandle *handle, int64_t card_id, int64_t deck_id);
 
+/* Unsuspend / unbury a card. */
+int32_t anki_backend_unsuspend_card(AnkiHandle *handle, int64_t card_id);
+
 /* Reschedule a card's due date (spec: "0", "3", "1-7"). */
 int32_t anki_backend_set_due_date(AnkiHandle *handle, int64_t card_id, const char *spec);
 

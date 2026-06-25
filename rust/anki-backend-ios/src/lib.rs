@@ -729,6 +729,25 @@ pub extern "C" fn anki_backend_bury_card(handle: *mut Handle, card_id: i64) -> c
     bury_or_suspend(handle, card_id, BuryOrSuspendMode::BuryUser, "bury")
 }
 
+/// Unsuspend / unbury a card (restore it to normal scheduling). 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_unsuspend_card(handle: *mut Handle, card_id: i64) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.unbury_or_unsuspend_cards(&[CardId(card_id)]) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("unsuspend failed: {e}"));
+            2
+        }
+    }
+}
+
 fn bury_or_suspend(
     handle: *mut Handle,
     card_id: i64,

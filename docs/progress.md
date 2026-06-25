@@ -381,3 +381,8 @@ Device feedback fixes:
   the AI edit path is unaffected). NoteData.tags (optional), EditableNote.tags;
   NoteEditorView shows a space-separated Tags field. Integration tests: tag
   round-trip; nil-tags keeps existing.
+
+### M2.37 — Deck creation + unsuspend (IN PROGRESS)
+- [ ] Bridge anki_backend_unsuspend_card (unbury_or_unsuspend_cards). Browser bulk
+  Suspend/Unsuspend submenu. Deck list "New deck" button (resolveOrCreateDeck).
+  Integration test: suspend → is:suspended; unsuspend → not.

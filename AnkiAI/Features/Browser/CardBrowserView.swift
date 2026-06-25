@@ -62,7 +62,10 @@ struct CardBrowserView: View {
 
     @ViewBuilder private var bulkActionBar: some View {
         if working { ProgressView() }
-        Button { Task { await bulkSuspend() } } label: { Label("Suspend", systemImage: "pause.circle") }
+        Menu {
+            Button { Task { await bulkSuspend() } } label: { Label("Suspend", systemImage: "pause.circle") }
+            Button { Task { await bulkUnsuspend() } } label: { Label("Unsuspend", systemImage: "play.circle") }
+        } label: { Label("Suspend", systemImage: "pause.circle") }
             .disabled(selection.isEmpty || working)
         Spacer()
         Menu {
@@ -92,6 +95,12 @@ struct CardBrowserView: View {
     private func bulkSuspend() async {
         working = true
         for id in selection { try? await env.gateway.suspendCard(cardId: id) }
+        await finishBulk()
+    }
+
+    private func bulkUnsuspend() async {
+        working = true
+        for id in selection { try? await env.gateway.unsuspendCard(cardId: id) }
         await finishBulk()
     }
 

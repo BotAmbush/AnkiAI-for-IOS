@@ -178,6 +178,7 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func answerButtonLabels(cardId: Int64) async throws -> [String]
     /// Suspend / bury a card; undo the last operation (M2.4 write paths).
     func suspendCard(cardId: Int64) async throws
+    func unsuspendCard(cardId: Int64) async throws
     func buryCard(cardId: Int64) async throws
     func undo() async throws
     /// Reschedule a card's due date (Anki spec, e.g. "0","3","1-7") / forget it (M2.35).
