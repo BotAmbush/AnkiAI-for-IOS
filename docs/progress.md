@@ -392,3 +392,7 @@ Device feedback fixes:
   {{cN::...}}, create a Cloze note (notetypeId(named:"Cloze")) instead of Basic.
   No prompt/parser change. Unit-tested (detection); cloze rendering already
   integration-tested (BackendClozeTests).
+
+### M2.39 — Browser bulk move-to-deck (IN PROGRESS)
+- [ ] Browser bulk bar gains a "Move" deck menu (loops the integration-tested
+  moveCard op across selected cards). Swift-only.

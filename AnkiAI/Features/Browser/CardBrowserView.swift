@@ -14,6 +14,7 @@ struct CardBrowserView: View {
     @State private var showTagPrompt = false
     @State private var tagText = ""
     @State private var working = false
+    @State private var decks: [DeckNameId] = []
 
     var body: some View {
         NavigationStack {
@@ -56,7 +57,10 @@ struct CardBrowserView: View {
             } message: {
                 Text("Add a tag to \(selection.count) selected card(s).")
             }
-            .task { await runSearch() }
+            .task {
+                decks = (try? await env.gateway.allDecks()) ?? []
+                await runSearch()
+            }
         }
     }
 
@@ -79,6 +83,13 @@ struct CardBrowserView: View {
         Spacer()
         Button { showTagPrompt = true } label: { Label("Tag", systemImage: "tag") }
             .disabled(selection.isEmpty || working)
+        Spacer()
+        Menu {
+            ForEach(decks) { deck in
+                Button(deck.name) { Task { await bulkMove(toDeckId: deck.id) } }
+            }
+        } label: { Label("Move", systemImage: "tray.and.arrow.down") }
+            .disabled(selection.isEmpty || working || decks.isEmpty)
     }
 
     private func runSearch() async {
@@ -101,6 +112,12 @@ struct CardBrowserView: View {
     private func bulkUnsuspend() async {
         working = true
         for id in selection { try? await env.gateway.unsuspendCard(cardId: id) }
+        await finishBulk()
+    }
+
+    private func bulkMove(toDeckId: Int64) async {
+        working = true
+        for id in selection { try? await env.gateway.moveCard(cardId: id, toDeckId: toDeckId) }
         await finishBulk()
     }
 
