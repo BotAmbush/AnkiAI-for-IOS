@@ -18,7 +18,7 @@ independent audit** verifies completion.
 | M3 | Remove silent production failures; CardBrowser bulk per-item reporting | **Fixed (R2)** — runBulk reports total/succeeded/failed + first error; selection kept on partial/failure; no false success |
 | M4 | AI Insights real revlog metrics (no placeholders) | **Partial (R3)** — real streak / avg reviews-per-day / avg seconds-per-card / today (from graphs) + retention/weak/mature; streak tip enabled. avg-ease + per-deck/worst-deck retention not yet computed (no placeholder shown). |
 | M5 | forced-study classified partial/platform-limited + strongest iOS equivalent | Reclassified (R1); enforcement strengthening pending |
-| M6 | Broader integration fixtures + production-path tests | Pending |
+| M6 | Broader integration fixtures + production-path tests | **Fixed (R4)** — anki_backend_create_large_fixture (~hundreds of cards, 7 decks/subdecks, Basic+Cloze, Hebrew/MathJax/Unicode, new/learning/review/future/suspended). Broad BackendCollectionGateway integration test: shape, states, cloze, Hebrew render, queue-excludes-suspended, real stats, colpkg round-trip at scale. (Full thousands-scale + corrupted/legacy-schema remains a device/manual concern.) |
 
 ## R1 — P0 upload safety + de-finalization (this commit)
 

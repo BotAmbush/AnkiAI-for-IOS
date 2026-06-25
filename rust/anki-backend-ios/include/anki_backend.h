@@ -150,6 +150,10 @@ int32_t anki_backend_import_colpkg(const char *col_path, const char *colpkg_path
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 
+/* Test support: build a larger/richer fixture (~scale notes; many decks, Basic +
+   Cloze, Hebrew/MathJax/Unicode, varied scheduling states). */
+int32_t anki_backend_create_large_fixture(const char *path, uint32_t scale);
+
 #ifdef __cplusplus
 }
 #endif

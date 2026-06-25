@@ -458,4 +458,10 @@ final class AnkiCollection {
         let rc = path.withCString { anki_backend_create_fixture($0) }
         guard rc == 0 else { throw AnkiBackendError.createFixture(lastError()) }
     }
+
+    /// Larger/richer fixture (~`scale` notes) for broad integration tests.
+    static func createLargeFixture(path: String, scale: Int) throws {
+        let rc = path.withCString { anki_backend_create_large_fixture($0, UInt32(max(1, scale))) }
+        guard rc == 0 else { throw AnkiBackendError.createFixture(lastError()) }
+    }
 }

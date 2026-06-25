@@ -2031,6 +2031,100 @@ fn build_fixture(path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Create a LARGER, richer deterministic fixture (`scale` ≈ number of notes):
+/// many decks + subdecks, Basic + Cloze note types, Hebrew/RTL + MathJax + Unicode
+/// content, and a spread of scheduling states (new / learning / review-today /
+/// future / suspended). Used by broad production-path integration tests.
+#[no_mangle]
+pub extern "C" fn anki_backend_create_large_fixture(path: *const c_char, scale: u32) -> c_int {
+    let path = match unsafe { cstr_to_string(path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null path".into());
+            return 1;
+        }
+    };
+    match build_large_fixture(&path, scale.max(1)) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("create_large_fixture failed: {e}"));
+            2
+        }
+    }
+}
+
+fn build_large_fixture(path: &str, scale: u32) -> Result<()> {
+    let mut col = CollectionBuilder::new(PathBuf::from(path)).build()?;
+    let basic = col
+        .get_notetype_by_name("Basic")?
+        .or_invalid("Basic notetype missing")?;
+    let cloze = col
+        .get_notetype_by_name("Cloze")?
+        .or_invalid("Cloze notetype missing")?;
+
+    let deck_names = [
+        "Languages::Hebrew",
+        "Languages::Spanish",
+        "Science::Physics",
+        "Science::Chemistry",
+        "Math::Calculus",
+        "Math::Arithmetic",
+        "Misc",
+    ];
+    let mut deck_ids = Vec::new();
+    for d in deck_names {
+        deck_ids.push(col.get_or_create_normal_deck(d)?.id);
+    }
+    let unicode = ["café résumé", "日本語のカード", "emoji 🎴🔥", "Ω≈ζ∮", "naïve façade"];
+
+    for i in 0..scale {
+        let did = deck_ids[(i as usize) % deck_ids.len()];
+        let u = unicode[(i as usize) % unicode.len()];
+        if i % 3 == 0 {
+            // Cloze note (Text field) with MathJax + Unicode.
+            let mut note = cloze.new_note();
+            note.set_field(
+                0,
+                &format!("Card {i}: the capital is {{{{c1::City{i}}}}} — {u} \\(x^2={}\\)", i * i),
+            )?;
+            note.tags = vec!["auto".to_string(), format!("d{}", i % 7)];
+            col.add_note(&mut note, did)?;
+        } else if i % 2 == 0 {
+            // Hebrew RTL + mixed LTR MathJax.
+            let front = format!(r#"<div dir="rtl" style="text-align:right;">שאלה {i} — {u}</div>"#);
+            let back = format!(r#"<div dir="rtl">תשובה {i} <span dir="ltr">\(\sqrt{{{i}}}\)</span></div>"#);
+            add_note(&mut col, &basic, did, &front, &back, &["hebrew", "auto"])?;
+        } else {
+            let front = format!("<div>Q{i}: {u}?</div>");
+            let back = format!("<div>A{i} \\({i} \\times 2 = {}\\)</div>", i * 2);
+            add_note(&mut col, &basic, did, &front, &back, &["auto"])?;
+        }
+    }
+
+    // Spread of scheduling states across all cards.
+    let all = col.search_cards("", SortMode::NoOrder)?;
+    for (idx, cid) in all.iter().enumerate() {
+        match idx % 9 {
+            0 => {
+                col.set_due_date(&[*cid], "0", None)?;
+            }
+            1 => {
+                col.grade_now(&[*cid], 1)?;
+            }
+            2 => {
+                col.set_due_date(&[*cid], "3", None)?;
+            }
+            3 => {
+                col.bury_or_suspend_cards(&[*cid], BuryOrSuspendMode::Suspend)?;
+            }
+            _ => {}
+        }
+    }
+
+    col.close(None)?;
+    Ok(())
+}
+
 fn add_note(
     col: &mut Collection,
     nt: &Notetype,
