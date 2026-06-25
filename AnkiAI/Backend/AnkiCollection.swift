@@ -7,6 +7,7 @@ enum AnkiBackendError: Error, CustomStringConvertible {
     case deckTree(String)
     case render(String)
     case answer(String)
+    case sync(String)
     case decode(String)
     case createFixture(String)
 
@@ -16,6 +17,7 @@ enum AnkiBackendError: Error, CustomStringConvertible {
         case .deckTree(let m): return "deck tree failed: \(m)"
         case .render(let m): return "render failed: \(m)"
         case .answer(let m): return "answer failed: \(m)"
+        case .sync(let m): return "sync failed: \(m)"
         case .decode(let m): return "decode failed: \(m)"
         case .createFixture(let m): return "create fixture failed: \(m)"
         }
@@ -279,6 +281,26 @@ final class AnkiCollection {
     static func lastError() -> String {
         guard let c = anki_backend_last_error() else { return "unknown error" }
         return String(cString: c)
+    }
+
+    /// AnkiWeb: log in, returning the session host key (hkey). Standalone (no handle).
+    static func syncLogin(username: String, password: String) throws -> String {
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = username.withCString { u in
+            password.withCString { p in anki_backend_sync_login(u, p, &out) }
+        }
+        guard rc == 0, let cstr = out else { throw AnkiBackendError.sync(lastError()) }
+        defer { anki_backend_string_free(cstr) }
+        return String(cString: cstr)
+    }
+
+    /// AnkiWeb: full-download the collection for `hkey`, REPLACING the file at `path`.
+    /// The caller must ensure no handle is open on `path` during this call.
+    static func syncDownload(path: String, hkey: String) throws {
+        let rc = path.withCString { p in
+            hkey.withCString { h in anki_backend_sync_download(p, h) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
     }
 
     /// Test/seed support: create a deterministic sample collection at `path`

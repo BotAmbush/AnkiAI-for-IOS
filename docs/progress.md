@@ -249,3 +249,12 @@ Tried with_scheduling + with_deck_configs options; import still fails with opaqu
 anki InvalidInput (deck-kind conflict). Reverted to export-only test (green);
 import wired but deferred, error now Debug-formatted for future local debugging.
 See known-issues. Top remaining gap: getting a real collection in (import/sync).
+
+### M2.19 — AnkiWeb sync: login + full-download (IN PROGRESS)
+User direction: file import deferred; use AnkiWeb sync to load the real collection.
+- [x] TLS gate passed (native-tls compiles for iOS, spike 28137478651).
+- [ ] Bridge sync_login + sync_download (full_download via a tokio block_on);
+  gateway syncLogin/downloadFromAnkiWeb (closes handle → replaces file → reopens);
+  Settings "AnkiWeb sync" section (email/password → hkey in Keychain → download).
+- NOT CI-tested (needs a real account) — DEVICE-VERIFIED ONLY. Two-way sync +
+  media sync are follow-ups.

@@ -10,6 +10,10 @@ struct AISettingsView: View {
     @State private var testing = false
     @State private var spent: Double = 0
     @State private var limitText = ""
+    @State private var ankiUser = ""
+    @State private var ankiPass = ""
+    @State private var syncing = false
+    @State private var syncStatus: String?
 
     var body: some View {
         NavigationStack {
@@ -52,6 +56,27 @@ struct AISettingsView: View {
                 }
 
                 Section {
+                    TextField("AnkiWeb email", text: $ankiUser)
+                        .textContentType(.username).keyboardType(.emailAddress)
+                        .autocorrectionDisabled().textInputAutocapitalization(.never)
+                    SecureField("AnkiWeb password", text: $ankiPass)
+                    Button {
+                        Task { await syncDownload() }
+                    } label: {
+                        HStack {
+                            Text("Log in & download collection")
+                            if syncing { Spacer(); ProgressView() }
+                        }
+                    }
+                    .disabled(syncing || ankiUser.isEmpty || ankiPass.isEmpty)
+                    if let syncStatus { Text(syncStatus).font(.caption) }
+                } header: {
+                    Text("AnkiWeb sync")
+                } footer: {
+                    Text("Downloads your AnkiWeb collection and REPLACES the local one. Your password is sent only to AnkiWeb; only the session key is stored (Keychain). Card import from files is not finished yet — use this to load your real cards.")
+                }
+
+                Section {
                     LabeledContent("Spent", value: String(format: "$%.4f", spent))
                     LabeledContent("Remaining", value: String(format: "$%.4f", max(0, env.settings.budgetLimitUSD - spent)))
                     HStack {
@@ -82,6 +107,23 @@ struct AISettingsView: View {
                 limitText = String(format: "%.2f", env.settings.budgetLimitUSD)
             }
         }
+    }
+
+    private func syncDownload() async {
+        syncing = true
+        syncStatus = "Logging in to AnkiWeb…"
+        do {
+            let hkey = try await env.gateway.syncLogin(username: ankiUser, password: ankiPass)
+            env.settings.ankiWebHKey = hkey
+            env.settings.ankiWebUsername = ankiUser
+            ankiPass = ""
+            syncStatus = "Downloading collection…"
+            try await env.gateway.downloadFromAnkiWeb(hkey: hkey)
+            syncStatus = "✓ Collection downloaded. Open the Decks tab."
+        } catch {
+            syncStatus = "✗ \(error)"
+        }
+        syncing = false
     }
 
     private func saveLimit() {

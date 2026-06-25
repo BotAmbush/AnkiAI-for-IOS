@@ -121,4 +121,18 @@ public actor BackendCollectionGateway: CollectionGateway {
         let info = try col.cardInfo(cardId: cardId)
         return try col.editableNote(noteId: info.noteId)
     }
+
+    // MARK: - AnkiWeb sync (M2.19)
+
+    public func syncLogin(username: String, password: String) async throws -> String {
+        try AnkiCollection.syncLogin(username: username, password: password)
+    }
+
+    /// Replace the local collection with the AnkiWeb one (full download). Closes
+    /// the open handle first so the file is free, then reopens lazily.
+    public func downloadFromAnkiWeb(hkey: String) async throws {
+        collection = nil  // release the open handle (deinit closes it)
+        try AnkiCollection.syncDownload(path: path, hkey: hkey)
+        _ = try opened()  // reopen the replaced collection
+    }
 }

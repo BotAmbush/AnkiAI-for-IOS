@@ -70,6 +70,7 @@ public struct KeychainStore: SecretStore {
 /// Mirrors the `AnkiDroidAI` SharedPreferences keys from `AiChatViewModel`.
 public final class AISettingsStore {
     public static let keyClaudeAPIKey = "claude_api_key"
+    public static let keyAnkiWebHKey = "ankiweb_hkey"
 
     private let keychain: SecretStore
     private let defaults: UserDefaults
@@ -91,6 +92,19 @@ public final class AISettingsStore {
     }
 
     public var hasAPIKey: Bool { apiKey != nil }
+
+    /// AnkiWeb session host key (Keychain) + username (UserDefaults).
+    public var ankiWebHKey: String? {
+        get { keychain.get(Self.keyAnkiWebHKey) }
+        set {
+            if let v = newValue, !v.isEmpty { keychain.set(v, for: Self.keyAnkiWebHKey) }
+            else { keychain.remove(Self.keyAnkiWebHKey) }
+        }
+    }
+    public var ankiWebUsername: String? {
+        get { defaults.string(forKey: "ankiweb_username") }
+        set { defaults.set(newValue, forKey: "ankiweb_username") }
+    }
 
     public var budgetLimitUSD: Double {
         get {

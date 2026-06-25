@@ -92,6 +92,12 @@ int32_t anki_backend_resolve_or_create_deck(AnkiHandle *handle, const char *name
 /* Add a note (fields_json = JSON array of strings); write new note id to *out_note_id. */
 int32_t anki_backend_add_note(AnkiHandle *handle, int64_t notetype_id, int64_t deck_id, const char *fields_json, int64_t *out_note_id);
 
+/* AnkiWeb: log in; write the session host key (hkey) to *out_hkey. */
+int32_t anki_backend_sync_login(const char *username, const char *password, char **out_hkey);
+
+/* AnkiWeb: full-download the collection for hkey, REPLACING the local col_path. */
+int32_t anki_backend_sync_download(const char *col_path, const char *hkey);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

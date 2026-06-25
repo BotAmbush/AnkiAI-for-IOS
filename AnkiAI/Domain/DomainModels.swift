@@ -157,6 +157,9 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func updateNote(_ note: NoteData) async throws
     /// Load a card's note for the manual editor (field names + values) (M2.15).
     func editableNote(cardId: Int64) async throws -> EditableNote
+    /// AnkiWeb: log in (returns hkey); full-download the collection (M2.19).
+    func syncLogin(username: String, password: String) async throws -> String
+    func downloadFromAnkiWeb(hkey: String) async throws
     func basicNotetypeId() async throws -> Int64
     /// Look up a notetype id by name (e.g. "Basic", "Cloze") (M2.16).
     func notetypeId(named name: String) async throws -> Int64

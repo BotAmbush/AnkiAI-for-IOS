@@ -54,6 +54,12 @@ public actor StubCollectionGateway: CollectionGateway {
     public func editableNote(cardId: Int64) async throws -> EditableNote {
         throw GatewayError.notImplementedInM21("editableNote")
     }
+    public func syncLogin(username: String, password: String) async throws -> String {
+        throw GatewayError.notImplementedInM21("syncLogin")
+    }
+    public func downloadFromAnkiWeb(hkey: String) async throws {
+        throw GatewayError.notImplementedInM21("downloadFromAnkiWeb")
+    }
 
     public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
         throw GatewayError.notImplementedInM21("answerCard")

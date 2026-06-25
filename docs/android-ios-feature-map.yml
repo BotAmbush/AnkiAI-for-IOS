@@ -491,13 +491,16 @@ features:
     category: sync
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Settings/AISettingsView.swift
+      - AnkiAI/Backend/BackendCollectionGateway.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Backend sync compiled but not surfaced; credentials will use Keychain.
+    notes: "M2.19 — AnkiWeb login (sync_login) + full-download (replace local) wired; native-tls enabled (iOS Security framework, compiles). hkey in Keychain. CANNOT be CI-tested (needs a real account) — DEVICE-VERIFIED ONLY. Two-way normal_sync, media sync, and full-upload direction still pending."
 
   - feature_id: filtered_decks
     description: Filtered/dynamic decks.

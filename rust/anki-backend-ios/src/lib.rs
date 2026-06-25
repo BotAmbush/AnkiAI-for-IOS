@@ -32,6 +32,7 @@ use anki_proto::decks::DeckTreeNode;
 use anki_proto::decks::RenameDeckRequest;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
 use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
+use anki::sync::login::{sync_login, SyncAuth};
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
@@ -989,6 +990,121 @@ pub extern "C" fn anki_backend_update_note(
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("update_notes failed: {e}"));
+            2
+        }
+    }
+}
+
+// ─── AnkiWeb sync ──────────────────────────────────────────────────────────────
+
+fn sync_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new())
+}
+
+fn sync_runtime() -> std::io::Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+}
+
+/// Log in to AnkiWeb with `username`/`password`; write the session host key (hkey)
+/// to `out_hkey` (free with anki_backend_string_free). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_sync_login(
+    username: *const c_char,
+    password: *const c_char,
+    out_hkey: *mut *mut c_char,
+) -> c_int {
+    let username = match unsafe { cstr_to_string(username) } {
+        Some(u) => u,
+        None => {
+            set_last_error("null username".into());
+            return 1;
+        }
+    };
+    let password = match unsafe { cstr_to_string(password) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null password".into());
+            return 1;
+        }
+    };
+    if out_hkey.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    let rt = match sync_runtime() {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("runtime: {e}"));
+            return 2;
+        }
+    };
+    match rt.block_on(sync_login(username, password, None, sync_client())) {
+        Ok(auth) => match CString::new(auth.hkey) {
+            Ok(c) => {
+                unsafe { *out_hkey = c.into_raw() };
+                0
+            }
+            Err(_) => {
+                set_last_error("hkey contained NUL".into());
+                3
+            }
+        },
+        Err(e) => {
+            set_last_error(format!("sync_login failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Full-download the AnkiWeb collection for `hkey`, REPLACING the local collection
+/// at `col_path`. Returns 0 on success. (Collection only; media sync is separate.)
+#[no_mangle]
+pub extern "C" fn anki_backend_sync_download(
+    col_path: *const c_char,
+    hkey: *const c_char,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let hkey = match unsafe { cstr_to_string(hkey) } {
+        Some(h) => h,
+        None => {
+            set_last_error("null hkey".into());
+            return 1;
+        }
+    };
+    let col = match CollectionBuilder::new(PathBuf::from(&col_path)).build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    let auth = SyncAuth {
+        hkey,
+        endpoint: None,
+        io_timeout_secs: None,
+    };
+    let rt = match sync_runtime() {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("runtime: {e}"));
+            return 2;
+        }
+    };
+    match rt.block_on(col.full_download(auth, sync_client())) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("sync_download failed: {e:?}"));
             2
         }
     }

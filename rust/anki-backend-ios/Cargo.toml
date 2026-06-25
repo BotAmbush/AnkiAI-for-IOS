@@ -19,6 +19,9 @@ crate-type = ["staticlib"]
 anki = { path = "../.work/anki/rslib", features = ["native-tls"] }
 anki_proto = { path = "../.work/anki/rslib/proto" }
 serde_json = "1"
+# Same reqwest as anki (0.12) so the Client type matches sync_login/full_download.
+# Features come from anki via unification; default-features off to match.
+reqwest = { version = "0.12", default-features = false }
 # Anki declares tokio without "io-util"; its media/sync code uses AsyncReadExt.
 # We also need a runtime (rt) + time/net to block_on the async sync functions.
 tokio = { version = "1.45", features = ["io-util", "rt", "rt-multi-thread", "time", "net"] }
