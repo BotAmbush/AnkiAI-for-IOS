@@ -68,6 +68,7 @@ struct ReviewerView: View {
                     Button { Task { await undoLast() } }
                         label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                 } label: { Image(systemName: "ellipsis.circle") }
+                .accessibilityLabel("Card actions".loc)
                 .disabled(cardIds.isEmpty || finished)
             }
         }

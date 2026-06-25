@@ -123,6 +123,7 @@ private struct DeckRow: View {
         HStack {
             Image(systemName: deck.level == 0 ? "tray.full" : "tray")
                 .foregroundColor(.secondary)
+                .accessibilityHidden(true)
             Text(leaf)
                 .padding(.leading, CGFloat(max(0, deck.level - 1)) * 14)
             Spacer()
@@ -130,6 +131,9 @@ private struct DeckRow: View {
             CountChip(value: deck.learnCount, color: .red)
             CountChip(value: deck.reviewCount, color: .green)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(leaf). \(deck.newCount) \("new".loc), \(deck.learnCount) \("learning".loc), \(deck.reviewCount) \("due".loc)")
     }
 }
 

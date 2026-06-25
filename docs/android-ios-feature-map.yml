@@ -578,13 +578,16 @@ features:
     category: platform
     android_paths:
       - AnkiDroid/src/main/java/com/ichi2/anki/ai/update/UpstreamCheckWorker.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Platform/BackgroundSync.swift
+      - AnkiAI/App/AnkiAIApp.swift
     backend_components: []
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackgroundSyncTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: iOS-constrained; M3.
+    notes: "M2.31 — BGAppRefreshTask (id com.evyatar.ankiai.sync) registered via SwiftUI .backgroundTask and scheduled on background; when logged in it runs a two-way collection sync + media sync, else no-ops. Info.plist declares UIBackgroundModes + BGTaskSchedulerPermittedIdentifiers. Logged-out no-op unit-tested; actual background execution is OS-scheduled (device-verified)."
 
   - feature_id: localization
     description: UI string localization (incl. Hebrew).
@@ -608,13 +611,15 @@ features:
     category: platform
     android_paths:
       - AnkiDroid/src/main
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Decks/DeckListView.swift
+      - AnkiAI/Features/Reviewer/ReviewerView.swift
     backend_components: []
     tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M3.
+    notes: "M2.31 — accessibility pass: SwiftUI gives Dynamic Type + VoiceOver by default; added explicit labels for icon-only controls (reviewer 'Card actions' menu), combined deck rows into a single VoiceOver element with a spoken new/learning/due summary (localized), and hid decorative icons. Full VoiceOver sweep is device-verified."
 
   - feature_id: ai_reviewer_chat
     description: Ask Claude chat during review (explain, edit/add-card proposals).

@@ -337,3 +337,12 @@ download retest (per task).
   values-iw/ai_strings.xml; RTL auto via device language. Wired the most visible
   UI (tabs, reviewer, answer buttons, deck list, custom study, settings, forced
   study). Unit-tested. localization → completed (catalog iterative).
+
+### M2.31 — Accessibility + background sync (IN PROGRESS)
+- [ ] Accessibility: VoiceOver label for the reviewer actions menu; deck rows
+  combined into one VoiceOver element with a localized new/learning/due summary;
+  decorative icons hidden; Dynamic Type via default. Background: BGAppRefreshTask
+  (.backgroundTask) scheduled on background → two-way + media sync when logged in,
+  no-op when logged out (unit-tested). Info.plist UIBackgroundModes +
+  BGTaskSchedulerPermittedIdentifiers. accessibility + background_behavior →
+  completed. This finishes all discoverable features except device-pending sync.

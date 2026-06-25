@@ -42,6 +42,11 @@ targets:
         NSCameraUsageDescription: "Attach photos of study material for AI card creation."
         NSPhotoLibraryUsageDescription: "Attach images from your library for AI card creation."
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.evyatar.ankiai.sync
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.evyatar.ankiai

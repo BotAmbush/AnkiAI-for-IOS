@@ -13,12 +13,17 @@ public final class AppEnvironment: ObservableObject {
     public let settings: AISettingsStore
     public let collectionPath: String
 
-    public init() {
+    /// Deterministic collection-file path (also used by background sync).
+    public static func defaultCollectionPath() -> String {
         let support = try? FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask,
             appropriateFor: nil, create: true)
-        let colURL = (support ?? URL(fileURLWithPath: NSTemporaryDirectory()))
-            .appendingPathComponent("collection.anki2")
+        return (support ?? URL(fileURLWithPath: NSTemporaryDirectory()))
+            .appendingPathComponent("collection.anki2").path
+    }
+
+    public init() {
+        let colURL = URL(fileURLWithPath: AppEnvironment.defaultCollectionPath())
         self.collectionPath = colURL.path
 
         // First launch: seed a real sample collection through the backend.

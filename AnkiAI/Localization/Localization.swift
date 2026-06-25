@@ -78,6 +78,11 @@ public enum Loc {
         "Forced study": "חיוב למידה",
         "Session complete!": "המפגש הושלם!",
         "Time to study": "הגיע זמן ללמוד",
+        // Accessibility
+        "new": "חדשים",
+        "learning": "בלימוד",
+        "due": "לחזרה",
+        "Card actions": "פעולות כרטיס",
     ]
 }
 
