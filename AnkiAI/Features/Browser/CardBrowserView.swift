@@ -9,6 +9,11 @@ struct CardBrowserView: View {
     @State private var results: [Int64] = []
     @State private var isLoading = false
     @State private var error: String?
+    @State private var selection = Set<Int64>()
+    @State private var editMode: EditMode = .inactive
+    @State private var showTagPrompt = false
+    @State private var tagText = ""
+    @State private var working = false
 
     var body: some View {
         NavigationStack {
@@ -18,7 +23,7 @@ struct CardBrowserView: View {
                 } else if isLoading && results.isEmpty {
                     ProgressView()
                 } else {
-                    List {
+                    List(selection: $selection) {
                         Section {
                             ForEach(results, id: \.self) { id in
                                 NavigationLink {
@@ -33,12 +38,44 @@ struct CardBrowserView: View {
                     }
                 }
             }
-            .navigationTitle("Browse")
+            .navigationTitle(editMode == .active && !selection.isEmpty ? "\(selection.count) selected" : "Browse")
+            .environment(\.editMode, $editMode)
             .searchable(text: $query, prompt: "Search cards…")
             .onSubmit(of: .search) { Task { await runSearch() } }
             .onChange(of: query) { _ in Task { await runSearch() } }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) { EditButton() }
+                if editMode == .active {
+                    ToolbarItemGroup(placement: .bottomBar) { bulkActionBar }
+                }
+            }
+            .alert("Add tag", isPresented: $showTagPrompt) {
+                TextField("tag", text: $tagText)
+                Button("Cancel", role: .cancel) {}
+                Button("Add") { Task { await bulkTag() } }
+            } message: {
+                Text("Add a tag to \(selection.count) selected card(s).")
+            }
             .task { await runSearch() }
         }
+    }
+
+    @ViewBuilder private var bulkActionBar: some View {
+        if working { ProgressView() }
+        Button { Task { await bulkSuspend() } } label: { Label("Suspend", systemImage: "pause.circle") }
+            .disabled(selection.isEmpty || working)
+        Spacer()
+        Menu {
+            Button("None") { Task { await bulkFlag(0) } }
+            Button("🔴 Red") { Task { await bulkFlag(1) } }
+            Button("🟠 Orange") { Task { await bulkFlag(2) } }
+            Button("🟢 Green") { Task { await bulkFlag(3) } }
+            Button("🔵 Blue") { Task { await bulkFlag(4) } }
+        } label: { Label("Flag", systemImage: "flag") }
+            .disabled(selection.isEmpty || working)
+        Spacer()
+        Button { showTagPrompt = true } label: { Label("Tag", systemImage: "tag") }
+            .disabled(selection.isEmpty || working)
     }
 
     private func runSearch() async {
@@ -50,6 +87,38 @@ struct CardBrowserView: View {
             self.error = "\(error)"
         }
         isLoading = false
+    }
+
+    private func bulkSuspend() async {
+        working = true
+        for id in selection { try? await env.gateway.suspendCard(cardId: id) }
+        await finishBulk()
+    }
+
+    private func bulkFlag(_ flag: Int) async {
+        working = true
+        for id in selection { try? await env.gateway.setFlag(cardId: id, flag: flag) }
+        await finishBulk()
+    }
+
+    private func bulkTag() async {
+        let tag = tagText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !tag.isEmpty else { return }
+        working = true
+        for id in selection {
+            if let info = try? await env.gateway.cardInfo(cardId: id) {
+                try? await env.gateway.addTags(noteId: info.noteId, tags: tag)
+            }
+        }
+        tagText = ""
+        await finishBulk()
+    }
+
+    private func finishBulk() async {
+        selection.removeAll()
+        editMode = .inactive
+        working = false
+        await runSearch()
     }
 }
 

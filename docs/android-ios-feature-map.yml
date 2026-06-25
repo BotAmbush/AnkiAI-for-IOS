@@ -126,7 +126,7 @@ features:
     status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.7 — Browse tab with arbitrary Anki search (deck:/tag:/free text) via backend search_cards; rows show rendered question, detail shows full card. Read-only; pagination + bulk actions pending.
+    notes: "M2.7 browse (arbitrary Anki search → rendered rows → card detail). M2.34 adds multi-select (EditButton) + SAFE bulk actions: suspend, flag, add-tag across selected cards (looping the integration-tested suspend/setFlag/addTags ops). Bulk delete intentionally omitted to protect live data."
 
   - feature_id: card_note_editor
     description: Create/edit notes and cards.

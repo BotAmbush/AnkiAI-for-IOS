@@ -363,3 +363,9 @@ Device feedback fixes:
   JSON). Gateway statsGraphs; StatsGraphs/GraphPoint models. InsightsView now shows
   Reviews (last 30d) + Due forecast (next 30d) bar charts (Swift Charts). Read-only
   (safe for the live collection). Integration-tested.
+
+### M2.34 — Browser multi-select + safe bulk actions (IN PROGRESS)
+- [ ] CardBrowserView: EditButton multi-select + bottom bar with bulk Suspend,
+  Flag (color submenu), and Add-tag (alert). Loops the already-tested gateway ops
+  (suspendCard/setFlag/addTags via cardInfo→noteId). No destructive bulk delete.
+  Swift-only (no Rust change).
