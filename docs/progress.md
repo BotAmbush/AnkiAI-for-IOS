@@ -370,7 +370,7 @@ Device feedback fixes:
   (suspendCard/setFlag/addTags via cardInfo→noteId). No destructive bulk delete.
   Swift-only (no Rust change).
 
-### M2.35 — Per-card reschedule: set due date + forget (IN PROGRESS)
+### M2.35 — Per-card reschedule: set due date + forget (CI GREEN, run 28148885081)
 - [ ] Bridge set_due_date (Anki spec "0"/"3"/"1-7") + forget_card
   (reschedule_cards_as_new, restore position). Gateway + reviewer menu ("Set due
   date…" alert, "Forget card"). Integration test: set-due-date → review with a due
