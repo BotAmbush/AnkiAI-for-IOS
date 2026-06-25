@@ -10,7 +10,7 @@ public struct BackupInfo: Identifiable, Equatable, Sendable {
     public init(url: URL, size: Int, date: Date) { self.url = url; self.size = size; self.date = date }
 }
 
-public enum BackupError: Error, LocalizedError {
+public enum BackupError: Error, LocalizedError, Equatable {
     case exportFailed(String)
     case tooSmall
     case notArchive
