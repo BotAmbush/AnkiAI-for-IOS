@@ -285,7 +285,7 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   output, fontCache global). CDN fallback only if the bundle is missing. Math now
   renders offline.
 
-### M2.24 — Media (sync + render) + audio + backup (IN PROGRESS)
+### M2.24 — Media (sync + render) + audio + backup (CI GREEN ✅, run 28141145842)
 - [ ] Bridge: sync_media (MediaManager + new_progress_handler), export_colpkg
   (backup with media). Gateway syncMedia/backup + mediaDirectory (<col>.media).
   CardWebView: AppResSchemeHandler serves appres://media/<file>; rewriteMedia
