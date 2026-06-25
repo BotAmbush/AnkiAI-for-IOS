@@ -462,10 +462,10 @@ features:
     tests:
       - AnkiAITests/BackendImportExportTests.swift
       - AnkiAITests/BackendColpkgTests.swift
-    status: completed
+    status: partial
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.27 — full collection import/export via .colpkg: export (backup) + import (restore) round-trip is integration-tested; Settings has back-up + restore (file importer). .apkg EXPORT also verified. Only .apkg IMPORT remains an anki-internal edge ('decks have different kinds') — colpkg/sync are the working import paths (see known-issues)."
+    notes: "[AUDIT 2026-06-25] Reverted to partial: .apkg IMPORT is not verified (only export + .colpkg restore are). M2.27 — full collection import/export via .colpkg: export (backup) + import (restore) round-trip is integration-tested; Settings has back-up + restore (file importer). .apkg EXPORT also verified. Only .apkg IMPORT remains an anki-internal edge ('decks have different kinds') — colpkg/sync are the working import paths (see known-issues)."
 
   - feature_id: apkg_colpkg
     description: APKG / collection package handling.
@@ -477,10 +477,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendColpkgTests.swift
-    status: completed
+    status: partial
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.27 — .colpkg export (export_colpkg, with media) + import (import_colpkg, whole-collection restore) round-trip integration-tested. .apkg export works; .apkg import alone remains an anki deck-merge edge (colpkg is the working package-import path)."
+    notes: "[AUDIT 2026-06-25] Reverted to partial: .apkg IMPORT not verified. M2.27 — .colpkg export (export_colpkg, with media) + import (import_colpkg, whole-collection restore) round-trip integration-tested. .apkg export works; .apkg import alone remains an anki deck-merge edge (colpkg is the working package-import path)."
 
   - feature_id: backups_restore
     description: Collection backups and restoration.
@@ -509,10 +509,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendSyncDownloadTests.swift
-    status: completed
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
+    status: partial
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "DEVICE-VERIFIED by the user (AnkiWeb download works, media displays). M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task)."
+    notes: "[AUDIT 2026-06-25] Reverted to partial: real physical-device full DOWNLOAD not re-verified after the endpoint fix, and BackgroundSync error handling is being hardened. DEVICE-VERIFIED by the user (AnkiWeb download works, media displays). M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task)."
 
   - feature_id: filtered_decks
     description: Filtered/dynamic decks.
@@ -672,10 +672,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/PricingAndTipsTests.swift
-    status: completed
+    status: partial
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.38 — AI creator + add-card auto-detect cloze syntax ({{c1::...}}) and create a Cloze note instead of Basic (no prompt/parser change). Tip engine ported + unit-tested. Insights now feed it REAL collection data (total/mature/weak/today/30-day retention via backend search). Streak history + per-card timing need the full revlog graph data, so those tips are cleanly omitted (includeStreak:false) rather than faked."
+    notes: "[AUDIT 2026-06-25] Reverted to partial: streak/retention/ease/daily-reviews/worst-deck/per-deck-retention/avg-time use placeholder values, not real revlog metrics. M2.38 — AI creator + add-card auto-detect cloze syntax ({{c1::...}}) and create a Cloze note instead of Basic (no prompt/parser change). Tip engine ported + unit-tested. Insights now feed it REAL collection data (total/mature/weak/today/30-day retention via backend search). Streak history + per-card timing need the full revlog graph data, so those tips are cleanly omitted (includeStreak:false) rather than faked."
 
   - feature_id: ai_response_parsing
     description: Parse Claude replies (edit/add actions, creator JSON array).
@@ -769,8 +769,8 @@ features:
     backend_components: []
     tests:
       - AnkiAITests/ForcedStudyManagerTests.swift
-    status: completed
+    status: partial
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.28 — iOS-faithful forced study: same config (interval/required cards/deck/snooze) as the Android fork; a repeating local notification + an in-app non-dismissible session that requires N reviews (shown as a fullScreenCover when due, on launch/foreground). iOS can't overlay other apps, so enforcement is in-app. Due/snooze/complete logic unit-tested."
+    notes: "[AUDIT 2026-06-25] partial / platform-limited: iOS cannot reproduce the Android cross-app overlay (foreground service + TYPE_APPLICATION_OVERLAY); only an in-app session + notifications. M2.28 — iOS-faithful forced study: same config (interval/required cards/deck/snooze) as the Android fork; a repeating local notification + an in-app non-dismissible session that requires N reviews (shown as a fullScreenCover when due, on launch/foreground). iOS can't overlay other apps, so enforcement is in-app. Due/snooze/complete logic unit-tested."
     notes: iOS lacks always-on overlays/foreground service; will be partial-parity (notifications + in-app session). M3.

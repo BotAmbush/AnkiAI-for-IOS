@@ -1,0 +1,211 @@
+﻿Perform an independent final audit of the native iOS migration.
+
+You are reviewing work produced primarily by another coding agent.
+Do not trust its completion claims, parity percentages, documentation statuses,
+or filenames without verifying them against the actual production code.
+
+IOS REPOSITORY:
+
+C:\AnkiAI-for-IOS
+
+CANONICAL CUSTOMIZED ANDROID SOURCE — READ ONLY:
+
+C:\Users\Evyatar\AndroidStudioProjects\Anki-Android-AI
+
+This is a review-only task.
+
+Do not modify files.
+Do not fix findings.
+Do not commit.
+Do not push.
+Do not trigger builds.
+Do not update baselines or parity statuses.
+Do not modify either repository.
+
+Read all permanent project instructions and status files, including:
+
+- CLAUDE.md
+- AGENTS.md, if present
+- ANDROID-SOURCE-BASELINE.json
+- STATUS-AUDIT.md
+- FINAL-MIGRATION-AUDIT.md, if present
+- CONTINUE-INITIAL-MIGRATION.md
+- UPDATE-FROM-ANDROID.md
+- FINALIZE-INITIAL-MIGRATION.md
+- docs/progress.md
+- docs/feature-parity-checklist.md
+- docs/android-ios-feature-map.yml
+- docs/known-issues.md
+- docs/ios-architecture.md
+- docs/licensing-analysis.md
+
+Then inspect the actual Android and iOS source code independently.
+
+## Required review
+
+1. Verify that the iOS production target uses the real Anki backend and not
+   stubs, mocks, sample data, preview data, fake gateways, or in-memory
+   replacements.
+
+2. Search production code for:
+   - TODO
+   - FIXME
+   - stub
+   - mock
+   - fake
+   - placeholder
+   - sample
+   - demo
+   - fatalError
+   - preconditionFailure
+   - not implemented
+   - empty/default return values
+   - disabled code paths
+   - silent fallbacks
+
+3. Compare the customized Android application with the native iOS production
+   implementation feature by feature.
+
+4. Verify the real production paths for:
+   - collection opening and closing
+   - collection database compatibility
+   - decks and subdecks
+   - card browser
+   - editor
+   - note types
+   - templates and CSS
+   - HTML and MathJax
+   - Hebrew and RTL
+   - cloze cards
+   - media and audio
+   - review queues
+   - answer buttons
+   - scheduler
+   - FSRS
+   - learning and relearning
+   - undo, bury, suspend, flags and tags
+   - filtered decks and custom study
+   - statistics
+   - APKG import/export
+   - COLPKG backup/restore
+   - AnkiWeb authentication
+   - two-way synchronization
+   - full download
+   - full upload
+   - media synchronization
+   - sync conflict handling
+   - interrupted-operation recovery
+   - settings
+   - notifications and background behavior
+   - AI reviewer
+   - AI card creator
+   - AI insights
+   - image/PDF attachments
+   - Keychain storage
+   - forced-study functionality
+
+5. For synchronization, specifically investigate the physical-device error:
+
+   HttpError 400: "missing original size"
+
+   Determine whether the implementation correctly handles:
+   - server-assigned sync endpoints
+   - authentication/session keys
+   - one-way full sync
+   - temporary downloads
+   - validation before replacement
+   - atomic collection replacement
+   - failure rollback
+   - protection of the remote collection
+
+6. Verify that every feature marked complete has:
+   - a real production implementation
+   - a production backend path
+   - relevant automated tests
+   - no stub fallback
+   - honest physical-device validation status
+
+7. Inspect tests for false confidence:
+   - tests exercising only mocks
+   - assertions that do not verify behavior
+   - fixtures unlike real Anki collections
+   - skipped or disabled tests
+   - missing failure-path tests
+   - tests that compile but do not execute production integrations
+
+8. Inspect Git history and determine whether the latest production code matches
+   the code that produced the latest IPA.
+
+9. Inspect the IPA and build artifacts available locally, if present:
+   - verify arm64 Mach-O executable
+   - verify the real backend is included
+   - verify bundle metadata
+   - verify no test or stub configuration is active
+   - verify signing status
+   - verify required resources and frameworks are bundled
+
+10. Review data-loss risks around:
+    - sync
+    - import
+    - restore
+    - migrations
+    - database writes
+    - app termination
+    - corrupted collections
+    - incompatible backend versions
+
+## Required findings format
+
+Prioritize findings as:
+
+- P0 — data loss, remote collection corruption, credential exposure, or app
+  unusable
+- P1 — major core feature missing, broken, stub-backed, or incorrectly marked
+  complete
+- P2 — meaningful functional, compatibility, test, or reliability defect
+- P3 — maintainability, UX, documentation, or minor correctness issue
+
+For every finding include:
+
+- priority
+- concise title
+- exact file and line references
+- Android reference where relevant
+- evidence
+- user-visible consequence
+- recommended correction
+- whether it blocks calling the migration complete
+
+Do not produce vague observations without code evidence.
+
+## Final verdict
+
+Provide conservative percentages for:
+
+- core Anki functionality
+- scheduler/FSRS parity
+- sync parity
+- import/export parity
+- backup/restore parity
+- AI parity
+- automated-test confidence
+- physical-device validation
+- overall migration completeness
+
+End with exactly one verdict:
+
+- VERIFIED COMPLETE
+- IMPLEMENTATION COMPLETE BUT DEVICE VALIDATION INCOMPLETE
+- PARTIALLY COMPLETE
+- NOT COMPLETE
+
+Also state:
+
+- whether it is safe to use with a real collection
+- whether it is safe to perform AnkiWeb upload
+- whether it is safe to perform AnkiWeb full download
+- whether it can replace the Android application for everyday use
+- the ordered repair plan
+
+This must be your own independent conclusion, not a restatement of Claude's
+documentation.

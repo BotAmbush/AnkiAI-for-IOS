@@ -1,45 +1,32 @@
 {
   "schemaVersion": 1,
-  "migrationMode": "incremental-synchronization",
+  "migrationMode": "initial-full-migration",
   "androidRepositoryPath": "C:\\Users\\Evyatar\\AndroidStudioProjects\\Anki-Android-AI",
   "androidRemoteUrl": "https://github.com/BotAmbush/Anki-Android-AI.git",
   "androidBranch": "main",
   "androidSourceSnapshotCommit": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
   "lastAndroidCommitReviewedForIOS": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
-  "lastAndroidCommitFullyPortedToIOS": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
+  "lastAndroidCommitFullyPortedToIOS": null,
   "iosRepositoryPath": "C:\\AnkiAI-for-IOS",
   "iosCommitAtBaselineCreation": "1f0843c2265db4f7773acde25d7d48625580bf39",
-  "iosCommitAtFinalization": "f8a61e98e53a6ea5352faa79bae46f6a80f2defb",
   "upstreamAnkiDroidRemoteUrl": "https://github.com/ankidroid/Anki-Android.git",
   "upstreamAnkiDroidCommitOrTag": "v2.25.0alpha1",
   "ankiBackendCommit": "3890e12c9e48c028c3f12aa58cb64bd9f8895e30",
-  "initialMigrationCompleted": true,
-  "incrementalUpdateModeEnabled": true,
-  "parityStatus": "full-with-documented-exceptions",
-  "finalizedAtUtc": "2026-06-25T11:25:00Z",
-  "capturedAtUtc": "2026-06-25T11:25:00Z",
-  "finalization": {
-    "confirmedByUser": true,
-    "fullyPortedAndroidCommit": "9bad8304c8b7b013a6c977c20ebd9f726a436430",
-    "ciRunId": "28156073715",
-    "ciMode": "full",
-    "testCount": 122,
-    "testsPassing": true,
-    "iosCommit": "f8a61e98e53a6ea5352faa79bae46f6a80f2defb",
-    "unsignedIpaProduced": true,
-    "deviceVerified": "User confirmed on a physical iPhone: AnkiWeb sync download works and media displays; reviewer/browser/AI/editor flows exercised. physical_device_verified is set on the features the user explicitly confirmed (synchronization, media); other features are CI + integration-test verified and were used on device but not individually device-signed-off.",
-    "documentedExceptions": [
-      "forced_study: iOS cannot draw an overlay over OTHER apps (sandbox); implemented as a repeating local notification + an in-app non-dismissible session instead.",
-      "deck-options WRITE is intentionally not exposed (read-only only): writing deck config to a live AnkiWeb-synced collection is risky (could reset scheduling / disable FSRS). Values sync down from AnkiWeb / Anki Desktop.",
-      ".apkg file IMPORT alone hits an anki-internal deck-merge edge; the working package-import path is .colpkg restore (integration-tested) and AnkiWeb sync."
-    ]
+  "initialMigrationCompleted": false,
+  "incrementalUpdateModeEnabled": false,
+  "parityStatus": "under-repair",
+  "capturedAtUtc": "2026-06-25T12:00:00Z",
+  "deFinalized": {
+    "deFinalizedAtUtc": "2026-06-25T12:00:00Z",
+    "reason": "An independent Codex audit (2026-06-25) concluded NOT COMPLETE and found a P0 remote-data-loss risk (the seeded sample collection could replace the user's AnkiWeb data via full upload), plus unverified/over-claimed statuses (sync not proven by a real physical full download after fixes, .apkg import not asserted, AI Insights using placeholder values, forced-study claimed as full parity). The premature finalization (Entry 2) is REVERTED to Mode A until the repair phase succeeds and a new independent audit verifies completion.",
+    "supersedesHistoryEntry": 2
   },
   "notes": [
-    "FINALIZED 2026-06-25: the iOS app is a complete functional copy of the customized Android fork at androidSourceSnapshotCommit, with documented platform exceptions. Mode is now incremental-synchronization (Mode B).",
-    "lastAndroidCommitFullyPortedToIOS records the verified fully-ported Android commit. Future 'update from Android' requests follow the INCREMENTAL workflow (UPDATE-FROM-ANDROID.md / tools/audit-android-update.ps1): diff this commit against Android HEAD and port the behavioral changes.",
-    "The customized Android fork (BotAmbush/Anki-Android-AI) remains the behavioral source of truth; upstream AnkiDroid reaches iOS only after first merging into the fork.",
-    "ankiBackendCommit is the pinned upstream anki Rust backend (tag 25.09.2) used by the iOS app (docs/anki-backend-pin.md).",
-    "Android repository is strictly read-only; baseline advancement done with read-only Git commands against the Android repo.",
-    "See docs/final-parity-report.md (46/46 completed) and docs/android-update-history.md (finalization entry) for the evidence."
+    "REVERTED to Mode A (initial-full-migration) on 2026-06-25 following an independent audit. lastAndroidCommitFullyPortedToIOS is null again; initialMigration/incrementalUpdate remain false. See docs/android-update-history.md Entry 3 and CLAUDE-REPAIR-REPORT.md.",
+    "Do NOT re-finalize until: the P0 sample-collection upload risk is blocked (done in repair P0), a real AnkiWeb full download + two-way + media sync succeed on a physical device, .apkg import/export round-trips, silent write failures are removed, AI Insights use real revlog metrics, forced-study is classified partial/platform-limited, expanded integration tests pass, CI is green, a new IPA is produced, and a SECOND independent audit verifies completion.",
+    "androidSourceSnapshotCommit is the Android HEAD used as the COMPLETE behavioral reference for the initial full migration; it is NOT a record of full parity.",
+    "The customized Android fork (BotAmbush/Anki-Android-AI) is the behavioral source of truth; upstream AnkiDroid reaches iOS only after first merging into the fork.",
+    "ankiBackendCommit is the pinned upstream anki Rust backend (tag 25.09.2); see docs/anki-backend-pin.md.",
+    "Android repository is strictly read-only."
   ]
 }

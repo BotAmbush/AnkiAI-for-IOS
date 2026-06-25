@@ -107,3 +107,48 @@ Future "update from Android" requests follow the **incremental** workflow
 `lastAndroidCommitFullyPortedToIOS` against Android HEAD and port the behavioral
 changes, then advance the baseline atomically with a new entry here. The Android
 repo stays strictly read-only.
+
+---
+
+## Entry 3 — DE-FINALIZATION (Mode B → Mode A) after independent audit
+
+- **Date / UTC:** 2026-06-25T12:00:00Z
+- **Event:** An independent **Codex audit** concluded **NOT COMPLETE**. Entry 2's
+  finalization is **REVERTED**. The project returns to
+  `initial-full-migration` (Mode A) and enters a **repair phase**.
+- **Migration mode:** `incremental-synchronization` → `initial-full-migration`
+- **Parity status:** `full-with-documented-exceptions` → `under-repair`
+- **initialMigrationCompleted:** `true` → `false`
+- **incrementalUpdateModeEnabled:** `true` → `false`
+- **lastAndroidCommitFullyPortedToIOS:** `9bad8304…` → `null`
+
+### Audit findings (to repair)
+1. **P0 remote-data-loss risk:** the seeded/sample collection could replace the
+   user's real AnkiWeb collection via **full upload** (no provenance guard, no
+   backup, no second confirmation). *(Addressed first — repair P0.)*
+2. **Sync** was marked complete without a real physical-device full-download
+   success after the endpoint fix; `BackgroundSync` swallowed errors
+   (full-sync-required / auth / media / network) and didn't persist results.
+3. **`.apkg` import** is not actually verified, yet import/export was marked
+   completed.
+4. **Production silent failures** (`try?` / ignored Results) including the
+   CardBrowser bulk operations (no per-item success/failure reporting).
+5. **AI Insights** uses neutral/placeholder values (streak, retention, ease,
+   daily reviews, worst deck, per-deck retention, avg time/card) instead of real
+   revlog metrics.
+6. **forced-study** was over-claimed as full Android parity (it cannot reproduce
+   the cross-app overlay) — must be classified partial/platform-limited.
+7. **Validation breadth:** the 7-card fixture is insufficient; broader
+   integration fixtures and production-path tests are required.
+
+### Status corrections applied with this entry (honest)
+- `synchronization` → **partial** (pending real device full-download + hardened
+  BackgroundSync).
+- `import_export`, `apkg_colpkg` → **partial** (`.apkg` import unverified).
+- `ai_insights` → **partial** (placeholder metrics).
+- `forced_study` → **partial** (platform-limited).
+- All `physical_device_verified` flags reset to `false`.
+
+### Repair tracking
+See `CLAUDE-REPAIR-REPORT.md`. The baseline will NOT advance again until the
+repair phase completes AND a **second independent audit** verifies completion.

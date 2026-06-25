@@ -66,6 +66,18 @@ public struct KeychainStore: SecretStore {
     }
 }
 
+/// Where the local collection came from. Gates destructive AnkiWeb upload: a
+/// seeded/unknown collection must NEVER be allowed to replace the user's remote
+/// AnkiWeb data (P0 data-loss guard).
+public enum CollectionProvenance: String {
+    case seededSample
+    case downloadedFromAnkiWeb
+    case importedFromPackage
+    case createdLocally
+    case restoredFromBackup
+    case unknown
+}
+
 /// Centralized access to AI credentials and budget settings.
 /// Mirrors the `AnkiDroidAI` SharedPreferences keys from `AiChatViewModel`.
 public final class AISettingsStore {
@@ -117,5 +129,21 @@ public final class AISettingsStore {
     public var totalSpentUSD: Double {
         get { defaults.double(forKey: "ai_total_spent_usd") }
         set { defaults.set(newValue, forKey: "ai_total_spent_usd") }
+    }
+
+    /// Provenance of the local collection. Defaults to `.unknown` (the safe value:
+    /// upload to AnkiWeb is hard-blocked until provenance is proven).
+    public var collectionProvenance: CollectionProvenance {
+        get { CollectionProvenance(rawValue: defaults.string(forKey: "collection_provenance") ?? "") ?? .unknown }
+        set { defaults.set(newValue.rawValue, forKey: "collection_provenance") }
+    }
+
+    /// True when the local collection must NEVER replace remote AnkiWeb data
+    /// (seeded sample or unknown provenance). Upload is forbidden in these cases.
+    public var isUploadForbidden: Bool {
+        switch collectionProvenance {
+        case .seededSample, .unknown: return true
+        case .downloadedFromAnkiWeb, .importedFromPackage, .createdLocally, .restoredFromBackup: return false
+        }
     }
 }

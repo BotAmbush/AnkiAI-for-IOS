@@ -20,6 +20,19 @@ struct AISettingsView: View {
     @State private var backupStatus: String?
     @State private var backingUp = false
     @State private var showRestoreImporter = false
+    @State private var showUploadConfirm = false
+    @State private var collectionCounts: (cards: Int, decks: Int)?
+
+    private var provenanceLabel: String {
+        switch env.settings.collectionProvenance {
+        case .seededSample: return "Demo / sample (not your data)"
+        case .downloadedFromAnkiWeb: return "From AnkiWeb"
+        case .importedFromPackage: return "Imported from a package"
+        case .createdLocally: return "Created on this phone"
+        case .restoredFromBackup: return "Restored from a backup"
+        case .unknown: return "Unknown origin"
+        }
+    }
 
     private var colpkgTypes: [UTType] {
         [UTType(filenameExtension: "colpkg") ?? .data, .data]
@@ -69,13 +82,23 @@ struct AISettingsView: View {
                     if let hkey = env.settings.ankiWebHKey {
                         Label(env.settings.ankiWebUsername ?? "Logged in", systemImage: "person.crop.circle.badge.checkmark")
                             .foregroundColor(.green)
+                        LabeledContent("This phone's collection", value: provenanceLabel)
+                        if let c = collectionCounts {
+                            Text("\(c.cards) cards · \(c.decks) decks").font(.caption).foregroundColor(.secondary)
+                        }
                         Button { Task { await syncNow(hkey) } } label: {
                             HStack { Text("Sync now"); if syncing { Spacer(); ProgressView() } }
                         }.disabled(syncing)
                         if fullSyncNeeded {
                             Text("A one-way full sync is required. Choose a direction:").font(.caption).foregroundColor(.orange)
-                            Button("⬇︎ Download from AnkiWeb (replace local)") { Task { await runFull(hkey, upload: false) } }.disabled(syncing)
-                            Button("⬆︎ Upload to AnkiWeb (replace remote)", role: .destructive) { Task { await runFull(hkey, upload: true) } }.disabled(syncing)
+                            Button("⬇︎ Download from AnkiWeb (replace this phone)") { Task { await runDownload(hkey) } }.disabled(syncing)
+                            if env.settings.isUploadForbidden {
+                                Text("⬆︎ Upload is BLOCKED: this phone holds the demo/sample collection (or its origin is unknown), so it must not overwrite your AnkiWeb data. Choose Download, or restore a real backup / import first.")
+                                    .font(.caption).foregroundColor(.red)
+                            } else {
+                                Button("⬆︎ Upload to AnkiWeb (replace remote)…", role: .destructive) { showUploadConfirm = true }
+                                    .disabled(syncing)
+                            }
                         }
                         Button("Log out", role: .destructive) {
                             env.settings.ankiWebHKey = nil; syncStatus = nil; fullSyncNeeded = false
@@ -93,7 +116,7 @@ struct AISettingsView: View {
                 } header: {
                     Text("AnkiWeb sync")
                 } footer: {
-                    Text("After logging in, AnkiAI syncs. The first time, if your phone and AnkiWeb differ, you'll be asked to choose a direction: download (use AnkiWeb, replace this phone) or upload (use this phone, replace AnkiWeb). Your password is sent only to AnkiWeb; only the session key is stored (Keychain).")
+                    Text("After logging in, AnkiAI syncs. If your phone and AnkiWeb differ you choose a direction. Upload (replacing your AnkiWeb data) is BLOCKED for the demo/sample collection and for collections of unknown origin, and otherwise requires a local backup + explicit confirmation — it is never automatic. Your password is sent only to AnkiWeb; only the session key is stored (Keychain).")
                 }
 
                 Section("Study reminders") {
@@ -149,11 +172,21 @@ struct AISettingsView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("AI Assistant")
+            .alert("Replace your AnkiWeb collection?", isPresented: $showUploadConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Back up & upload (replace remote)", role: .destructive) {
+                    if let hkey = env.settings.ankiWebHKey { Task { await guardedUpload(hkey) } }
+                }
+            } message: {
+                let c = collectionCounts.map { "\($0.cards) cards · \($0.decks) decks" } ?? "this phone's collection"
+                Text("This OVERWRITES your entire AnkiWeb collection with this phone's (\(provenanceLabel): \(c)). Your remote data will be replaced and this cannot be undone. A local backup (.colpkg) is saved first.")
+            }
             .onAppear {
                 hasKey = env.settings.hasAPIKey
                 spent = env.settings.totalSpentUSD
                 limitText = String(format: "%.2f", env.settings.budgetLimitUSD)
             }
+            .task { await loadCounts() }
         }
     }
 
@@ -175,6 +208,12 @@ struct AISettingsView: View {
         }
     }
 
+    private func loadCounts() async {
+        let cards = (try? await env.gateway.searchCardIds(query: "").count) ?? 0
+        let decks = (try? await env.gateway.deckTree().count) ?? 0
+        collectionCounts = (cards, decks)
+    }
+
     private func syncNow(_ hkey: String) async {
         syncing = true; syncStatus = "Syncing…"; fullSyncNeeded = false
         do {
@@ -183,28 +222,58 @@ struct AISettingsView: View {
                 fullSyncNeeded = true
                 syncStatus = "Full sync required — choose a direction below."
             } else {
+                // A successful normal two-way sync means this phone is in sync with
+                // AnkiWeb — it is now genuinely the user's collection.
+                env.settings.collectionProvenance = .downloadedFromAnkiWeb
                 syncStatus = "Syncing media…"
-                try? await env.gateway.syncMedia(hkey: hkey)
-                syncStatus = "✓ Synced (collection + media)."
+                do { try await env.gateway.syncMedia(hkey: hkey); syncStatus = "✓ Synced (collection + media)." }
+                catch { syncStatus = "✓ Synced. ⚠︎ Media sync failed: \(error)" }
             }
         } catch {
             syncStatus = "✗ \(error)"
         }
+        await loadCounts()
         syncing = false
     }
 
-    private func runFull(_ hkey: String, upload: Bool) async {
-        syncing = true; syncStatus = upload ? "Uploading…" : "Downloading…"
+    private func runDownload(_ hkey: String) async {
+        syncing = true; syncStatus = "Downloading…"
         do {
-            if upload { try await env.gateway.uploadToAnkiWeb(hkey: hkey) }
-            else { try await env.gateway.downloadFromAnkiWeb(hkey: hkey) }
+            try await env.gateway.downloadFromAnkiWeb(hkey: hkey)
+            env.settings.collectionProvenance = .downloadedFromAnkiWeb
             syncStatus = "Syncing media…"
+            do { try await env.gateway.syncMedia(hkey: hkey); syncStatus = "✓ Downloaded (collection + media). Open the Decks tab." }
+            catch { syncStatus = "✓ Downloaded. ⚠︎ Media sync failed: \(error)" }
+            fullSyncNeeded = false
+        } catch {
+            syncStatus = "✗ Download failed (local collection preserved): \(error)"
+        }
+        await loadCounts()
+        syncing = false
+    }
+
+    /// Upload is gated: never for seeded/unknown collections; otherwise back up
+    /// locally first, then replace the remote. Never an automatic fallback.
+    private func guardedUpload(_ hkey: String) async {
+        guard !env.settings.isUploadForbidden else {
+            syncStatus = "✗ Upload blocked: this collection may not replace your AnkiWeb data."
+            return
+        }
+        syncing = true
+        do {
+            syncStatus = "Backing up before upload…"
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            try await env.gateway.backup(toPath: docs.appendingPathComponent("AnkiAI-preupload-\(stamp).colpkg").path)
+            syncStatus = "Uploading (replacing remote)…"
+            try await env.gateway.uploadToAnkiWeb(hkey: hkey)
             try? await env.gateway.syncMedia(hkey: hkey)
             fullSyncNeeded = false
-            syncStatus = upload ? "✓ Uploaded to AnkiWeb." : "✓ Downloaded (collection + media). Open the Decks tab."
+            syncStatus = "✓ Uploaded to AnkiWeb (backup saved to Documents)."
         } catch {
-            syncStatus = "✗ \(error)"
+            syncStatus = "✗ Upload failed: \(error)"
         }
+        await loadCounts()
         syncing = false
     }
 
@@ -228,6 +297,8 @@ struct AISettingsView: View {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         do {
             try await env.gateway.restore(fromColpkg: url.path)
+            env.settings.collectionProvenance = .restoredFromBackup
+            await loadCounts()
             backupStatus = "✓ Collection restored. Open the Decks tab."
         } catch {
             backupStatus = "✗ \(error)"

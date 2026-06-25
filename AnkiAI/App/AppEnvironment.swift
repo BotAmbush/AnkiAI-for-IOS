@@ -26,13 +26,20 @@ public final class AppEnvironment: ObservableObject {
         let colURL = URL(fileURLWithPath: AppEnvironment.defaultCollectionPath())
         self.collectionPath = colURL.path
 
-        // First launch: seed a real sample collection through the backend.
+        let settings = AISettingsStore()
+        self.settings = settings
+
+        // First launch: seed a DEMO sample collection through the backend, and
+        // record its provenance so it can never replace the user's AnkiWeb data.
         if !FileManager.default.fileExists(atPath: colURL.path) {
             try? AnkiCollection.createFixture(path: colURL.path)
+            settings.collectionProvenance = .seededSample
+        } else if UserDefaults.standard.string(forKey: "collection_provenance") == nil {
+            // Pre-existing collection from before provenance tracking → unknown (safe).
+            settings.collectionProvenance = .unknown
         }
         self.gateway = BackendCollectionGateway(path: colURL.path)
 
-        self.settings = AISettingsStore()
         if let db = try? AIDatabase.makeDefault() {
             self.database = db
         } else {
