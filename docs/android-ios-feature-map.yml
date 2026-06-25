@@ -563,13 +563,14 @@ features:
     category: platform
     android_paths:
       - AnkiDroid/src/main/java/com/ichi2/anki/services
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Platform/NotificationService.swift
     backend_components: []
     tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M3.
+    notes: "M2.28 — local notifications (UNUserNotificationCenter): a repeating forced-study reminder + a daily reminder helper, with authorization request. Drives the forced-study prompts. Device-verified for delivery."
 
   - feature_id: background_behavior
     description: Background tasks / scheduling.
@@ -752,10 +753,15 @@ features:
       - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/ForcedStudyService.kt
       - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/AiChatLauncherActivity.kt
       - AnkiDroid/src/main/java/com/ichi2/anki/ai/enforcement/ForcedStudyAlarmManager.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Platform/ForcedStudyManager.swift
+      - AnkiAI/Features/ForcedStudy/ForcedStudySessionView.swift
+      - AnkiAI/Features/ForcedStudy/ForcedStudySettingsView.swift
     backend_components: []
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/ForcedStudyManagerTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
+    notes: "M2.28 — iOS-faithful forced study: same config (interval/required cards/deck/snooze) as the Android fork; a repeating local notification + an in-app non-dismissible session that requires N reviews (shown as a fullScreenCover when due, on launch/foreground). iOS can't overlay other apps, so enforcement is in-app. Due/snooze/complete logic unit-tested."
     notes: iOS lacks always-on overlays/foreground service; will be partial-parity (notifications + in-app session). M3.

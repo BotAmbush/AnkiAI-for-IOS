@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 /// Keychain-backed), test connection, model info, and budget/spend tracking.
 struct AISettingsView: View {
     @EnvironmentObject private var env: AppEnvironment
+    @EnvironmentObject private var forcedStudy: ForcedStudyManager
     @State private var apiKey = ""
     @State private var hasKey = false
     @State private var testResult: String?
@@ -93,6 +94,16 @@ struct AISettingsView: View {
                     Text("AnkiWeb sync")
                 } footer: {
                     Text("\"Sync now\" is a two-way sync. The first time, download REPLACES the local sample with your collection. Your password is sent only to AnkiWeb; only the session key is stored (Keychain). Media (images) sync is a follow-up.")
+                }
+
+                Section("Study reminders") {
+                    NavigationLink {
+                        ForcedStudySettingsView()
+                            .environmentObject(env)
+                            .environmentObject(forcedStudy)
+                    } label: {
+                        Label("Forced study & reminders", systemImage: "bell.badge")
+                    }
                 }
 
                 Section {

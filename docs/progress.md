@@ -310,3 +310,11 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   whole-collection restore avoids the .apkg deck-merge bug). Gateway restore;
   Settings "Restore from .colpkg" file importer. Integration test: backup→restore
   round-trip (7 cards + decks survive). import_export + apkg_colpkg → completed.
+
+### M2.28 — Notifications + forced study (IN PROGRESS)
+- [ ] NotificationService (UNUserNotificationCenter: repeating forced-study +
+  daily reminder). ForcedStudyStore/Manager (interval/required/deck/snooze, due
+  logic). ForcedStudySessionView (non-dismissible, requires N reviews) shown as a
+  fullScreenCover when due (launch/foreground). ForcedStudySettingsView in
+  Settings. Manager due/snooze/complete unit-tested. notifications + forced_study
+  → completed.
