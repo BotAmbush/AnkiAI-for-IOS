@@ -273,8 +273,14 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   AITipEngine gained includeStreak flag. Upgraded to completed: migrations,
   statistics (numeric), settings, ai_insights.
 
-### M2.22 — AI creator image + PDF attachments (IN PROGRESS)
+### M2.22 — AI creator image + PDF attachments (CI GREEN ✅, run 28139882312)
 - [ ] AttachmentLoader (PhotosPicker images → JPEG; PDFKit rasterizes up to 6
   pages → JPEG); ChatView creator input bar gains photo + PDF buttons with an
   attachment chip; generateCards(attachments:) sends via chatWithImages.
   Added chatWithImages to AIChatAPIClient protocol (text-only default).
+
+### M2.23 — Offline MathJax (bundled SVG build) (IN PROGRESS)
+- [ ] Bundle MathJax v3 tex-mml-svg.js (self-contained SVG, 2.1MB) as an app
+  resource; CardWebView serves it over an appres:// WKURLSchemeHandler (SVG
+  output, fontCache global). CDN fallback only if the bundle is missing. Math now
+  renders offline.

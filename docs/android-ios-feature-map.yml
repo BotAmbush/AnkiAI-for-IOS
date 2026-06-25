@@ -347,10 +347,10 @@ features:
     backend_components: []
     tests:
       - AnkiAITests/HTMLTextTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Delimiters/markers unit-tested; MathJax loads from CDN (bundle locally pending).
+    notes: "M2.23 — MathJax v3 (SVG, self-contained) is BUNDLED in the app and served over an appres:// WKURLSchemeHandler for fully offline rendering; CDN is only a fallback if the bundle is missing. Delimiters/markers unit-tested."
 
   - feature_id: hebrew_rtl
     description: Hebrew and right-to-left text handling.
