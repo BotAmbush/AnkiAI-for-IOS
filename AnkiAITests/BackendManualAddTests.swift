@@ -25,7 +25,8 @@ final class BackendManualAddTests: XCTestCase {
         let after = try await gateway.searchCardIds(query: "deck:Manual").count
         XCTAssertEqual(after, before + 1, "the new card appears in the deck (Browse search)")
 
-        let cid = try XCTUnwrap(try await gateway.cardIds(inDeckNamed: "Manual").last)
+        let manualCards = try await gateway.cardIds(inDeckNamed: "Manual")
+        let cid = try XCTUnwrap(manualCards.last)
         let rendered = try await gateway.renderCard(cardId: cid)
         XCTAssertTrue(rendered.questionHTML.contains("Manual front"))
 
@@ -40,7 +41,8 @@ final class BackendManualAddTests: XCTestCase {
         let nt = try await gateway.notetypeId(named: "Cloze")
         _ = try await gateway.addNote(notetypeId: nt, fields: ["The sky is {{c1::blue}}.", ""], deckId: deckId)
 
-        let cid = try XCTUnwrap(try await gateway.cardIds(inDeckNamed: "ManualCloze").first)
+        let clozeCards = try await gateway.cardIds(inDeckNamed: "ManualCloze")
+        let cid = try XCTUnwrap(clozeCards.first)
         let rendered = try await gateway.renderCard(cardId: cid)
         XCTAssertTrue(rendered.questionHTML.contains("[...]"), "cloze question shows the blank")
         XCTAssertTrue(rendered.answerHTML.contains("blue"), "cloze answer reveals the word")
