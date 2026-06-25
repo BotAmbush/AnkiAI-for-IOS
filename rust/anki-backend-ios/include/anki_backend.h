@@ -114,6 +114,9 @@ int32_t anki_backend_sync_media(const char *col_path, const char *hkey);
 /* Back up the whole collection (with media) to a .colpkg at out_path. */
 int32_t anki_backend_export_colpkg(const char *col_path, const char *out_path);
 
+/* Restore a .colpkg, REPLACING the collection at col_path (and media). */
+int32_t anki_backend_import_colpkg(const char *col_path, const char *colpkg_path);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

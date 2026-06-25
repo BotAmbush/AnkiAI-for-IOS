@@ -25,6 +25,8 @@ use std::ptr;
 
 use anki::collection::{Collection, CollectionBuilder};
 use anki::prelude::*;
+use anki::import_export::package::import_colpkg;
+use anki::import_export::ImportProgress;
 use anki::search::SortMode;
 use anki::services::DecksService;
 use anki::services::NotesService;
@@ -1393,6 +1395,55 @@ pub extern "C" fn anki_backend_export_colpkg(
         Ok(()) => 0,
         Err(e) => {
             set_last_error(format!("export_colpkg failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Restore a `.colpkg` at `colpkg_path`, REPLACING the collection at `col_path`
+/// (and its media). Unlike .apkg import, this whole-collection restore avoids the
+/// deck-merge conflict. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_import_colpkg(
+    col_path: *const c_char,
+    colpkg_path: *const c_char,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let colpkg_path = match unsafe { cstr_to_string(colpkg_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null colpkg path".into());
+            return 1;
+        }
+    };
+    let target = PathBuf::from(&col_path);
+    let media_folder = target.with_extension("media");
+    let media_db = target.with_extension("mdb");
+    let _ = std::fs::create_dir_all(&media_folder);
+    // Open the target only to obtain a progress handler (it clones an Arc, so it
+    // stays valid after close), then close so import can replace the file.
+    let col = match CollectionBuilder::new(target.clone()).build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    let progress = col.new_progress_handler::<ImportProgress>();
+    if let Err(e) = col.close(None) {
+        set_last_error(format!("close failed: {e}"));
+        return 2;
+    }
+    match import_colpkg(&colpkg_path, &col_path, &media_folder, &media_db, progress) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("import_colpkg failed: {e:?}"));
             2
         }
     }

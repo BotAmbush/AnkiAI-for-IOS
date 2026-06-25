@@ -460,10 +460,11 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendImportExportTests.swift
-    status: partial
+      - AnkiAITests/BackendColpkgTests.swift
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.10 — .apkg EXPORT verified (valid ZIP package, run 28129393676). IMPORT wired but deferred: round-trip into a fresh collection hits anki InvalidInput 'decks have different kinds' (see docs/known-issues.md). Files-app/share-sheet UI + .colpkg pending."
+    notes: "M2.27 — full collection import/export via .colpkg: export (backup) + import (restore) round-trip is integration-tested; Settings has back-up + restore (file importer). .apkg EXPORT also verified. Only .apkg IMPORT remains an anki-internal edge ('decks have different kinds') — colpkg/sync are the working import paths (see known-issues)."
 
   - feature_id: apkg_colpkg
     description: APKG / collection package handling.
@@ -474,11 +475,11 @@ features:
       - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
-      - AnkiAITests/BackendImportExportTests.swift
-    status: partial
+      - AnkiAITests/BackendColpkgTests.swift
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.10 — .apkg export verified; import deferred (deck-kind conflict). .colpkg not yet wired."
+    notes: "M2.27 — .colpkg export (export_colpkg, with media) + import (import_colpkg, whole-collection restore) round-trip integration-tested. .apkg export works; .apkg import alone remains an anki deck-merge edge (colpkg is the working package-import path)."
 
   - feature_id: backups_restore
     description: Collection backups and restoration.

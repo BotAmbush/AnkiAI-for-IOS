@@ -170,4 +170,10 @@ public actor BackendCollectionGateway: CollectionGateway {
         try AnkiCollection.exportColpkg(path: path, outPath: outPath)
         _ = try opened()
     }
+
+    public func restore(fromColpkg colpkgPath: String) async throws {
+        collection = nil
+        try AnkiCollection.importColpkg(path: path, colpkgPath: colpkgPath)
+        _ = try opened()
+    }
 }

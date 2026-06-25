@@ -169,6 +169,8 @@ public protocol CollectionGateway: AnyObject, Sendable {
     nonisolated var mediaDirectory: URL? { get }
     func syncMedia(hkey: String) async throws
     func backup(toPath outPath: String) async throws
+    /// Restore a .colpkg, replacing the whole collection (M2.27).
+    func restore(fromColpkg colpkgPath: String) async throws
     func basicNotetypeId() async throws -> Int64
     /// Look up a notetype id by name (e.g. "Basic", "Cloze") (M2.16).
     func notetypeId(named name: String) async throws -> Int64

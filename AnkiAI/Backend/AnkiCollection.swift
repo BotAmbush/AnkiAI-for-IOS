@@ -349,6 +349,14 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.answer(lastError()) }
     }
 
+    /// Restore a `.colpkg`, REPLACING the collection at `path`. No open handle.
+    static func importColpkg(path: String, colpkgPath: String) throws {
+        let rc = path.withCString { p in
+            colpkgPath.withCString { c in anki_backend_import_colpkg(p, c) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.answer(lastError()) }
+    }
+
     /// Test/seed support: create a deterministic sample collection at `path`
     /// (real backend writes — not hardcoded data). Used by integration tests and
     /// for first-launch seeding of the app's collection.

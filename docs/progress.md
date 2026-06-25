@@ -304,3 +304,9 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   multi-day graduation). learning_review_relearning_steps → completed.
   Completes the requested red+yellow batch (media, audio, filtered, custom study,
   backups, learning steps).
+
+### M2.27 — .colpkg restore (completes import) (IN PROGRESS)
+- [ ] Bridge import_colpkg (progress handler from a throwaway open then close;
+  whole-collection restore avoids the .apkg deck-merge bug). Gateway restore;
+  Settings "Restore from .colpkg" file importer. Integration test: backup→restore
+  round-trip (7 cards + decks survive). import_export + apkg_colpkg → completed.

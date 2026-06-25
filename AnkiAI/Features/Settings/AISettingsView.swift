@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// AI Assistant settings. Mirrors `AiSettingsFragment` — API key entry (now
 /// Keychain-backed), test connection, model info, and budget/spend tracking.
@@ -17,6 +18,11 @@ struct AISettingsView: View {
     @State private var fullSyncNeeded = false
     @State private var backupStatus: String?
     @State private var backingUp = false
+    @State private var showRestoreImporter = false
+
+    private var colpkgTypes: [UTType] {
+        [UTType(filenameExtension: "colpkg") ?? .data, .data]
+    }
 
     var body: some View {
         NavigationStack {
@@ -93,11 +99,18 @@ struct AISettingsView: View {
                     Button { Task { await exportBackup() } } label: {
                         HStack { Text("Back up collection (.colpkg)"); if backingUp { Spacer(); ProgressView() } }
                     }.disabled(backingUp)
+                    Button(role: .destructive) { showRestoreImporter = true } label: {
+                        Text("Restore from .colpkg (replaces all)")
+                    }.disabled(backingUp)
                     if let backupStatus { Text(backupStatus).font(.caption) }
                 } header: {
-                    Text("Backup")
+                    Text("Backup & restore")
                 } footer: {
-                    Text("Saves a full .colpkg (collection + media) into the app's Documents folder, accessible via the Files app. Restore is via AnkiWeb sync or Anki Desktop.")
+                    Text("Back up saves a full .colpkg (collection + media) to the app's Documents folder (Files app). Restore REPLACES your whole collection from a .colpkg exported by AnkiAI or Anki Desktop.")
+                }
+                .fileImporter(isPresented: $showRestoreImporter, allowedContentTypes: colpkgTypes) { result in
+                    guard case .success(let url) = result else { return }
+                    Task { await restoreBackup(url) }
                 }
 
                 Section {
@@ -193,6 +206,19 @@ struct AISettingsView: View {
             let out = docs.appendingPathComponent("AnkiAI-backup-\(stamp).colpkg")
             try await env.gateway.backup(toPath: out.path)
             backupStatus = "✓ Saved \(out.lastPathComponent) to Documents."
+        } catch {
+            backupStatus = "✗ \(error)"
+        }
+        backingUp = false
+    }
+
+    private func restoreBackup(_ url: URL) async {
+        backingUp = true; backupStatus = "Restoring…"
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            try await env.gateway.restore(fromColpkg: url.path)
+            backupStatus = "✓ Collection restored. Open the Decks tab."
         } catch {
             backupStatus = "✗ \(error)"
         }
