@@ -22,6 +22,7 @@ struct AISettingsView: View {
     @State private var showRestoreImporter = false
     @State private var lastBackup: BackupInfo?
     @State private var exportPickerURL: URL?
+    @State private var loggedIn = false
     @State private var showUploadConfirm = false
     @State private var collectionCounts: (cards: Int, decks: Int)?
 
@@ -81,7 +82,7 @@ struct AISettingsView: View {
                 }
 
                 Section {
-                    if let hkey = env.settings.ankiWebHKey {
+                    if loggedIn, let hkey = env.settings.ankiWebHKey {
                         Label(env.settings.ankiWebUsername ?? "Logged in", systemImage: "person.crop.circle.badge.checkmark")
                             .foregroundColor(.green)
                         LabeledContent("This phone's collection", value: provenanceLabel)
@@ -109,10 +110,12 @@ struct AISettingsView: View {
                                     .disabled(syncing)
                             }
                         }
-                        Button("Log out", role: .destructive) {
-                            env.settings.ankiWebHKey = nil; syncStatus = nil; fullSyncNeeded = false
-                        }
+                        Button("Log out", role: .destructive) { logOut() }
                     } else {
+                        if env.settings.collectionProvenance == .seededSample {
+                            Text("Not signed in. This phone has the demo/sample collection.")
+                                .font(.caption).foregroundColor(.secondary)
+                        }
                         TextField("AnkiWeb email", text: $ankiUser)
                             .textContentType(.username).keyboardType(.emailAddress)
                             .autocorrectionDisabled().textInputAutocapitalization(.never)
@@ -213,9 +216,22 @@ struct AISettingsView: View {
                 hasKey = env.settings.hasAPIKey
                 spent = env.settings.totalSpentUSD
                 limitText = String(format: "%.2f", env.settings.budgetLimitUSD)
+                loggedIn = env.settings.isAnkiWebLoggedIn   // only a real persisted session
             }
             .task { await loadCounts() }
         }
+    }
+
+    /// Log out immediately: invalidate the session, cancel pending sync work, clear
+    /// the displayed account and update the UI. Never touches the local collection.
+    private func logOut() {
+        env.settings.logOutAnkiWeb()
+        syncing = false
+        fullSyncNeeded = false
+        ankiUser = ""
+        ankiPass = ""
+        loggedIn = false
+        syncStatus = "Logged out. Your cards on this phone are unchanged."
     }
 
     private func loginAndSync() async {
@@ -226,6 +242,7 @@ struct AISettingsView: View {
             env.settings.ankiWebHKey = hkey
             env.settings.ankiWebUsername = ankiUser
             ankiPass = ""
+            loggedIn = true
             syncing = false
             // Two-way sync; if the phone and AnkiWeb diverge, the user is asked to
             // choose a direction (download vs upload) rather than auto-replacing.

@@ -36,7 +36,7 @@ features:
     backend_components: []
     tests: []
     status: completed
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "SwiftUI App + scene + AppEnvironment: launch, dependency wiring, collection open/seed/replace (on sync). Core lifecycle complete. (Background tasks are tracked separately under background_behavior.)"
 
@@ -161,7 +161,7 @@ features:
     tests:
       - AnkiAITests/BackendRenderTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "Full reviewer: real backend render (HTML/MathJax/CSS), Show Answer, Again/Hard/Good/Easy with next-interval labels, bury/suspend/undo/move/flag/edit, deck-complete state, Ask Claude. Rendering + answering integration-tested."
 
@@ -244,7 +244,7 @@ features:
       - AnkiAITests/BackendDeckTreeTests.swift
       - AnkiAITests/BackendAnswerTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "Scheduler runs in the linked backend: due counts, grade_now (Again/Hard/Good/Easy), next-interval labels, queue-based review, bury/suspend/undo, and M2.35 per-card reschedule (set_due_date + forget/reschedule_cards_as_new, surfaced in the reviewer menu) — all integration-tested. (Per-deck options config UI is intentionally not exposed — risky to write on a live synced collection.)"
 
@@ -257,7 +257,7 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
     status: completed
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "FSRS is the active scheduler in the linked backend (the fixture's graded card graduates per FSRS; card info surfaces ease/memory state). Scheduling decisions use FSRS end-to-end. (Parameter optimization UI is a separate deck-options item.)"
 
@@ -272,7 +272,7 @@ features:
     tests:
       - AnkiAITests/BackendLearningStepsTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "Learning/review/relearning step transitions are performed by the linked backend scheduler (same engine as AnkiDroid). Integration-tested: answering a new card 'Again' keeps it in learning (no multi-day graduation); grading also drives review/relearning transitions (see scheduler tests)."
 
@@ -350,7 +350,7 @@ features:
     tests:
       - AnkiAITests/HTMLTextTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "M2.23 — MathJax v3 (SVG, self-contained) is BUNDLED in the app and served over an appres:// WKURLSchemeHandler for fully offline rendering; CDN is only a fallback if the bundle is missing. Delimiters/markers unit-tested."
 
@@ -366,7 +366,7 @@ features:
     tests:
       - AnkiAITests/HTMLTextTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: dir preserved end-to-end; strip helpers tested. UI string localization still pending.
 
@@ -414,7 +414,7 @@ features:
     tests:
       - AnkiAITests/CardWebViewMediaTests.swift
     status: completed
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "M2.24 — media file sync (anki_backend_sync_media via MediaManager) downloads the image/audio files; CardWebView serves them over the appres://media/ scheme (AppResSchemeHandler reads <col>.media) and rewrites relative <img src> (unit-tested). Wired into the AnkiWeb sync flow. Device-verified for real media."
 
@@ -509,8 +509,8 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendSyncDownloadTests.swift
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
     notes: "[AUDIT 2026-06-25] Reverted to partial: real physical-device full DOWNLOAD not re-verified after the endpoint fix, and BackgroundSync error handling is being hardened. DEVICE-VERIFIED by the user (AnkiWeb download works, media displays). M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task)."
 

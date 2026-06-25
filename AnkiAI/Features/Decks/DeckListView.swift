@@ -9,6 +9,7 @@ struct DeckListView: View {
     @State private var isLoading = true
     @State private var loadError: String?
     @State private var showCreator = false
+    @State private var showManualAdd = false
     @State private var showCustomStudy = false
     @State private var renameTarget: DeckTreeEntry?
     @State private var renameText = ""
@@ -67,6 +68,11 @@ struct DeckListView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showManualAdd = true } label: {
+                        Label("Add card", systemImage: "plus")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showCreator = true } label: {
                         Label("Create Cards with AI".loc, systemImage: "sparkles")
                     }
@@ -74,6 +80,9 @@ struct DeckListView: View {
             }
             .sheet(isPresented: $showCustomStudy) {
                 CustomStudyView { Task { await load() } }
+            }
+            .sheet(isPresented: $showManualAdd) {
+                ManualAddCardView { Task { await load() } }.environmentObject(env)
             }
             .sheet(item: $optionsDeck) { deck in
                 DeckOptionsView(deckId: deck.deckId, deckName: deck.name)

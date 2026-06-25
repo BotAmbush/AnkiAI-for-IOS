@@ -1,5 +1,23 @@
 # AnkiAI — Physical-Device Test Plan
 
+## ✅ Already PASSED on a physical device (2026-06-25)
+- Full AnkiWeb **download** · **media** download
+- **Demo/seeded upload blocking** (the sample collection cannot replace AnkiWeb)
+- Normal **two-way sync**
+- **Persistence** after force-closing and reopening
+- **Learning/relearning** card returning after the displayed short delay
+- **MathJax** rendering
+
+> Recorded as `physical_device_verified: true` in the feature map. Full **upload**
+> is NOT physically verified (and is intentionally guarded).
+
+## 🔁 MUST be RE-TESTED on device (fixed in this repair, not yet device-verified)
+- **Manual backup** now saved to On My iPhone/AnkiAI/Backups (Files-visible) — steps 13–14.
+- **Manual Add Card** entry point (Decks → "+" Add card) — new step.
+- **Logout / initial auth UI** (demo never shown as logged in; Logout works now) — steps 1–3 + a logout.
+
+---
+
 Run this **ordered** sequence on a real iPhone after installing the latest unsigned
 IPA (signed with iLoader). Record each step as **PASS / FAIL / NOT TESTED** in the
 table at the bottom. Nothing is "device-verified" until this is executed.

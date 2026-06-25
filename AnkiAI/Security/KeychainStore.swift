@@ -118,6 +118,18 @@ public final class AISettingsStore {
         set { defaults.set(newValue, forKey: "ankiweb_username") }
     }
 
+    /// True ONLY when a real persisted AnkiWeb session key exists. The seeded/demo
+    /// collection has none, so it is never presented as an authenticated account.
+    public var isAnkiWebLoggedIn: Bool { (ankiWebHKey?.isEmpty == false) }
+
+    /// Log out of AnkiWeb: invalidate/remove the session key + username and the last
+    /// background-sync state. Does NOT touch the local collection.
+    public func logOutAnkiWeb() {
+        ankiWebHKey = nil
+        ankiWebUsername = nil
+        lastBackgroundSyncResult = nil
+    }
+
     public var budgetLimitUSD: Double {
         get {
             let v = defaults.double(forKey: "ai_budget_limit_usd")
