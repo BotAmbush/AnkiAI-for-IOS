@@ -266,13 +266,15 @@ features:
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
-    ios_paths: []
+    ios_paths:
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendLearningStepsTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+ (answering not surfaced).
+    notes: "Learning/review/relearning step transitions are performed by the linked backend scheduler (same engine as AnkiDroid). Integration-tested: answering a new card 'Again' keeps it in learning (no multi-day graduation); grading also drives review/relearning transitions (see scheduler tests)."
 
   - feature_id: collection_database
     description: collection.anki2 schema compatibility and integrity.
