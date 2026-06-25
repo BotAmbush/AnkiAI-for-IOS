@@ -405,26 +405,31 @@ features:
     category: media
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/Media.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Rendering/CardWebView.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/CardWebViewMediaTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.24 — media file sync (anki_backend_sync_media via MediaManager) downloads the image/audio files; CardWebView serves them over the appres://media/ scheme (AppResSchemeHandler reads <col>.media) and rewrites relative <img src> (unit-tested). Wired into the AnkiWeb sync flow. Device-verified for real media."
 
   - feature_id: audio
     description: Audio playback/recording for cards.
     category: media
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/Media.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Rendering/CardWebView.swift
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/CardWebViewMediaTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.24 — [sound:file] references are rewritten to an inline HTML5 <audio controls> served over appres://media/ (unit-tested). Files arrive via media sync. Playback only; in-app audio recording is a later enhancement."
 
   - feature_id: statistics
     description: Study statistics.
@@ -478,13 +483,15 @@ features:
     category: io
     android_paths:
       - AnkiDroid/src/main/java/com/ichi2/anki/BackendBackups.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Settings/AISettingsView.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.24 — full BACKUP to .colpkg (export_colpkg with media) into the app's Documents folder (Files-app accessible) from Settings. RESTORE is via AnkiWeb sync (download replaces local) or Anki Desktop; .colpkg file-restore shares the deferred colpkg-import progress-handler work (see known-issues)."
 
   - feature_id: synchronization
     description: AnkiWeb / self-hosted sync.

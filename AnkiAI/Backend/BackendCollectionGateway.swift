@@ -149,4 +149,22 @@ public actor BackendCollectionGateway: CollectionGateway {
         try AnkiCollection.syncUpload(path: path, hkey: hkey)
         _ = try opened()
     }
+
+    /// The media folder for this collection (`<col>.media`), where image/audio
+    /// files live — used by the WebView to resolve `<img>`/`[sound:]` references.
+    public nonisolated var mediaDirectory: URL? {
+        URL(fileURLWithPath: path).deletingPathExtension().appendingPathExtension("media")
+    }
+
+    public func syncMedia(hkey: String) async throws {
+        collection = nil
+        try AnkiCollection.syncMedia(path: path, hkey: hkey)
+        _ = try opened()
+    }
+
+    public func backup(toPath outPath: String) async throws {
+        collection = nil
+        try AnkiCollection.exportColpkg(path: path, outPath: outPath)
+        _ = try opened()
+    }
 }

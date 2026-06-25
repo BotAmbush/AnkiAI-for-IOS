@@ -87,9 +87,11 @@ private struct CardDetailView: View {
             } else if let rendered {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        CardWebView(html: rendered.questionHTML, css: rendered.css).frame(minHeight: 140)
+                        CardWebView(html: rendered.questionHTML, css: rendered.css,
+                                    mediaDirectory: env.gateway.mediaDirectory).frame(minHeight: 140)
                         Divider()
-                        CardWebView(html: rendered.answerHTML, css: rendered.css).frame(minHeight: 160)
+                        CardWebView(html: rendered.answerHTML, css: rendered.css,
+                                    mediaDirectory: env.gateway.mediaDirectory).frame(minHeight: 160)
                         if let info { infoSection(info) }
                     }
                 }

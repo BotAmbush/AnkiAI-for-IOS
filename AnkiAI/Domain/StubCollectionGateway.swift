@@ -62,6 +62,9 @@ public actor StubCollectionGateway: CollectionGateway {
     }
     public func sync(hkey: String) async throws -> Bool { throw GatewayError.notImplementedInM21("sync") }
     public func uploadToAnkiWeb(hkey: String) async throws { throw GatewayError.notImplementedInM21("uploadToAnkiWeb") }
+    public nonisolated var mediaDirectory: URL? { nil }
+    public func syncMedia(hkey: String) async throws { throw GatewayError.notImplementedInM21("syncMedia") }
+    public func backup(toPath outPath: String) async throws { throw GatewayError.notImplementedInM21("backup") }
 
     public func answerCard(cardId: Int64, rating: AnswerRating) async throws {
         throw GatewayError.notImplementedInM21("answerCard")

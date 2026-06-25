@@ -34,6 +34,7 @@ use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptio
 use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
 use anki::sync::collection::normal::SyncActionRequired;
 use anki::sync::login::{sync_login, SyncAuth};
+use anki::sync::media::progress::MediaSyncProgress;
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
@@ -1219,6 +1220,108 @@ pub extern "C" fn anki_backend_sync_upload(
         Ok(()) => 0,
         Err(e) => {
             set_last_error(format!("sync_upload failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Sync media files (download/upload the actual image/audio files) for `hkey`.
+/// Uses the desktop media-folder convention (`<col>.media`). Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_sync_media(
+    col_path: *const c_char,
+    hkey: *const c_char,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let hkey = match unsafe { cstr_to_string(hkey) } {
+        Some(h) => h,
+        None => {
+            set_last_error("null hkey".into());
+            return 1;
+        }
+    };
+    let mut builder = CollectionBuilder::new(PathBuf::from(&col_path));
+    builder.with_desktop_media_paths();
+    let mut col = match builder.build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    let mgr = match col.media() {
+        Ok(m) => m,
+        Err(e) => {
+            set_last_error(format!("media open failed: {e}"));
+            let _ = col.close(None);
+            return 2;
+        }
+    };
+    let progress = col.new_progress_handler::<MediaSyncProgress>();
+    let auth = SyncAuth {
+        hkey,
+        endpoint: None,
+        io_timeout_secs: None,
+    };
+    let rt = match sync_runtime() {
+        Ok(r) => r,
+        Err(e) => {
+            set_last_error(format!("runtime: {e}"));
+            let _ = col.close(None);
+            return 2;
+        }
+    };
+    let result = rt.block_on(mgr.sync_media(progress, auth, sync_client(), None));
+    let _ = col.close(None);
+    match result {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("sync_media failed: {e:?}"));
+            2
+        }
+    }
+}
+
+/// Back up the whole collection to a `.colpkg` at `out_path` (with media).
+/// Consumes/reopens internally (export closes the collection). Returns 0 on ok.
+#[no_mangle]
+pub extern "C" fn anki_backend_export_colpkg(
+    col_path: *const c_char,
+    out_path: *const c_char,
+) -> c_int {
+    let col_path = match unsafe { cstr_to_string(col_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null col path".into());
+            return 1;
+        }
+    };
+    let out_path = match unsafe { cstr_to_string(out_path) } {
+        Some(p) => p,
+        None => {
+            set_last_error("null out path".into());
+            return 1;
+        }
+    };
+    let mut builder = CollectionBuilder::new(PathBuf::from(&col_path));
+    builder.with_desktop_media_paths();
+    let col = match builder.build() {
+        Ok(c) => c,
+        Err(e) => {
+            set_last_error(format!("open failed: {e}"));
+            return 2;
+        }
+    };
+    match col.export_colpkg(&out_path, true, false) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_error(format!("export_colpkg failed: {e:?}"));
             2
         }
     }

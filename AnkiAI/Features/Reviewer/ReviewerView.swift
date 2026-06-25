@@ -37,7 +37,8 @@ struct ReviewerView: View {
             } else if finished {
                 completionView
             } else if let rendered {
-                CardWebView(html: showAnswer ? rendered.answerHTML : rendered.questionHTML, css: rendered.css)
+                CardWebView(html: showAnswer ? rendered.answerHTML : rendered.questionHTML, css: rendered.css,
+                            mediaDirectory: env.gateway.mediaDirectory)
                     .frame(maxHeight: .infinity)
                 Divider()
                 controls

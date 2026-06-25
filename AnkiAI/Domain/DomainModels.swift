@@ -163,6 +163,10 @@ public protocol CollectionGateway: AnyObject, Sendable {
     /// Two-way sync (returns true if a full sync is required); full-upload (M2.20).
     func sync(hkey: String) async throws -> Bool
     func uploadToAnkiWeb(hkey: String) async throws
+    /// Media files folder (`<col>.media`); sync media; back up to .colpkg (M2.24).
+    nonisolated var mediaDirectory: URL? { get }
+    func syncMedia(hkey: String) async throws
+    func backup(toPath outPath: String) async throws
     func basicNotetypeId() async throws -> Int64
     /// Look up a notetype id by name (e.g. "Basic", "Cloze") (M2.16).
     func notetypeId(named name: String) async throws -> Int64

@@ -322,6 +322,22 @@ final class AnkiCollection {
         guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
     }
 
+    /// AnkiWeb: sync the media files (images/audio). No handle may be open on `path`.
+    static func syncMedia(path: String, hkey: String) throws {
+        let rc = path.withCString { p in
+            hkey.withCString { h in anki_backend_sync_media(p, h) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
+    }
+
+    /// Back up the whole collection (with media) to a `.colpkg`. No open handle.
+    static func exportColpkg(path: String, outPath: String) throws {
+        let rc = path.withCString { p in
+            outPath.withCString { o in anki_backend_export_colpkg(p, o) }
+        }
+        guard rc == 0 else { throw AnkiBackendError.answer(lastError()) }
+    }
+
     /// Test/seed support: create a deterministic sample collection at `path`
     /// (real backend writes — not hardcoded data). Used by integration tests and
     /// for first-launch seeding of the app's collection.

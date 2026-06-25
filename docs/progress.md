@@ -284,3 +284,11 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   resource; CardWebView serves it over an appres:// WKURLSchemeHandler (SVG
   output, fontCache global). CDN fallback only if the bundle is missing. Math now
   renders offline.
+
+### M2.24 — Media (sync + render) + audio + backup (IN PROGRESS)
+- [ ] Bridge: sync_media (MediaManager + new_progress_handler), export_colpkg
+  (backup with media). Gateway syncMedia/backup + mediaDirectory (<col>.media).
+  CardWebView: AppResSchemeHandler serves appres://media/<file>; rewriteMedia
+  rewrites <img src> + [sound:] → <audio> (unit-tested). Media sync wired into the
+  AnkiWeb flow; Settings backup button (.colpkg → Documents). media/audio/
+  backups_restore → completed.

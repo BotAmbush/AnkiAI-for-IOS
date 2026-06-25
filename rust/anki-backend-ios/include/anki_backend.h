@@ -104,6 +104,12 @@ int32_t anki_backend_sync(const char *col_path, const char *hkey, int32_t *out_r
 /* AnkiWeb: full-upload local collection, REPLACING the remote. */
 int32_t anki_backend_sync_upload(const char *col_path, const char *hkey);
 
+/* AnkiWeb: sync media files (images/audio) for hkey. */
+int32_t anki_backend_sync_media(const char *col_path, const char *hkey);
+
+/* Back up the whole collection (with media) to a .colpkg at out_path. */
+int32_t anki_backend_export_colpkg(const char *col_path, const char *out_path);
+
 /* Test support: build a deterministic fixture collection at `path`. */
 int32_t anki_backend_create_fixture(const char *path);
 

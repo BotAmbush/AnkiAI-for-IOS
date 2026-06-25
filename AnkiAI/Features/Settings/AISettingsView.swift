@@ -15,6 +15,8 @@ struct AISettingsView: View {
     @State private var syncing = false
     @State private var syncStatus: String?
     @State private var fullSyncNeeded = false
+    @State private var backupStatus: String?
+    @State private var backingUp = false
 
     var body: some View {
         NavigationStack {
@@ -88,6 +90,17 @@ struct AISettingsView: View {
                 }
 
                 Section {
+                    Button { Task { await exportBackup() } } label: {
+                        HStack { Text("Back up collection (.colpkg)"); if backingUp { Spacer(); ProgressView() } }
+                    }.disabled(backingUp)
+                    if let backupStatus { Text(backupStatus).font(.caption) }
+                } header: {
+                    Text("Backup")
+                } footer: {
+                    Text("Saves a full .colpkg (collection + media) into the app's Documents folder, accessible via the Files app. Restore is via AnkiWeb sync or Anki Desktop.")
+                }
+
+                Section {
                     LabeledContent("Spent", value: String(format: "$%.4f", spent))
                     LabeledContent("Remaining", value: String(format: "$%.4f", max(0, env.settings.budgetLimitUSD - spent)))
                     HStack {
@@ -130,7 +143,9 @@ struct AISettingsView: View {
             ankiPass = ""
             syncStatus = "Downloading collection…"
             try await env.gateway.downloadFromAnkiWeb(hkey: hkey)
-            syncStatus = "✓ Collection downloaded. Open the Decks tab."
+            syncStatus = "Downloading media…"
+            try? await env.gateway.syncMedia(hkey: hkey)
+            syncStatus = "✓ Collection + media downloaded. Open the Decks tab."
         } catch {
             syncStatus = "✗ \(error)"
         }
@@ -145,7 +160,9 @@ struct AISettingsView: View {
                 fullSyncNeeded = true
                 syncStatus = "Full sync required — choose a direction below."
             } else {
-                syncStatus = "✓ Synced."
+                syncStatus = "Syncing media…"
+                try? await env.gateway.syncMedia(hkey: hkey)
+                syncStatus = "✓ Synced (collection + media)."
             }
         } catch {
             syncStatus = "✗ \(error)"
@@ -158,12 +175,28 @@ struct AISettingsView: View {
         do {
             if upload { try await env.gateway.uploadToAnkiWeb(hkey: hkey) }
             else { try await env.gateway.downloadFromAnkiWeb(hkey: hkey) }
+            syncStatus = "Syncing media…"
+            try? await env.gateway.syncMedia(hkey: hkey)
             fullSyncNeeded = false
-            syncStatus = upload ? "✓ Uploaded to AnkiWeb." : "✓ Downloaded. Open the Decks tab."
+            syncStatus = upload ? "✓ Uploaded to AnkiWeb." : "✓ Downloaded (collection + media). Open the Decks tab."
         } catch {
             syncStatus = "✗ \(error)"
         }
         syncing = false
+    }
+
+    private func exportBackup() async {
+        backingUp = true; backupStatus = "Backing up…"
+        do {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let out = docs.appendingPathComponent("AnkiAI-backup-\(stamp).colpkg")
+            try await env.gateway.backup(toPath: out.path)
+            backupStatus = "✓ Saved \(out.lastPathComponent) to Documents."
+        } catch {
+            backupStatus = "✗ \(error)"
+        }
+        backingUp = false
     }
 
     private func saveLimit() {
