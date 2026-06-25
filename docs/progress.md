@@ -413,7 +413,7 @@ Device feedback fixes:
   AI request returns a graceful failure (no crash). Closes the remaining
   testing-requirements gaps.
 
-### M2.43 — Media path-traversal hardening (CLAUDE.md security) (IN PROGRESS)
+### M2.43 — Media path-traversal hardening (CI GREEN, run 28155233415)
 - [ ] AppResSchemeHandler.mediaFileURL(in:requestURL:): pure, traversal-guarded
   resolution (last path component only; reject ../ , embedded slashes, empty/dot;
   verify the resolved file sits directly under the media folder). Unit-tested.
