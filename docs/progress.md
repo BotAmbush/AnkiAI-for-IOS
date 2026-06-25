@@ -406,3 +406,9 @@ Device feedback fixes:
   rate limiting (429 → rateLimited), generic HTTP (500 → .http), and malformed AI
   responses (non-JSON 200 → malformedResponse; missing text → noTextContent) +
   unexpected errors → underlying. Closes the testing-requirements gap.
+
+### M2.42 — Date-boundary + cancellation tests (CLAUDE.md requirements) (IN PROGRESS)
+- [ ] Date-boundary: a card due tomorrow is not due today, due today is; a review
+  answered now is within today (rated:1). Cancellation: a cancelled/CancellationError
+  AI request returns a graceful failure (no crash). Closes the remaining
+  testing-requirements gaps.
