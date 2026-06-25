@@ -376,7 +376,7 @@ Device feedback fixes:
   date…" alert, "Forget card"). Integration test: set-due-date → review with a due
   date; forget → new with a queue position.
 
-### M2.36 — Tag editing in the note editor (IN PROGRESS)
+### M2.36 — Tag editing in the note editor (CI GREEN, run 28149436245)
 - [ ] Bridge update_note gains an optional tags_json (null = keep existing tags, so
   the AI edit path is unaffected). NoteData.tags (optional), EditableNote.tags;
   NoteEditorView shows a space-separated Tags field. Integration tests: tag
