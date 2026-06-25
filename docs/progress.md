@@ -407,7 +407,7 @@ Device feedback fixes:
   responses (non-JSON 200 → malformedResponse; missing text → noTextContent) +
   unexpected errors → underlying. Closes the testing-requirements gap.
 
-### M2.42 — Date-boundary + cancellation tests (CLAUDE.md requirements) (IN PROGRESS)
+### M2.42 — Date-boundary + cancellation tests (CI GREEN, run 28153527665)
 - [ ] Date-boundary: a card due tomorrow is not due today, due today is; a review
   answered now is within today (rated:1). Cancellation: a cancelled/CancellationError
   AI request returns a graceful failure (no crash). Closes the remaining
