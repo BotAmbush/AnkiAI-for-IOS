@@ -299,7 +299,7 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   (deck-list toolbar) with presets. Integration test: filtered deck appears in
   the tree. filtered_decks + custom_study → completed.
 
-### M2.26 — Learning steps verified (IN PROGRESS)
+### M2.26 — Learning steps verified (CI GREEN ✅, run 28142041190)
 - [ ] Integration test: answering a new card "Again" keeps it in learning (no
   multi-day graduation). learning_review_relearning_steps → completed.
   Completes the requested red+yellow batch (media, audio, filtered, custom study,
