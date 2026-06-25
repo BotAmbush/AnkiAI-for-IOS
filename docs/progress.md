@@ -386,3 +386,9 @@ Device feedback fixes:
 - [ ] Bridge anki_backend_unsuspend_card (unbury_or_unsuspend_cards). Browser bulk
   Suspend/Unsuspend submenu. Deck list "New deck" button (resolveOrCreateDeck).
   Integration test: suspend → is:suspended; unsuspend → not.
+
+### M2.38 — Auto-detect cloze in AI cards (IN PROGRESS)
+- [ ] AIChatViewModel.containsCloze: when a generated/added card contains
+  {{cN::...}}, create a Cloze note (notetypeId(named:"Cloze")) instead of Basic.
+  No prompt/parser change. Unit-tested (detection); cloze rendering already
+  integration-tested (BackendClozeTests).

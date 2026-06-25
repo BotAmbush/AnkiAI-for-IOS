@@ -192,8 +192,10 @@ public final class AIChatViewModel: ObservableObject {
         isLoading = true
         do {
             let notetypeId: Int64
-            if let sourceNoteId = cardContext?.noteId,
-               let sourceNotetypeId = try? await gateway.note(id: sourceNoteId).notetypeId {
+            if Self.containsCloze(proposal.front) || Self.containsCloze(proposal.back) {
+                notetypeId = try await gateway.notetypeId(named: "Cloze")
+            } else if let sourceNoteId = cardContext?.noteId,
+                      let sourceNotetypeId = try? await gateway.note(id: sourceNoteId).notetypeId {
                 notetypeId = sourceNotetypeId
             } else {
                 notetypeId = try await gateway.basicNotetypeId()
@@ -208,6 +210,12 @@ public final class AIChatViewModel: ObservableObject {
     }
 
     public func dismissAddCardProposal() { pendingAddCardProposal = nil }
+
+    /// True if the text contains Anki cloze syntax (`{{c1::…}}`), so the card
+    /// should be created with the Cloze note type rather than Basic.
+    nonisolated static func containsCloze(_ s: String) -> Bool {
+        s.range(of: "\\{\\{c[0-9]+::", options: .regularExpression) != nil
+    }
 
     private func insertUser(_ text: String) {
         try? db.insert(AIChatMessage(sessionId: sessionId, role: AIChatMessage.roleUser, content: text))
@@ -264,7 +272,10 @@ public final class AIChatViewModel: ObservableObject {
     public func addCardFromProposal(_ proposal: CardProposal) async {
         isLoading = true
         do {
-            let notetypeId = try await gateway.basicNotetypeId()
+            let cloze = Self.containsCloze(proposal.front) || Self.containsCloze(proposal.back)
+            let notetypeId = cloze
+                ? try await gateway.notetypeId(named: "Cloze")
+                : try await gateway.basicNotetypeId()
             _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: proposal.deckId)
             addedCount += 1
             generationProposals.removeAll { $0.id == proposal.id }

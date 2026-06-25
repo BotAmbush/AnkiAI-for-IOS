@@ -675,7 +675,7 @@ features:
     status: completed
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "Tip engine ported + unit-tested. Insights now feed it REAL collection data (total/mature/weak/today/30-day retention via backend search). Streak history + per-card timing need the full revlog graph data, so those tips are cleanly omitted (includeStreak:false) rather than faked."
+    notes: "M2.38 — AI creator + add-card auto-detect cloze syntax ({{c1::...}}) and create a Cloze note instead of Basic (no prompt/parser change). Tip engine ported + unit-tested. Insights now feed it REAL collection data (total/mature/weak/today/30-day retention via backend search). Streak history + per-card timing need the full revlog graph data, so those tips are cleanly omitted (includeStreak:false) rather than faked."
 
   - feature_id: ai_response_parsing
     description: Parse Claude replies (edit/add actions, creator JSON array).
