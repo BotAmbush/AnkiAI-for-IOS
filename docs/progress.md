@@ -387,7 +387,7 @@ Device feedback fixes:
   Suspend/Unsuspend submenu. Deck list "New deck" button (resolveOrCreateDeck).
   Integration test: suspend → is:suspended; unsuspend → not.
 
-### M2.38 — Auto-detect cloze in AI cards (IN PROGRESS)
+### M2.38 — Auto-detect cloze in AI cards (CI GREEN, run 28150724497)
 - [ ] AIChatViewModel.containsCloze: when a generated/added card contains
   {{cN::...}}, create a Cloze note (notetypeId(named:"Cloze")) instead of Basic.
   No prompt/parser change. Unit-tested (detection); cloze rendering already
