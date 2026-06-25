@@ -2,6 +2,22 @@
 
 Canonical status of the AnkiAI iOS migration. Updated after every milestone.
 
+## 2026-06-25 — DE-FINALIZED (Mode A) + audit repair + device repair
+An independent Codex audit returned NOT COMPLETE; the premature finalization was
+REVERTED to Mode A (history Entry 3). Audit repairs landed: P0 seeded-collection
+upload guard, honest bulk-op reporting, BackgroundSync result persistence, real
+revlog Insights metrics, forced-study reclassified partial/platform-limited, broad
+integration fixtures, `.apkg` import safety + tests (kept partial). A physical-device
+retest then confirmed download / media / two-way sync / persistence / learning-delay
+/ MathJax / demo-upload-block (recorded `physical_device_verified: true`) and found 3
+defects, now fixed: (1) backups made Files-visible via `Documents/Backups` +
+Info.plist file-sharing keys (CI-verified in the compiled app); (2) a native manual
+**Add Card** entry point (Basic/Cloze, real backend); (3) **Logout**/auth-state
+observability. CI green (run 28177577113, **149 tests**). Feature map: **42 completed
+/ 4 partial / 9 device-verified**. Status: still **initial-full-migration**, NOT
+finalized — awaiting a second independent audit + a device retest of the 3 fixes.
+See `CLAUDE-REPAIR-REPORT.md`.
+
 ## Baseline (captured 2026-06-24)
 
 - **Android source**: `C:\Users\Evyatar\AndroidStudioProjects\Anki-Android-AI` — **read-only**.

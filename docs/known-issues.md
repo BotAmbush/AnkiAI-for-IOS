@@ -2,6 +2,21 @@
 
 Updated 2026-06-24 (M1).
 
+## 2026-06-25 device repair — resolved + awaiting retest
+Three physical-device defects were fixed (code-complete, **not yet device-retested**):
+- **Manual backup invisible in Files** — root cause was the missing Info.plist
+  file-sharing keys, not the export. Now `UIFileSharingEnabled` +
+  `LSSupportsOpeningDocumentsInPlace` (CI verifies both in the COMPILED app), and
+  backups are validated + saved to `Documents/Backups` (Files-visible) with
+  list/share/save/delete.
+- **No discoverable manual Add Card** — added a native Decks-toolbar "+" → Basic/Cloze
+  creator (real backend).
+- **Logout did nothing / stale demo account** — auth state is now observable;
+  demo/seeded is never shown as authenticated; Logout clears the session immediately.
+Confirmed working on device and recorded device-verified: full download, media,
+two-way sync, persistence, learning-delay, MathJax, demo-upload-block. Full **upload**
+remains NOT device-verified (guarded).
+
 ## ⛔ BLOCKER (2026-06-24): GitHub Actions macOS minutes exhausted
 After ~10+ full macOS builds in one day on the **private** repo (macOS minutes bill
 at 10×), GitHub Actions began failing every job **instantly** (0 steps, ~3–6 s, no

@@ -33,10 +33,70 @@ independent audit** verifies completion.
   new unsigned IPA produced.
 - **NOT re-finalized.** Per the audit, this repair phase stops here and reports.
 
+> A second device-repair phase followed (physical-device findings) — see
+> "Device-repair phase 2" below. Current state: **42 completed / 4 partial / 9
+> physical_device_verified**; CI green (run 28177577113, **149 tests**); still Mode A,
+> NOT finalized.
+
+## Device-repair phase 2 (physical-device findings) — 2026-06-25
+
+The user retested on a real iPhone. Confirmed working (now recorded
+`physical_device_verified: true`): full AnkiWeb **download**, **media** download,
+**demo/seeded upload blocking**, normal **two-way sync**, **persistence** after
+relaunch, **learning/relearning short delay**, **MathJax**. Full upload is NOT
+device-verified (guarded). Three defects were found and fixed:
+
+### Issue 1 — manual backup not accessible (FIXED, await device retest)
+Root cause: backups were written to Documents but the app didn't expose Documents to
+the Files app.
+- **Files:** `project.yml` (`UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`),
+  `.github/workflows/ios.yml` (PlistBuddy verification of both keys in the COMPILED
+  app), `AnkiAI/Platform/BackupService.swift` (new — validated atomic backups in
+  `Documents/Backups`), `AnkiAI/Features/Settings/AISettingsView.swift` (validated
+  flow + result presentation + Share/Save-to-Files), `BackupsListView.swift` (new),
+  `ColpkgFile`.
+- **Tests:** `BackupServiceTests` (destination, timestamped unique name, no illegal
+  chars, failed-export→no-success+temp-cleanup, too-small/non-archive rejected, no
+  overwrite, list+delete, real colpkg validates).
+- **Verified:** the downloaded IPA's compiled `Info.plist` contains both keys.
+
+### Issue 2 — no discoverable manual Add Card (FIXED, await device retest)
+- **Files:** `AnkiAI/Features/Editor/ManualAddCardView.swift` (new — native
+  Basic/Cloze: deck + fields + tags, required-field validation, REAL backend save,
+  errors surfaced), `AnkiAI/Features/Decks/DeckListView.swift` (toolbar "+" + sheet).
+- **Tests:** `BackendManualAddTests` (Basic note + tags in Browse; Cloze renders).
+
+### Issue 3 — stale demo account / Logout did nothing (FIXED, await device retest)
+Root cause: `ankiWebHKey` read directly (not observable) → Logout never re-rendered.
+- **Files:** `AnkiAI/Security/KeychainStore.swift` (`isAnkiWebLoggedIn` +
+  `logOutAnkiWeb()`), `AnkiAI/Features/Settings/AISettingsView.swift` (`@State
+  loggedIn`, demo-not-authenticated note, immediate Logout that cancels sync + clears
+  session, never touches the collection).
+- **Tests:** `AnkiWebAuthStateTests` (demo not authenticated; login needs non-empty
+  key; logout clears session/username/bg-state; logout preserves Claude key +
+  collection).
+
+### Delivery
+- **CI:** run **28177577113** — green, **149 tests, 0 failures**
+  (https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28177577113).
+- **Commit:** `3f5f694` (main).
+- **IPA:** `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,297,746 bytes**; compiled
+  `Info.plist` verified: `UIFileSharingEnabled=true` +
+  `LSSupportsOpeningDocumentsInPlace=true`.
+
+### Exact physical-device retest steps (this delivery)
+1. Files → Browse → On My iPhone → **AnkiAI → Backups** exists after "Back up
+   collection"; the new `AnkiAI-Backup-<ts>.colpkg` is visible/non-empty/openable;
+   Share + Save to Files work; Restore from it succeeds.
+2. Decks → **"+" Add card** → create a Basic note and a Cloze note (deck + tags); both
+   appear in Browse and survive a sync.
+3. Fresh launch on the demo collection shows **"Not signed in / demo"**; after login,
+   **Logout** immediately returns to the login form; the local cards remain.
+
 ## Remaining (NOT done by this repair phase)
-1. **Physical-device validation** — execute `PHYSICAL-DEVICE-TEST-PLAN.md` on a real
-   iPhone (real AnkiWeb full download + two-way + media sync + safe push-back, RTL/
-   MathJax). Nothing is device-verified until then.
+1. **Physical-device retest** of backup / manual-add / auth-UI (steps above); plus
+   continued device validation of sync/RTL/MathJax. Those three stay
+   device-unverified until retested.
 2. **Happy-path `.apkg` import** — needs LOCAL anki debugging of the deck-merge edge
    (`decks.rs:141`); `.colpkg`/sync are the working import paths meanwhile.
 3. **AI Insights** — average ease + per-deck/worst-deck retention still uncomputed
