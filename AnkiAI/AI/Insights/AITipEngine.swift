@@ -55,16 +55,21 @@ public struct AITip: Equatable, Identifiable {
 /// Pure port of `AiTipEngine.generateTips`. Returns the top 5 tips by priority.
 /// Message strings use English text; localization is wired through `Localized`.
 public enum AITipEngine {
-    public static func generateTips(_ stats: InsightStats) -> [AITip] {
+    /// `includeStreak`: the streak tip needs a consecutive-day count from the
+    /// revlog, which card-search cannot provide; callers without revlog access
+    /// pass `false` to omit it rather than show a misleading number.
+    public static func generateTips(_ stats: InsightStats, includeStreak: Bool = true) -> [AITip] {
         var tips: [AITip] = []
 
         // Streak
-        switch stats.streak {
-        case 0: tips.append(AITip(icon: "⚠️", message: L.streakZero, priority: 10))
-        case 1: tips.append(AITip(icon: "🌱", message: L.streakOne, priority: 5))
-        case 2...6: tips.append(AITip(icon: "🔥", message: L.streakFew(stats.streak), priority: 4))
-        case 7...29: tips.append(AITip(icon: "🏆", message: L.streakWeek(stats.streak), priority: 3))
-        default: tips.append(AITip(icon: "🌟", message: L.streakMonth(stats.streak), priority: 2))
+        if includeStreak {
+            switch stats.streak {
+            case 0: tips.append(AITip(icon: "⚠️", message: L.streakZero, priority: 10))
+            case 1: tips.append(AITip(icon: "🌱", message: L.streakOne, priority: 5))
+            case 2...6: tips.append(AITip(icon: "🔥", message: L.streakFew(stats.streak), priority: 4))
+            case 7...29: tips.append(AITip(icon: "🏆", message: L.streakWeek(stats.streak), priority: 3))
+            default: tips.append(AITip(icon: "🌟", message: L.streakMonth(stats.streak), priority: 2))
+            }
         }
 
         // Retention

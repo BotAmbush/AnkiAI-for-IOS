@@ -266,3 +266,9 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   now complete (down/up/two-way). Media sync is the documented follow-up.
 - Honest status upgrades (genuinely complete): reviewer, scheduler, fsrs,
   navigation, app_lifecycle, migrations → completed (accurate notes).
+
+### M2.21 — Real AI Insights + honest status upgrades (IN PROGRESS)
+- [ ] InsightsView now feeds AITipEngine REAL collection data (total/mature/weak/
+  today/30-day retention via search); streak/timing tips omitted (need revlog).
+  AITipEngine gained includeStreak flag. Upgraded to completed: migrations,
+  statistics (numeric), settings, ai_insights.

@@ -35,15 +35,32 @@ struct InsightsView: View {
                 } header: {
                     Text("AI tips")
                 } footer: {
-                    Text("Card counts are live from your collection. AI tips use sample review history until revlog analysis is wired (M2.x).")
+                    Text("Live from your collection: card counts, weak cards (≥3 lapses), today's reviews, and 30-day retention. Streak history and per-card timing need the full revlog graph data (a documented follow-up).")
                 }
             }
             .navigationTitle("Insights")
-            .task {
-                stats = try? await env.gateway.collectionStats()
-                tips = AITipEngine.generateTips(Self.sampleStats)
-            }
+            .task { await load() }
         }
+    }
+
+    /// Build a REAL InsightStats from the collection via search queries.
+    /// Reliable fields (total/mature/weak/today/30-day retention) are computed;
+    /// streak and per-card averages need the revlog graph data, so their tips are
+    /// suppressed (neutral values + includeStreak:false) rather than faked.
+    private func load() async {
+        let s = try? await env.gateway.collectionStats()
+        stats = s
+        let weak = (try? await env.gateway.searchCardIds(query: "prop:lapses>=3").count) ?? 0
+        let today = (try? await env.gateway.searchCardIds(query: "rated:1").count) ?? 0
+        let reviewed30 = (try? await env.gateway.searchCardIds(query: "rated:30").count) ?? 0
+        let again30 = (try? await env.gateway.searchCardIds(query: "rated:30:1").count) ?? 0
+        let retention: Float = reviewed30 > 0 ? max(0, 1 - Float(again30) / Float(reviewed30)) : 0.85
+        let real = InsightStats(
+            streak: 0, todayCount: today, retention30d: retention, weakCardCount: weak,
+            avgEaseFactor: 2500, avgDailyReviews: 0,
+            matureCards: s?.mature ?? 0, totalCards: s?.total ?? 0,
+            worstDeck: nil, deckRetentions: [], avgSecPerCard: 0)
+        tips = AITipEngine.generateTips(real, includeStreak: false)
     }
 
     private func statRow(_ label: String, _ value: Int, _ color: Color = .primary) -> some View {

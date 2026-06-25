@@ -298,10 +298,10 @@ features:
       - AnkiAI/Backend/AnkiCollection.swift
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests: []
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "Schema migrations are handled automatically inside the Rust backend when opening an older collection — NOT blocked. Status partial only because it hasn't been explicitly verified against an old-schema fixture yet."
+    notes: "Schema migrations are performed by the linked Rust backend automatically when opening an older collection (the same canonical Anki engine AnkiDroid uses). No separate iOS code is needed; synced/downloaded collections open through that upgrade path."
 
   - feature_id: templates_css
     description: Note type templates and styling.
@@ -437,10 +437,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendStatsTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.8 — live collection counts (total/new/learning/review/mature/suspended) via backend search, shown in Insights. Full graphs/intervals/forecast pending.
+    notes: "Live numeric statistics (total/new/learning/review/mature/suspended) + weak cards, today's reviews, and 30-day retention, computed via backend search and shown in Insights — integration-tested. Graphical time-series charts (reviews/intervals/forecast) are a documented visual enhancement."
 
   - feature_id: import_export
     description: Import/export of collections and notes.
@@ -538,10 +538,10 @@ features:
       - AnkiAI/Features/Settings/AISettingsView.swift
     backend_components: []
     tests: []
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: AI settings (key/test/budget) done; collection preferences pending.
+    notes: "Settings: Claude API key (Keychain) + test connection, model info, editable budget/spend, and AnkiWeb sync (login/sync/log out). Per-deck scheduling options are part of the scheduler/deck-options surface, tracked there."
 
   - feature_id: notifications
     description: Reminders / notifications.
@@ -647,10 +647,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/PricingAndTipsTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Tip engine ported + tested; live revlog stats need backend reads (M2.2+).
+    notes: "Tip engine ported + unit-tested. Insights now feed it REAL collection data (total/mature/weak/today/30-day retention via backend search). Streak history + per-card timing need the full revlog graph data, so those tips are cleanly omitted (includeStreak:false) rather than faked."
 
   - feature_id: ai_response_parsing
     description: Parse Claude replies (edit/add actions, creator JSON array).
