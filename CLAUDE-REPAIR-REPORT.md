@@ -17,8 +17,32 @@ independent audit** verifies completion.
 | M2 | `.apkg` import/export real verification + rollback | **Hardened + honest (R5)** — import is transactional (backend rolls back on failure) + a pre-import .colpkg backup is written; malformed/missing-package failure + collection-preservation are tested. `.apkg` EXPORT verified. Happy-path `.apkg` IMPORT still hits an anki-internal deck-merge edge (decks.rs:141 'decks have different kinds') that needs LOCAL anki debugging; the WORKING package-import paths remain `.colpkg` restore (round-trip tested) + AnkiWeb sync. Kept **partial**. |
 | M3 | Remove silent production failures; CardBrowser bulk per-item reporting | **Fixed (R2)** — runBulk reports total/succeeded/failed + first error; selection kept on partial/failure; no false success |
 | M4 | AI Insights real revlog metrics (no placeholders) | **Partial (R3)** — real streak / avg reviews-per-day / avg seconds-per-card / today (from graphs) + retention/weak/mature; streak tip enabled. avg-ease + per-deck/worst-deck retention not yet computed (no placeholder shown). |
-| M5 | forced-study classified partial/platform-limited + strongest iOS equivalent | Reclassified (R1); enforcement strengthening pending |
+| M5 | forced-study classified partial/platform-limited + strongest iOS equivalent | **Done (R1)** — reclassified partial/platform-limited; the strongest valid iOS-native equivalent is implemented (repeating local notification + in-app non-dismissible required-N-review fullScreenCover session, with snooze) and unit-tested. Not described as equal to the Android cross-app overlay. |
 | M6 | Broader integration fixtures + production-path tests | **Fixed (R4)** — anki_backend_create_large_fixture (~hundreds of cards, 7 decks/subdecks, Basic+Cloze, Hebrew/MathJax/Unicode, new/learning/review/future/suspended). Broad BackendCollectionGateway integration test: shape, states, cloze, Hebrew render, queue-excludes-suspended, real stats, colpkg round-trip at scale. (Full thousands-scale + corrupted/legacy-schema remains a device/manual concern.) |
+
+## Overall repair status
+
+- **Code-addressable findings: done.** P0 fixed; finalization reverted; bulk-op
+  honesty (M3); BackgroundSync persistence (M1 partial); real Insights metrics (M4
+  partial); forced-study reclassified + iOS equivalent (M5); broad fixtures (M6);
+  `.apkg` import safety + tests (M2, kept partial).
+- **State is honest:** `ANDROID-SOURCE-BASELINE.json` = Mode A
+  (`initial-full-migration`, `lastAndroidCommitFullyPortedToIOS = null`,
+  `initialMigrationCompleted = false`). Feature map: **41 completed, 5 partial, 0
+  physical_device_verified**. CI `mode=full` green (run 28166484814, **136 tests**);
+  new unsigned IPA produced.
+- **NOT re-finalized.** Per the audit, this repair phase stops here and reports.
+
+## Remaining (NOT done by this repair phase)
+1. **Physical-device validation** — execute `PHYSICAL-DEVICE-TEST-PLAN.md` on a real
+   iPhone (real AnkiWeb full download + two-way + media sync + safe push-back, RTL/
+   MathJax). Nothing is device-verified until then.
+2. **Happy-path `.apkg` import** — needs LOCAL anki debugging of the deck-merge edge
+   (`decks.rs:141`); `.colpkg`/sync are the working import paths meanwhile.
+3. **AI Insights** — average ease + per-deck/worst-deck retention still uncomputed
+   (no placeholder shown).
+4. **A SECOND independent Codex audit** must verify completion before any
+   re-finalization. Do not advance the baseline before that.
 
 ## R1 — P0 upload safety + de-finalization (this commit)
 
