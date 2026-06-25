@@ -99,8 +99,15 @@ int32_t anki_backend_add_note(AnkiHandle *handle, int64_t notetype_id, int64_t d
 /* AnkiWeb: log in; write the session host key (hkey) to *out_hkey. */
 int32_t anki_backend_sync_login(const char *username, const char *password, char **out_hkey);
 
-/* AnkiWeb: full-download the collection for hkey, REPLACING the local col_path. */
-int32_t anki_backend_sync_download(const char *col_path, const char *hkey);
+/* AnkiWeb: full-download the collection for hkey, REPLACING the local col_path.
+   Discovers the assigned sync endpoint first (meta) so the download is issued
+   directly to the right host. endpoint_override may be NULL (use AnkiWeb default)
+   or a base URL (self-hosted / tests). */
+int32_t anki_backend_sync_download(const char *col_path, const char *hkey,
+                                   const char *endpoint_override);
+
+/* Take (and clear) the sanitized diagnostics from the last sync op. Caller frees. */
+char *anki_backend_take_sync_log(void);
 
 /* AnkiWeb: two-way normal sync. *out_required: 0 = synced, 2 = full sync needed. */
 int32_t anki_backend_sync(const char *col_path, const char *hkey, int32_t *out_required);

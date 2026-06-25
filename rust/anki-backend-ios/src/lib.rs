@@ -37,16 +37,70 @@ use anki_proto::decks::RenameDeckRequest;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
 use anki_proto::notes::{NoteId as PbNoteId, UpdateNotesRequest};
 use anki::sync::collection::normal::SyncActionRequired;
+use anki::sync::collection::status::online_sync_status_check;
+use anki::sync::http_client::HttpSyncClient;
 use anki::sync::login::{sync_login, SyncAuth};
 use anki::sync::media::progress::MediaSyncProgress;
 use anki_proto::scheduler::bury_or_suspend_cards_request::Mode as BuryOrSuspendMode;
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
+    /// Sanitized, human-readable diagnostics for the last sync operation. NEVER
+    /// contains passwords, session keys, auth headers, or collection contents.
+    static SYNC_LOG: RefCell<Vec<String>> = const { RefCell::new(Vec::new() ) };
 }
 
 fn set_last_error(msg: String) {
     LAST_ERROR.with(|e| *e.borrow_mut() = CString::new(msg).ok());
+}
+
+fn sync_log_reset() {
+    SYNC_LOG.with(|l| l.borrow_mut().clear());
+}
+
+fn sync_log(msg: impl Into<String>) {
+    SYNC_LOG.with(|l| l.borrow_mut().push(msg.into()));
+}
+
+/// Host (no scheme/path/query) of a URL string, for safe logging. Returns
+/// "default" for None and "<unparseable>" if it can't be parsed.
+fn endpoint_host(ep: Option<&str>) -> String {
+    match ep {
+        None => "default".to_string(),
+        Some(s) => match reqwest::Url::parse(s) {
+            Ok(u) => u.host_str().unwrap_or("<no-host>").to_string(),
+            Err(_) => "<unparseable>".to_string(),
+        },
+    }
+}
+
+/// A coarse, non-sensitive error category (the leading variant/type name only —
+/// never the message body, which for sync errors may echo server text).
+fn error_category<E: std::fmt::Debug>(e: &E) -> String {
+    let dbg = format!("{e:?}");
+    let cat: String = dbg
+        .chars()
+        .take_while(|c| c.is_alphanumeric() || *c == '_')
+        .collect();
+    if cat.is_empty() {
+        "Unknown".to_string()
+    } else {
+        cat
+    }
+}
+
+/// Take (and clear) the sanitized sync diagnostics log. Caller frees the string.
+#[no_mangle]
+pub extern "C" fn anki_backend_take_sync_log() -> *mut c_char {
+    let joined = SYNC_LOG.with(|l| {
+        let v = l.borrow();
+        v.join("\n")
+    });
+    sync_log_reset();
+    match CString::new(joined) {
+        Ok(c) => c.into_raw(),
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Opaque handle wrapping an open collection.
@@ -1138,11 +1192,26 @@ pub extern "C" fn anki_backend_sync_login(
 
 /// Full-download the AnkiWeb collection for `hkey`, REPLACING the local collection
 /// at `col_path`. Returns 0 on success. (Collection only; media sync is separate.)
+///
+/// Endpoint discovery (AnkiDroid PR #14935 / #19102): AnkiWeb shards accounts onto
+/// per-host sync servers. We MUST run a meta request first to discover the assigned
+/// endpoint and issue the download directly to it — otherwise the request reaches
+/// the default host, gets redirected, and the redirect drops the
+/// `anki-original-size` header → HTTP 400 "missing original size".
+///
+/// `endpoint_override` (nullable) sets the base endpoint (self-hosted sync servers
+/// and deterministic tests); pass NULL for AnkiWeb.
+///
+/// Safety: `full_download` itself downloads into a temp file, rebuilds it with an
+/// integrity check, and only then atomically renames over `col_path`; the original
+/// collection is left untouched on any HTTP/decompression/db/validation failure.
 #[no_mangle]
 pub extern "C" fn anki_backend_sync_download(
     col_path: *const c_char,
     hkey: *const c_char,
+    endpoint_override: *const c_char,
 ) -> c_int {
+    sync_log_reset();
     let col_path = match unsafe { cstr_to_string(col_path) } {
         Some(p) => p,
         None => {
@@ -1157,17 +1226,31 @@ pub extern "C" fn anki_backend_sync_download(
             return 1;
         }
     };
+    let override_ep = unsafe { cstr_to_string(endpoint_override) };
+    let base_endpoint: Option<reqwest::Url> = match override_ep.as_deref() {
+        Some(s) if !s.is_empty() => match reqwest::Url::parse(s) {
+            Ok(u) => Some(u),
+            Err(e) => {
+                set_last_error(format!("invalid endpoint override: {e}"));
+                return 1;
+            }
+        },
+        _ => None,
+    };
+
+    sync_log("op=download");
+    sync_log(format!(
+        "base_endpoint={}",
+        endpoint_host(base_endpoint.as_ref().map(|u| u.as_str()))
+    ));
+
     let col = match CollectionBuilder::new(PathBuf::from(&col_path)).build() {
         Ok(c) => c,
         Err(e) => {
             set_last_error(format!("open failed: {e}"));
+            sync_log("error=open_failed");
             return 2;
         }
-    };
-    let auth = SyncAuth {
-        hkey,
-        endpoint: None,
-        io_timeout_secs: None,
     };
     let rt = match sync_runtime() {
         Ok(r) => r,
@@ -1176,9 +1259,70 @@ pub extern "C" fn anki_backend_sync_download(
             return 2;
         }
     };
-    match rt.block_on(col.full_download(auth, sync_client())) {
-        Ok(()) => 0,
+
+    let auth = SyncAuth {
+        hkey,
+        endpoint: base_endpoint.clone(),
+        io_timeout_secs: None,
+    };
+
+    // 1. Discover the assigned endpoint via a meta request (with redirect).
+    let local_meta = match col.sync_meta() {
+        Ok(m) => m,
         Err(e) => {
+            set_last_error(format!("sync_meta failed: {e:?}"));
+            sync_log("error=sync_meta_failed");
+            return 2;
+        }
+    };
+    let mut client = HttpSyncClient::new(auth.clone(), sync_client());
+    let state = match rt.block_on(online_sync_status_check(local_meta, &mut client)) {
+        Ok(s) => s,
+        Err(e) => {
+            sync_log("meta=err");
+            sync_log(format!("error_category={}", error_category(&e)));
+            set_last_error(format!("sync status check failed: {e:?}"));
+            // Local collection untouched (no download attempted).
+            return 2;
+        }
+    };
+    sync_log("meta=ok");
+    sync_log(format!(
+        "new_endpoint={}",
+        endpoint_host(state.new_endpoint.as_deref())
+    ));
+
+    // 2. Persist the discovered endpoint into the auth used for the full download.
+    let mut download_auth = auth;
+    let mut endpoint_updated = false;
+    if let Some(ep) = state.new_endpoint.as_deref() {
+        match reqwest::Url::parse(ep) {
+            Ok(u) => {
+                download_auth.endpoint = Some(u);
+                endpoint_updated = true;
+            }
+            Err(e) => {
+                set_last_error(format!("server returned an invalid endpoint: {e}"));
+                sync_log("error=invalid_new_endpoint");
+                return 2;
+            }
+        }
+    }
+    sync_log(format!("endpoint_updated={endpoint_updated}"));
+    sync_log(format!(
+        "download_endpoint={}",
+        endpoint_host(download_auth.endpoint.as_ref().map(|u| u.as_str()))
+    ));
+
+    // 3. Full download directly to the assigned endpoint (no header-dropping redirect).
+    match rt.block_on(col.full_download(download_auth, sync_client())) {
+        Ok(()) => {
+            sync_log("full_download=ok");
+            0
+        }
+        Err(e) => {
+            sync_log("full_download=err");
+            sync_log(format!("error_category={}", error_category(&e)));
             set_last_error(format!("sync_download failed: {e:?}"));
             2
         }
@@ -1270,17 +1414,14 @@ pub extern "C" fn anki_backend_sync_upload(
             return 1;
         }
     };
+    sync_log_reset();
+    sync_log("op=upload");
     let col = match CollectionBuilder::new(PathBuf::from(&col_path)).build() {
         Ok(c) => c,
         Err(e) => {
             set_last_error(format!("open failed: {e}"));
             return 2;
         }
-    };
-    let auth = SyncAuth {
-        hkey,
-        endpoint: None,
-        io_timeout_secs: None,
     };
     let rt = match sync_runtime() {
         Ok(r) => r,
@@ -1289,9 +1430,51 @@ pub extern "C" fn anki_backend_sync_upload(
             return 2;
         }
     };
-    match rt.block_on(col.full_upload(auth, sync_client())) {
-        Ok(()) => 0,
+    let auth = SyncAuth {
+        hkey,
+        endpoint: None,
+        io_timeout_secs: None,
+    };
+    // Same endpoint discovery as download: issue the upload directly to the
+    // assigned host so redirects don't drop the anki-original-size header.
+    let local_meta = match col.sync_meta() {
+        Ok(m) => m,
         Err(e) => {
+            set_last_error(format!("sync_meta failed: {e:?}"));
+            return 2;
+        }
+    };
+    let mut client = HttpSyncClient::new(auth.clone(), sync_client());
+    let state = match rt.block_on(online_sync_status_check(local_meta, &mut client)) {
+        Ok(s) => s,
+        Err(e) => {
+            sync_log(format!("error_category={}", error_category(&e)));
+            set_last_error(format!("sync status check failed: {e:?}"));
+            return 2;
+        }
+    };
+    let mut upload_auth = auth;
+    if let Some(ep) = state.new_endpoint.as_deref() {
+        match reqwest::Url::parse(ep) {
+            Ok(u) => upload_auth.endpoint = Some(u),
+            Err(e) => {
+                set_last_error(format!("server returned an invalid endpoint: {e}"));
+                return 2;
+            }
+        }
+    }
+    sync_log(format!(
+        "upload_endpoint={}",
+        endpoint_host(upload_auth.endpoint.as_ref().map(|u| u.as_str()))
+    ));
+    match rt.block_on(col.full_upload(upload_auth, sync_client())) {
+        Ok(()) => {
+            sync_log("full_upload=ok");
+            0
+        }
+        Err(e) => {
+            sync_log("full_upload=err");
+            sync_log(format!("error_category={}", error_category(&e)));
             set_last_error(format!("sync_upload failed: {e:?}"));
             2
         }

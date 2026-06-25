@@ -311,10 +311,23 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   Settings "Restore from .colpkg" file importer. Integration test: backup→restore
   round-trip (7 cards + decks survive). import_export + apkg_colpkg → completed.
 
-### M2.28 — Notifications + forced study (IN PROGRESS)
+### M2.28 — Notifications + forced study (CI GREEN ✅, run 28143397743)
 - [ ] NotificationService (UNUserNotificationCenter: repeating forced-study +
   daily reminder). ForcedStudyStore/Manager (interval/required/deck/snooze, due
   logic). ForcedStudySessionView (non-dismissible, requires N reviews) shown as a
   fullScreenCover when due (launch/foreground). ForcedStudySettingsView in
   Settings. Manager due/snooze/complete unit-tested. notifications + forced_study
   → completed.
+
+### M2.29 — Fix AnkiWeb full-sync download 400 "missing original size" (IN PROGRESS)
+Device bug: one-way download failed (400). Root cause: full_download with
+endpoint:None hit the default host; AnkiWeb shards per host, the redirect dropped
+the anki-original-size header → 400 (AnkiDroid #14935/#19102). Fix:
+sync_download/upload now discover the assigned endpoint via a meta request
+(online_sync_status_check → meta_with_redirect) and issue the transfer directly to
+it. Added sanitized diagnostics (anki_backend_take_sync_log; no secrets) + endpoint
+override (self-hosted/tests). full_download already does temp-file+integrity+atomic
+replace (local preserved on failure). Offline regression tests: failed download
+preserves local; custom endpoint honored (not replaced by default); no secrets in
+diagnostics; invalid override rejected. synchronization → partial pending on-device
+download retest (per task).

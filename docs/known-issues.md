@@ -20,6 +20,23 @@ be treated as green until a macOS run passes.
 3. Wait for the monthly minutes quota to reset.
 Then re-run the workflow (`mode=full`) on `main` and drive the build-repair loop.
 
+## AnkiWeb full-sync download — HTTP 400 "missing original size" (FIX in M2.29, pending device retest)
+On a physical iPhone, login succeeded but one-way **Download from AnkiWeb** failed
+with `HttpError { code: 400, context: "missing original size" }`. Root cause: the
+bridge called `full_download` with `endpoint: None`, so the request hit the default
+AnkiWeb host; AnkiWeb shards accounts per host, the default host **redirected**, and
+the redirect dropped the `anki-original-size` request header → the assigned host
+returned 400. Matches AnkiDroid **#14935** ("sync endpoint moved") and **#19102**
+("full sync"). Fix: `sync_download`/`sync_upload` now run a meta request
+(`online_sync_status_check` → `meta_with_redirect`) to discover the assigned endpoint
+and persist it into `SyncAuth` before the transfer, so the request goes **directly**
+to the right host (no header-dropping redirect). `full_download` already writes to a
+temp file, integrity-checks it, and atomically renames — the local collection is
+preserved on any failure. Sanitized diagnostics added (`anki_backend_take_sync_log`,
+never logs key/password/headers/contents). **Status: code fix + offline regression
+tests landed; awaiting a successful on-device download retest before marking
+synchronization complete.**
+
 ## ⛳ OPEN TODO — card import from a collection file is NOT finished
 Loading a user's existing collection via **file import (.apkg/.colpkg) is incomplete**
 (see below). Per the user's direction, the current path to load a real collection is

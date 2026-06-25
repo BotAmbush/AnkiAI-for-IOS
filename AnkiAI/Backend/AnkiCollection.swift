@@ -307,11 +307,31 @@ final class AnkiCollection {
 
     /// AnkiWeb: full-download the collection for `hkey`, REPLACING the file at `path`.
     /// The caller must ensure no handle is open on `path` during this call.
-    static func syncDownload(path: String, hkey: String) throws {
-        let rc = path.withCString { p in
-            hkey.withCString { h in anki_backend_sync_download(p, h) }
+    static func syncDownload(path: String, hkey: String, endpoint: String? = nil) throws {
+        var rc: Int32 = -1
+        path.withCString { p in
+            hkey.withCString { h in
+                if let endpoint {
+                    endpoint.withCString { e in rc = anki_backend_sync_download(p, h, e) }
+                } else {
+                    rc = anki_backend_sync_download(p, h, nil)
+                }
+            }
         }
-        guard rc == 0 else { throw AnkiBackendError.sync(lastError()) }
+        let diagnostics = takeSyncLog()
+        #if DEBUG
+        if !diagnostics.isEmpty { print("[sync] \(diagnostics.replacingOccurrences(of: "\n", with: " | "))") }
+        #endif
+        guard rc == 0 else {
+            throw AnkiBackendError.sync("\(lastError())\n[diagnostics] \(diagnostics)")
+        }
+    }
+
+    /// Sanitized diagnostics from the last sync op (no secrets); also clears them.
+    static func takeSyncLog() -> String {
+        guard let c = anki_backend_take_sync_log() else { return "" }
+        defer { anki_backend_string_free(c) }
+        return String(cString: c)
     }
 
     /// AnkiWeb: two-way normal sync. Returns true if a full sync is required
