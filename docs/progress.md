@@ -319,7 +319,7 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   Settings. Manager due/snooze/complete unit-tested. notifications + forced_study
   → completed.
 
-### M2.29 — Fix AnkiWeb full-sync download 400 "missing original size" (IN PROGRESS)
+### M2.29 — Fix AnkiWeb full-sync download 400 "missing original size" (CI GREEN ✅, run 28144320661, 88 tests)
 Device bug: one-way download failed (400). Root cause: full_download with
 endpoint:None hit the default host; AnkiWeb shards per host, the redirect dropped
 the anki-original-size header → 400 (AnkiDroid #14935/#19102). Fix:
