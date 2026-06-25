@@ -13,9 +13,9 @@ independent audit** verifies completion.
 |---|---------|--------|
 | P0 | Seeded/unknown collection could replace remote AnkiWeb via full upload | **Fixed (R1)** — provenance gate + backup + double-confirm; seeded/unknown upload forbidden |
 | — | Premature finalization | **Reverted (R1)** — baseline back to Mode A; statuses corrected |
-| M1 | Sync hardening (BackgroundSync error persistence; full-download atomic/backup; device retest) | In progress |
+| M1 | Sync hardening (BackgroundSync error persistence; full-download atomic/backup; device retest) | **Partial** — BackgroundSync now persists outcomes (full-sync-required / auth / media / network) and surfaces them on next launch; never auto-resolves full-sync. full_download already does temp+integrity+atomic; pre-upload backup added (R1). Device retest still required. |
 | M2 | `.apkg` import/export real verification + rollback | Pending |
-| M3 | Remove silent production failures; CardBrowser bulk per-item reporting | Pending |
+| M3 | Remove silent production failures; CardBrowser bulk per-item reporting | **Fixed (R2)** — runBulk reports total/succeeded/failed + first error; selection kept on partial/failure; no false success |
 | M4 | AI Insights real revlog metrics (no placeholders) | Pending |
 | M5 | forced-study classified partial/platform-limited + strongest iOS equivalent | Reclassified (R1); enforcement strengthening pending |
 | M6 | Broader integration fixtures + production-path tests | Pending |

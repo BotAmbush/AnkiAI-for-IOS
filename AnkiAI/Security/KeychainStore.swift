@@ -146,4 +146,15 @@ public final class AISettingsStore {
         case .downloadedFromAnkiWeb, .importedFromPackage, .createdLocally, .restoredFromBackup: return false
         }
     }
+
+    /// Last background-sync outcome (empty = success), surfaced on next launch so
+    /// background failures are never silently discarded.
+    public var lastBackgroundSyncResult: String? {
+        get { defaults.string(forKey: "bg_sync_last_result") }
+        set { defaults.set(newValue, forKey: "bg_sync_last_result") }
+    }
+    public var lastBackgroundSyncDate: Date? {
+        get { let t = defaults.double(forKey: "bg_sync_last_date"); return t > 0 ? Date(timeIntervalSince1970: t) : nil }
+        set { defaults.set(newValue?.timeIntervalSince1970 ?? 0, forKey: "bg_sync_last_date") }
+    }
 }

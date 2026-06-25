@@ -86,6 +86,13 @@ struct AISettingsView: View {
                         if let c = collectionCounts {
                             Text("\(c.cards) cards · \(c.decks) decks").font(.caption).foregroundColor(.secondary)
                         }
+                        if let bg = env.settings.lastBackgroundSyncResult, !bg.isEmpty {
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
+                                Text("Last background sync: \(bg)").font(.caption)
+                                Button("Dismiss") { env.settings.lastBackgroundSyncResult = nil }.font(.caption)
+                            }
+                        }
                         Button { Task { await syncNow(hkey) } } label: {
                             HStack { Text("Sync now"); if syncing { Spacer(); ProgressView() } }
                         }.disabled(syncing)

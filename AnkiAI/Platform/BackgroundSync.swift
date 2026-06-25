@@ -23,11 +23,30 @@ enum BackgroundSync {
     }
 
     /// Testable core: no-ops when logged out; otherwise syncs collection + media.
-    /// Never throws (background work must fail quietly and preserve local data).
-    static func run(hkey: String?, collectionPath: String) async {
+    /// Never throws, but NEVER silently discards the outcome — the result (incl.
+    /// full-sync-required / auth / media / network failures) is persisted via
+    /// `settings` so the app can surface an actionable message on next launch.
+    static func run(hkey: String?, collectionPath: String, settings: AISettingsStore = AISettingsStore()) async {
         guard let hkey, !hkey.isEmpty else { return }
         let gateway = BackendCollectionGateway(path: collectionPath)
-        _ = try? await gateway.sync(hkey: hkey)
-        try? await gateway.syncMedia(hkey: hkey)
+        settings.lastBackgroundSyncDate = Date()
+        do {
+            let needsFull = try await gateway.sync(hkey: hkey)
+            if needsFull {
+                // Do NOT auto-resolve: the user must choose a direction in-app.
+                settings.lastBackgroundSyncResult = "Full sync required — open AnkiAI to choose download or upload."
+                return
+            }
+            // A successful normal sync means this phone is in sync with AnkiWeb.
+            settings.collectionProvenance = .downloadedFromAnkiWeb
+            do {
+                try await gateway.syncMedia(hkey: hkey)
+                settings.lastBackgroundSyncResult = nil
+            } catch {
+                settings.lastBackgroundSyncResult = "Background media sync failed: \(error)"
+            }
+        } catch {
+            settings.lastBackgroundSyncResult = "Background sync failed: \(error)"
+        }
     }
 }

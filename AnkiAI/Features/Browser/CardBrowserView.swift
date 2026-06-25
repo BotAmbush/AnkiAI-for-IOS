@@ -15,6 +15,7 @@ struct CardBrowserView: View {
     @State private var tagText = ""
     @State private var working = false
     @State private var decks: [DeckNameId] = []
+    @State private var bulkResult: String?
 
     var body: some View {
         NavigationStack {
@@ -34,7 +35,13 @@ struct CardBrowserView: View {
                                 }
                             }
                         } footer: {
-                            Text("\(results.count) card(s). Try `deck:Math`, `tag:vocab`, or free text.")
+                            VStack(alignment: .leading, spacing: 4) {
+                                if let bulkResult {
+                                    Text(bulkResult)
+                                        .foregroundColor(bulkResult.hasPrefix("⚠︎") ? .orange : .green)
+                                }
+                                Text("\(results.count) card(s). Try `deck:Math`, `tag:vocab`, or free text.")
+                            }
                         }
                     }
                 }
@@ -104,47 +111,58 @@ struct CardBrowserView: View {
     }
 
     private func bulkSuspend() async {
-        working = true
-        for id in selection { try? await env.gateway.suspendCard(cardId: id) }
-        await finishBulk()
+        await runBulk("Suspend") { try await env.gateway.suspendCard(cardId: $0) }
     }
 
     private func bulkUnsuspend() async {
-        working = true
-        for id in selection { try? await env.gateway.unsuspendCard(cardId: id) }
-        await finishBulk()
+        await runBulk("Unsuspend") { try await env.gateway.unsuspendCard(cardId: $0) }
     }
 
     private func bulkMove(toDeckId: Int64) async {
-        working = true
-        for id in selection { try? await env.gateway.moveCard(cardId: id, toDeckId: toDeckId) }
-        await finishBulk()
+        await runBulk("Move") { try await env.gateway.moveCard(cardId: $0, toDeckId: toDeckId) }
     }
 
     private func bulkFlag(_ flag: Int) async {
-        working = true
-        for id in selection { try? await env.gateway.setFlag(cardId: id, flag: flag) }
-        await finishBulk()
+        await runBulk("Flag") { try await env.gateway.setFlag(cardId: $0, flag: flag) }
     }
 
     private func bulkTag() async {
         let tag = tagText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !tag.isEmpty else { return }
-        working = true
-        for id in selection {
-            if let info = try? await env.gateway.cardInfo(cardId: id) {
-                try? await env.gateway.addTags(noteId: info.noteId, tags: tag)
-            }
-        }
         tagText = ""
-        await finishBulk()
+        await runBulk("Tag") { id in
+            let info = try await env.gateway.cardInfo(cardId: id)
+            try await env.gateway.addTags(noteId: info.noteId, tags: tag)
+        }
     }
 
-    private func finishBulk() async {
-        selection.removeAll()
-        editMode = .inactive
+    /// Run `op` over every selected card, counting successes/failures and reporting
+    /// honestly. Selection is only cleared on FULL success; on partial/failure it is
+    /// kept, no "success" is shown, and the first real backend error is surfaced.
+    private func runBulk(_ label: String, _ op: (Int64) async throws -> Void) async {
+        let ids = Array(selection)
+        let total = ids.count
+        guard total > 0 else { return }
+        working = true
+        error = nil
+        var succeeded = 0
+        var firstError: String?
+        for id in ids {
+            do { try await op(id); succeeded += 1 }
+            catch { if firstError == nil { firstError = "\(error)" } }
+        }
+        let failed = total - succeeded
         working = false
         await runSearch()
+        if failed == 0 {
+            selection.removeAll()
+            editMode = .inactive
+            error = nil
+            bulkResult = "✓ \(label): \(succeeded)/\(total) succeeded."
+        } else {
+            // Keep the selection so the user can retry the failures.
+            bulkResult = "⚠︎ \(label): \(succeeded)/\(total) succeeded, \(failed) failed. \(firstError ?? "")"
+        }
     }
 }
 
