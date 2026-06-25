@@ -332,13 +332,13 @@ preserves local; custom endpoint honored (not replaced by default); no secrets i
 diagnostics; invalid override rejected. synchronization → partial pending on-device
 download retest (per task).
 
-### M2.30 — Localization (Hebrew) (IN PROGRESS)
+### M2.30 — Localization (Hebrew) (CI GREEN ✅, run 28145038375)
 - [ ] Loc.t / String.loc: English keys + Hebrew catalog ported from the fork's
   values-iw/ai_strings.xml; RTL auto via device language. Wired the most visible
   UI (tabs, reviewer, answer buttons, deck list, custom study, settings, forced
   study). Unit-tested. localization → completed (catalog iterative).
 
-### M2.31 — Accessibility + background sync (IN PROGRESS)
+### M2.31 — Accessibility + background sync (CI GREEN ✅, run 28145627801, 94 tests)
 - [ ] Accessibility: VoiceOver label for the reviewer actions menu; deck rows
   combined into one VoiceOver element with a localized new/learning/due summary;
   decorative icons hidden; Dynamic Type via default. Background: BGAppRefreshTask
