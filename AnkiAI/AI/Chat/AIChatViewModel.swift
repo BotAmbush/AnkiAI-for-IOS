@@ -357,6 +357,7 @@ public final class AIChatViewModel: ObservableObject {
             AIDiagnostics.log(stage: "parse-failed", model: ClaudeAPIClient.defaultCreatorModel,
                               responseLength: reply.count, recovered: 0)
             error = "Could not parse Claude's response as a card list. Your prompt and attachment are kept — try parsing again, ask Claude to repair it, or regenerate."
+            persistSession()
             return
         }
         parseFailed = false
