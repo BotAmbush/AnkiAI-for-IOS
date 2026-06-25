@@ -222,6 +222,20 @@ final class AnkiCollection {
         guard anki_backend_set_card_deck(handle, cardId, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func setCurrentDeck(deckId: Int64) throws {
+        guard anki_backend_set_current_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func nextDueCard() throws -> DueQueueState {
+        var cid: Int64 = -1
+        var n: Int32 = 0, l: Int32 = 0, r: Int32 = 0
+        guard anki_backend_next_card(handle, &cid, &n, &l, &r) == 0 else {
+            throw AnkiBackendError.answer(Self.lastError())
+        }
+        return DueQueueState(cardId: cid >= 0 ? cid : nil,
+                             newCount: Int(n), learnCount: Int(l), reviewCount: Int(r))
+    }
+
     func renameDeck(deckId: Int64, newName: String) throws {
         let rc = newName.withCString { anki_backend_rename_deck(handle, deckId, $0) }
         guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }

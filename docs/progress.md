@@ -346,3 +346,14 @@ download retest (per task).
   no-op when logged out (unit-tested). Info.plist UIBackgroundModes +
   BGTaskSchedulerPermittedIdentifiers. accessibility + background_behavior →
   completed. This finishes all discoverable features except device-pending sync.
+
+### M2.32 — Reviewer uses the scheduler QUEUE; login asks sync direction (IN PROGRESS)
+Device feedback fixes:
+- Reviewer now studies the real scheduler queue (set_current_deck + get_queued_cards/
+  get_next_card) instead of searching ALL deck cards. Fixes: suspended/non-due cards
+  no longer appear (#3); each answer persists + leaves the queue, so leaving after one
+  card keeps it answered (#2). Shows remaining new/learn/review counts.
+- Login now runs a two-way sync that PROMPTS the download/upload direction when the
+  phone and AnkiWeb differ, instead of unconditionally downloading (#1).
+- Integration tests: queue returns a due card; suspended card excluded; an answered
+  (Easy) card leaves today's queue.

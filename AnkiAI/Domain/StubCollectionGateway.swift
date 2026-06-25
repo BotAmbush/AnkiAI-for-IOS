@@ -44,6 +44,10 @@ public actor StubCollectionGateway: CollectionGateway {
     public func searchCardIds(query: String) async throws -> [Int64] {
         cardToNoteDeck.keys.sorted()
     }
+    public func setStudyDeck(named name: String) async throws {}
+    public func nextDueCard() async throws -> DueQueueState {
+        DueQueueState(cardId: cardToNoteDeck.keys.sorted().first, newCount: 1, learnCount: 0, reviewCount: 0)
+    }
 
     public func renderCard(cardId: Int64) async throws -> RenderedCard {
         throw GatewayError.notImplementedInM21("renderCard")

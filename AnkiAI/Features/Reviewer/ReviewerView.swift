@@ -1,16 +1,18 @@
 import SwiftUI
 
-/// Reviewer: loads REAL cards from a deck, renders question/answer + note-type CSS
-/// via the backend, and grades them through the real scheduler. Answer buttons
-/// show the next interval per rating; finishing the deck shows a completion state.
+/// Reviewer: studies the deck's real scheduler QUEUE (due/learning/new in the
+/// scheduler's order, respecting daily limits; suspended/buried/future cards are
+/// excluded). Each answer is graded through the backend and persists immediately,
+/// so leaving after one card keeps that card answered. Finishing the queue shows
+/// a completion state.
 struct ReviewerView: View {
     @EnvironmentObject private var env: AppEnvironment
     let deckName: String
 
-    @State private var cardIds: [Int64] = []
-    @State private var index = 0
+    @State private var currentCardId: Int64?
     @State private var rendered: RenderedCard?
     @State private var labels: [String] = ["", "", "", ""]
+    @State private var counts = (new: 0, learn: 0, review: 0)
     @State private var showAnswer = false
     @State private var finished = false
     @State private var isLoading = true
@@ -32,8 +34,6 @@ struct ReviewerView: View {
                     Text(error).font(.caption).foregroundColor(.secondary).multilineTextAlignment(.center).padding()
                 }
                 Spacer()
-            } else if cardIds.isEmpty {
-                Spacer(); Text("No cards in this deck.".loc).foregroundColor(.secondary); Spacer()
             } else if finished {
                 completionView
             } else if let rendered {
@@ -42,6 +42,8 @@ struct ReviewerView: View {
                     .frame(maxHeight: .infinity)
                 Divider()
                 controls
+            } else {
+                Spacer(); Text("No cards in this deck.".loc).foregroundColor(.secondary); Spacer()
             }
         }
         .navigationTitle(leaf)
@@ -51,11 +53,11 @@ struct ReviewerView: View {
                 Menu {
                     Button { showEditor = true }
                         label: { Label("Edit card".loc, systemImage: "pencil") }
-                    Button { Task { await mutateCurrent { try await env.gateway.buryCard(cardId: $0) }; await next() } }
+                    Button { Task { await mutateCurrent { try await env.gateway.buryCard(cardId: $0) }; await advance() } }
                         label: { Label("Bury card".loc, systemImage: "arrow.down.to.line") }
-                    Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await next() } }
+                    Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await advance() } }
                         label: { Label("Suspend card", systemImage: "pause.circle") }
-                    Button { Task { await moveCurrentToDefault(); await next() } }
+                    Button { Task { await moveCurrentToDefault(); await advance() } }
                         label: { Label("Move to Default deck", systemImage: "tray.and.arrow.down") }
                     Menu {
                         Button("None") { Task { await flagCurrent(0) } }
@@ -69,20 +71,18 @@ struct ReviewerView: View {
                         label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                 } label: { Image(systemName: "ellipsis.circle") }
                 .accessibilityLabel("Card actions".loc)
-                .disabled(cardIds.isEmpty || finished)
+                .disabled(currentCardId == nil || finished)
             }
         }
-        .task { await loadDeck() }
+        .task { await startStudy() }
         .sheet(isPresented: $showEditor) {
-            if cardIds.indices.contains(index) {
-                NoteEditorView(cardId: cardIds[index]) {
-                    Task { try? await renderCurrent() }
-                }
+            if let cid = currentCardId {
+                NoteEditorView(cardId: cid) { Task { await renderCurrent() } }
             }
         }
         .sheet(isPresented: $showChat) {
             NavigationStack {
-                ChatView(viewModel: env.makeChatViewModel(cardId: cardIds.indices.contains(index) ? cardIds[index] : -2))
+                ChatView(viewModel: env.makeChatViewModel(cardId: currentCardId ?? -2))
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { Button("Done") { showChat = false } }
                     }
@@ -95,9 +95,9 @@ struct ReviewerView: View {
             Spacer()
             Text("🎉").font(.system(size: 56))
             Text("Deck complete").font(.title2.bold())
-            Text("You've gone through all \(cardIds.count) card(s) in \(leaf).")
+            Text("You've finished the cards due now in \(leaf).")
                 .font(.callout).foregroundColor(.secondary).multilineTextAlignment(.center).padding(.horizontal)
-            Button("Review again") { Task { await loadDeck() } }
+            Button("Review again") { Task { await startStudy() } }
                 .buttonStyle(.borderedProminent)
             Spacer()
         }
@@ -106,8 +106,10 @@ struct ReviewerView: View {
 
     private var controls: some View {
         VStack(spacing: 8) {
-            HStack {
-                Text("\(index + 1) / \(cardIds.count)").font(.caption).foregroundColor(.secondary)
+            HStack(spacing: 10) {
+                countLabel(counts.new, .blue)
+                countLabel(counts.learn, .red)
+                countLabel(counts.review, .green)
                 Spacer()
                 Button("Ask Claude".loc) { showChat = true }.buttonStyle(.bordered).font(.caption)
             }
@@ -138,41 +140,55 @@ struct ReviewerView: View {
         .padding()
     }
 
-    private func loadDeck() async {
-        isLoading = true; error = nil; finished = false
+    private func countLabel(_ value: Int, _ color: Color) -> some View {
+        Text("\(value)").font(.caption.monospacedDigit().bold()).foregroundColor(value == 0 ? .secondary : color)
+    }
+
+    private func startStudy() async {
+        isLoading = true; error = nil; finished = false; showAnswer = false
         do {
-            cardIds = try await env.gateway.cardIds(inDeckNamed: deckName)
-            index = 0
-            if !cardIds.isEmpty { try await renderCurrent() }
+            try await env.gateway.setStudyDeck(named: deckName)
+            await advance()
         } catch {
             self.error = "\(error)"
         }
         isLoading = false
     }
 
-    private func renderCurrent() async throws {
-        showAnswer = false
-        rendered = try await env.gateway.renderCard(cardId: cardIds[index])
-        // Interval labels are best-effort (non-fatal if unavailable).
-        labels = (try? await env.gateway.answerButtonLabels(cardId: cardIds[index])) ?? ["", "", "", ""]
+    /// Pull the next due card from the scheduler queue (or finish).
+    private func advance() async {
+        do {
+            let q = try await env.gateway.nextDueCard()
+            counts = (q.newCount, q.learnCount, q.reviewCount)
+            if let cid = q.cardId {
+                currentCardId = cid
+                try await renderCurrent()
+            } else {
+                currentCardId = nil
+                finished = true
+            }
+        } catch {
+            self.error = "\(error)"
+        }
     }
 
-    private func next() async {
-        guard !cardIds.isEmpty else { return }
-        if index + 1 >= cardIds.count {
-            finished = true   // reached the end of the deck — show completion
-            return
+    private func renderCurrent() async {
+        guard let cid = currentCardId else { return }
+        showAnswer = false
+        do {
+            rendered = try await env.gateway.renderCard(cardId: cid)
+            labels = (try? await env.gateway.answerButtonLabels(cardId: cid)) ?? ["", "", "", ""]
+        } catch {
+            self.error = "\(error)"
         }
-        index += 1
-        do { try await renderCurrent() } catch { self.error = "\(error)" }
     }
 
     private func answer(_ rating: AnswerRating) async {
-        guard cardIds.indices.contains(index) else { return }
+        guard let cid = currentCardId else { return }
         isAnswering = true
         do {
-            try await env.gateway.answerCard(cardId: cardIds[index], rating: rating)
-            await next()
+            try await env.gateway.answerCard(cardId: cid, rating: rating)
+            await advance()
         } catch {
             self.error = "\(error)"
         }
@@ -180,8 +196,8 @@ struct ReviewerView: View {
     }
 
     private func mutateCurrent(_ op: (Int64) async throws -> Void) async {
-        guard cardIds.indices.contains(index) else { return }
-        do { try await op(cardIds[index]) } catch { self.error = "\(error)" }
+        guard let cid = currentCardId else { return }
+        do { try await op(cid) } catch { self.error = "\(error)" }
     }
 
     private func flagCurrent(_ flag: Int) async {
@@ -189,10 +205,10 @@ struct ReviewerView: View {
     }
 
     private func moveCurrentToDefault() async {
-        guard cardIds.indices.contains(index) else { return }
+        guard let cid = currentCardId else { return }
         do {
             let deckId = try await env.gateway.resolveOrCreateDeck(name: "Default")
-            try await env.gateway.moveCard(cardId: cardIds[index], toDeckId: deckId)
+            try await env.gateway.moveCard(cardId: cid, toDeckId: deckId)
         } catch {
             self.error = "\(error)"
         }
@@ -201,7 +217,7 @@ struct ReviewerView: View {
     private func undoLast() async {
         do {
             try await env.gateway.undo()
-            await loadDeck()
+            await startStudy()
         } catch {
             self.error = "\(error)"
         }

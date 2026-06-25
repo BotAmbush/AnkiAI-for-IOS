@@ -100,6 +100,21 @@ public struct CardInfo: Equatable, Sendable {
     }
 }
 
+/// The scheduler queue state for the current deck (M2.32): the next due card
+/// (nil = nothing left to study now) + remaining new/learning/review counts.
+public struct DueQueueState: Equatable, Sendable {
+    public let cardId: Int64?
+    public let newCount: Int
+    public let learnCount: Int
+    public let reviewCount: Int
+    public init(cardId: Int64?, newCount: Int, learnCount: Int, reviewCount: Int) {
+        self.cardId = cardId
+        self.newCount = newCount
+        self.learnCount = learnCount
+        self.reviewCount = reviewCount
+    }
+}
+
 /// A card rendered by the backend (templates + CSS), ready for the WebView.
 public struct RenderedCard: Equatable, Sendable {
     public let questionHTML: String
@@ -120,6 +135,10 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func deckTree() async throws -> [DeckTreeEntry]
     /// Card ids in a deck (and its subdecks), by full deck name (M2.2 read path).
     func cardIds(inDeckNamed name: String) async throws -> [Int64]
+    /// Begin studying a deck's scheduler queue; then fetch the next DUE card +
+    /// remaining counts (respects due/limits, excludes suspended) (M2.32).
+    func setStudyDeck(named name: String) async throws
+    func nextDueCard() async throws -> DueQueueState
     /// Card ids matching an arbitrary Anki search string (M2.7 card browser).
     func searchCardIds(query: String) async throws -> [Int64]
     /// Backend-rendered question/answer HTML + CSS for a card (M2.2 read path).

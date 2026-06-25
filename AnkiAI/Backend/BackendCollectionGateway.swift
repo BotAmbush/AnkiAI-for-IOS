@@ -41,6 +41,15 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func cardIds(inDeckNamed name: String) async throws -> [Int64] {
         try opened().cardIds(inDeckNamed: name)
     }
+    public func setStudyDeck(named name: String) async throws {
+        let col = try opened()
+        let deckId = try col.deckTree().first { $0.name == name }?.deckId
+            ?? col.resolveOrCreateDeck(name: name)
+        try col.setCurrentDeck(deckId: deckId)
+    }
+    public func nextDueCard() async throws -> DueQueueState {
+        try opened().nextDueCard()
+    }
 
     public func searchCardIds(query: String) async throws -> [Int64] {
         try opened().searchCardIds(query: query)

@@ -85,15 +85,15 @@ struct AISettingsView: View {
                             .textContentType(.username).keyboardType(.emailAddress)
                             .autocorrectionDisabled().textInputAutocapitalization(.never)
                         SecureField("AnkiWeb password", text: $ankiPass)
-                        Button { Task { await loginAndDownload() } } label: {
-                            HStack { Text("Log in & download collection"); if syncing { Spacer(); ProgressView() } }
+                        Button { Task { await loginAndSync() } } label: {
+                            HStack { Text("Log in"); if syncing { Spacer(); ProgressView() } }
                         }.disabled(syncing || ankiUser.isEmpty || ankiPass.isEmpty)
                     }
                     if let syncStatus { Text(syncStatus).font(.caption) }
                 } header: {
                     Text("AnkiWeb sync")
                 } footer: {
-                    Text("\"Sync now\" is a two-way sync. The first time, download REPLACES the local sample with your collection. Your password is sent only to AnkiWeb; only the session key is stored (Keychain). Media (images) sync is a follow-up.")
+                    Text("After logging in, AnkiAI syncs. The first time, if your phone and AnkiWeb differ, you'll be asked to choose a direction: download (use AnkiWeb, replace this phone) or upload (use this phone, replace AnkiWeb). Your password is sent only to AnkiWeb; only the session key is stored (Keychain).")
                 }
 
                 Section("Study reminders") {
@@ -157,7 +157,7 @@ struct AISettingsView: View {
         }
     }
 
-    private func loginAndDownload() async {
+    private func loginAndSync() async {
         syncing = true
         syncStatus = "Logging in to AnkiWeb…"
         do {
@@ -165,15 +165,14 @@ struct AISettingsView: View {
             env.settings.ankiWebHKey = hkey
             env.settings.ankiWebUsername = ankiUser
             ankiPass = ""
-            syncStatus = "Downloading collection…"
-            try await env.gateway.downloadFromAnkiWeb(hkey: hkey)
-            syncStatus = "Downloading media…"
-            try? await env.gateway.syncMedia(hkey: hkey)
-            syncStatus = "✓ Collection + media downloaded. Open the Decks tab."
+            syncing = false
+            // Two-way sync; if the phone and AnkiWeb diverge, the user is asked to
+            // choose a direction (download vs upload) rather than auto-replacing.
+            await syncNow(hkey)
         } catch {
             syncStatus = "✗ \(error)"
+            syncing = false
         }
-        syncing = false
     }
 
     private func syncNow(_ hkey: String) async {

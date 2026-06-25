@@ -62,6 +62,13 @@ int32_t anki_backend_undo(AnkiHandle *handle);
 /* Move a card to another deck. */
 int32_t anki_backend_set_card_deck(AnkiHandle *handle, int64_t card_id, int64_t deck_id);
 
+/* Set the deck whose scheduler queue is studied. */
+int32_t anki_backend_set_current_deck(AnkiHandle *handle, int64_t deck_id);
+
+/* Next DUE card from the scheduler queue (-1 if empty) + remaining counts. */
+int32_t anki_backend_next_card(AnkiHandle *handle, int64_t *out_card_id,
+                               int32_t *out_new, int32_t *out_learn, int32_t *out_review);
+
 /* Rename a deck to a new full human name. */
 int32_t anki_backend_rename_deck(AnkiHandle *handle, int64_t deck_id, const char *new_name);
 

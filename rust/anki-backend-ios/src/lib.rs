@@ -524,6 +524,65 @@ pub extern "C" fn anki_backend_answer_card(
     }
 }
 
+/// Set the deck whose scheduler queue is being studied. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_set_current_deck(handle: *mut Handle, deck_id: i64) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle.col.set_current_deck(DeckId(deck_id)) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("set_current_deck failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Next DUE card from the scheduler queue for the current deck (respecting the
+/// queue: due/learning/new order, daily limits; suspended/buried/future excluded).
+/// Writes the card id to `out_card_id` (-1 if the queue is empty) and the remaining
+/// new/learning/review counts. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_next_card(
+    handle: *mut Handle,
+    out_card_id: *mut i64,
+    out_new: *mut i32,
+    out_learn: *mut i32,
+    out_review: *mut i32,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    if out_card_id.is_null() || out_new.is_null() || out_learn.is_null() || out_review.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    match handle.col.get_queued_cards(1, false) {
+        Ok(q) => {
+            unsafe {
+                *out_card_id = q.cards.first().map(|c| c.card.id.0).unwrap_or(-1);
+                *out_new = q.new_count as i32;
+                *out_learn = q.learning_count as i32;
+                *out_review = q.review_count as i32;
+            }
+            0
+        }
+        Err(e) => {
+            set_last_error(format!("get_queued_cards failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Suspend a card (excluded from review until unsuspended). Returns 0 on success.
 #[no_mangle]
 pub extern "C" fn anki_backend_suspend_card(handle: *mut Handle, card_id: i64) -> c_int {
