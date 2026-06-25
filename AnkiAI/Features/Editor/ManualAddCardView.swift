@@ -18,9 +18,11 @@ struct ManualAddCardView: View {
     @State private var deckId: Int64 = 0
     @State private var saving = false
     @State private var error: String?
+    @State private var showDeckPicker = false
 
     /// Field labels per note type (matches the default Anki note types).
     private var fieldNames: [String] { kind == .basic ? ["Front", "Back"] : ["Text", "Back Extra"] }
+    private var selectedDeck: DeckNameId? { decks.first { $0.id == deckId } }
 
     var body: some View {
         NavigationStack {
@@ -37,10 +39,12 @@ struct ManualAddCardView: View {
                 }
                 ForEach(fieldNames.indices, id: \.self) { i in
                     Section(fieldNames[i] + (i == 0 ? " (required)" : "")) {
+                        let value = i < fields.count ? fields[i] : ""
                         TextEditor(text: Binding(get: { i < fields.count ? fields[i] : "" },
                                                  set: { if i < fields.count { fields[i] = $0 } }))
                             .frame(minHeight: 80)
                             .font(.system(.body, design: .monospaced))
+                            .multilineTextAlignment(TextDirection.firstStrongIsRTL(value) ? .trailing : .leading)
                     }
                 }
                 Section("Tags") {
@@ -48,11 +52,27 @@ struct ManualAddCardView: View {
                         .autocorrectionDisabled().textInputAutocapitalization(.never)
                 }
                 Section("Deck") {
-                    Picker("Deck", selection: $deckId) {
-                        ForEach(decks) { Text($0.name).tag($0.id) }
+                    Button { showDeckPicker = true } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(selectedDeck.map { DeckPickerModel.leaf($0.name) } ?? "Choose a deck")
+                                    .foregroundColor(.primary)
+                                if let d = selectedDeck, !DeckPickerModel.parentPath(d.name).isEmpty {
+                                    Text(DeckPickerModel.parentPath(d.name))
+                                        .font(.caption).foregroundColor(.secondary)
+                                        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+                        }
                     }
+                    .accessibilityLabel("Deck: \(selectedDeck?.name ?? "none selected")")
                 }
                 if let error { Section { Text(error).font(.caption).foregroundColor(.red) } }
+            }
+            .sheet(isPresented: $showDeckPicker) {
+                DeckPickerSheet(decks: decks, selectedId: $deckId)
             }
             .navigationTitle("Add Card")
             .navigationBarTitleDisplayMode(.inline)

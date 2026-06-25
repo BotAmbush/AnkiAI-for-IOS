@@ -11,9 +11,16 @@ struct ChatView: View {
     @State private var attachments: [ImagePayload] = []
     @State private var showPDFImporter = false
     @State private var loadingAttachment = false
+    @State private var showClearConfirm = false
+
+    @Environment(\.scenePhase) private var scenePhase
 
     init(viewModel: AIChatViewModel) {
         _vm = StateObject(wrappedValue: viewModel)
+    }
+
+    private var composeIsRTL: Bool {
+        TextDirection.isRTL(language: vm.language, text: vm.isCreatorMode ? vm.draft : input)
     }
 
     var body: some View {
@@ -30,7 +37,7 @@ struct ChatView: View {
                                 .padding()
                         }
                         ForEach(vm.messages) { message in
-                            MessageBubble(message: message).id(message.id)
+                            MessageBubble(message: message, language: vm.language).id(message.id)
                         }
                         ForEach(vm.generationProposals) { proposal in
                             ProposalCard(proposal: proposal) {
@@ -38,6 +45,9 @@ struct ChatView: View {
                             } onDismiss: {
                                 vm.removeGenerationProposal(proposal)
                             }
+                        }
+                        if vm.parseFailed {
+                            ParseFailureBar(vm: vm)
                         }
                     }
                     .padding()
@@ -68,7 +78,45 @@ struct ChatView: View {
         }
         .navigationTitle(vm.isCreatorMode ? "Create Cards with AI" : "Ask Claude")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Picker("Language", selection: Binding(get: { vm.language }, set: { vm.setLanguage($0) })) {
+                        ForEach(AILanguage.allCases) { Text($0.displayName).tag($0) }
+                    }
+                    Divider()
+                    Button(role: .destructive) { showClearConfirm = true } label: {
+                        Label(vm.isCreatorMode ? "Clear session" : "Clear chat", systemImage: "trash")
+                    }
+                } label: {
+                    Label("Options", systemImage: "ellipsis.circle")
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            HStack(spacing: 10) {
+                Label(vm.language.displayName, systemImage: "globe").font(.caption2)
+                if vm.isCreatorMode {
+                    Label("\(vm.generationProposals.count) pending", systemImage: "rectangle.stack").font(.caption2)
+                    if !attachments.isEmpty { Label("\(attachments.count)", systemImage: "paperclip").font(.caption2) }
+                }
+                Spacer()
+            }
+            .foregroundColor(.secondary)
+            .padding(.horizontal).padding(.vertical, 4)
+            .background(.ultraThinMaterial)
+        }
+        .confirmationDialog("Clear session?", isPresented: $showClearConfirm, titleVisibility: .visible) {
+            Button("Clear session", role: .destructive) {
+                vm.clearSession(); input = ""; attachments = []; photoItems = []
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the chat history, draft, attachments, and any unresolved generated-card proposals. Cards already added to your collection are NOT deleted.")
+        }
         .task { await vm.load() }
+        .onDisappear { vm.persistSession() }
+        .onChange(of: scenePhase) { phase in if phase != .active { vm.persistSession() } }
     }
 
     private var inputBar: some View {
@@ -92,27 +140,30 @@ struct ChatView: View {
                     }
                     Button { showPDFImporter = true } label: { Image(systemName: "doc.fill") }
                 }
-                TextField(vm.isCreatorMode ? "Describe what to learn…" : "Ask a question…", text: $input, axis: .vertical)
+                TextField(vm.isCreatorMode ? "Describe what to learn…" : "Ask a question…",
+                          text: vm.isCreatorMode ? $vm.draft : $input, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...4)
+                    .multilineTextAlignment(composeIsRTL ? .trailing : .leading)
                 if vm.isLoading {
                     ProgressView()
                 } else {
                     Button {
-                        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let source = vm.isCreatorMode ? vm.draft : input
+                        let text = source.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !text.isEmpty else { return }
-                        input = ""
                         if vm.isCreatorMode {
                             let imgs = attachments
-                            attachments = []; photoItems = []
+                            vm.draft = ""; attachments = []; photoItems = []
                             Task { await vm.generateCards(text, attachments: imgs) }
                         } else {
+                            input = ""
                             Task { await vm.sendMessage(text) }
                         }
                     } label: {
                         Image(systemName: "paperplane.fill")
                     }
-                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !vm.hasAPIKey)
+                    .disabled((vm.isCreatorMode ? vm.draft : input).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !vm.hasAPIKey)
                 }
             }
         }
@@ -140,15 +191,28 @@ struct ChatView: View {
 
 private struct MessageBubble: View {
     let message: AIChatMessage
+    var language: AILanguage = .automatic
     var isUser: Bool { message.role == AIChatMessage.roleUser }
+    private var isRTL: Bool { TextDirection.isRTL(language: language, text: message.content) }
+
     var body: some View {
         HStack {
             if isUser { Spacer(minLength: 40) }
-            Text(message.content)
-                .padding(10)
-                .background(isUser ? Color.accentColor.opacity(0.15) : Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+            Group {
+                if isUser {
+                    // User messages stay plain text, but use language-aware alignment.
+                    Text(message.content)
+                        .multilineTextAlignment(isRTL ? .trailing : .leading)
+                        .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
+                } else {
+                    // Assistant messages render safe Markdown (Issue 4).
+                    ChatMarkdownView(text: message.content, language: language)
+                }
+            }
+            .padding(10)
+            .background(isUser ? Color.accentColor.opacity(0.15) : Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
             if !isUser { Spacer(minLength: 40) }
         }
     }
@@ -207,6 +271,27 @@ private struct AddProposalBar: View {
             }
         }
         .padding().background(Color(.secondarySystemBackground))
+    }
+}
+
+/// Parse-failure recovery (Issue 5). The session is preserved; actions that cost a
+/// paid API call are labelled.
+private struct ParseFailureBar: View {
+    @ObservedObject var vm: AIChatViewModel
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Couldn't read the response as cards", systemImage: "exclamationmark.triangle")
+                .font(.caption.bold()).foregroundColor(.orange)
+            Text("Your prompt and attachment are kept.").font(.caption2).foregroundColor(.secondary)
+            HStack {
+                Button("Try parsing again") { vm.tryParseAgain() }.buttonStyle(.bordered)
+                Button("Ask Claude to repair ($)") { Task { await vm.repairResponse() } }.buttonStyle(.bordered)
+                Button("Regenerate ($)") { Task { await vm.regenerate() } }.buttonStyle(.bordered)
+            }.font(.caption)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

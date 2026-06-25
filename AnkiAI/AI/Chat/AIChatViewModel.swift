@@ -26,6 +26,8 @@ public final class AIChatViewModel: ObservableObject {
     @Published public private(set) var addedCount = 0
     /// Output language for this chat (overrides the global default; persisted).
     @Published public var language: AILanguage = .automatic
+    /// The in-progress prompt draft (persisted for the creator session).
+    @Published public var draft: String = ""
     /// Human-readable reasons for cards skipped during parsing (partial-success).
     @Published public private(set) var skippedCards: [String] = []
     /// True when the last generation produced a response we could not parse — the
@@ -67,11 +69,46 @@ public final class AIChatViewModel: ObservableObject {
     public func setLanguage(_ lang: AILanguage) {
         language = lang
         settings.aiLanguage = lang
+        persistSession()
     }
 
     public func load() async {
         loadMessages()
+        if isCreatorMode { restoreCreatorSession() }
         if !isCreatorMode { await loadCardContext() }
+    }
+
+    // MARK: - Creator session persistence (Issue 3)
+
+    private func restoreCreatorSession() {
+        guard let s = CreatorSessionStore.load(sessionId: sessionId) else { return }
+        draft = s.draft
+        language = AILanguage(rawValue: s.language) ?? language
+        addedCount = s.addedCount
+        parseFailed = s.parseFailed
+        lastRawResponse = s.rawResponse
+        lastPrompt = s.lastPrompt
+        lastAttachments = s.attachments.map { ImagePayload(base64: $0.base64, mediaType: $0.mediaType) }
+        generationProposals = s.proposals.map {
+            CardProposal(front: $0.front, back: $0.back, deckName: $0.deckName, deckId: $0.deckId)
+        }
+    }
+
+    /// Persist the unfinished creator session after every meaningful change.
+    public func persistSession() {
+        guard isCreatorMode else { return }
+        let snapshot = PersistedCreatorSession(
+            draft: draft,
+            language: language.rawValue,
+            addedCount: addedCount,
+            parseFailed: parseFailed,
+            rawResponse: lastRawResponse,
+            lastPrompt: lastPrompt,
+            proposals: generationProposals.map {
+                PersistedProposal(front: $0.front, back: $0.back, deckName: $0.deckName, deckId: $0.deckId)
+            },
+            attachments: lastAttachments.map { PersistedAttachment(base64: $0.base64, mediaType: $0.mediaType) })
+        CreatorSessionStore.save(snapshot, sessionId: sessionId)
     }
 
     private func loadMessages() {
@@ -251,6 +288,7 @@ public final class AIChatViewModel: ObservableObject {
         isLoading = true; error = nil; generationProposals = []; skippedCards = []; parseFailed = false
         repairAttempted = false
         lastPrompt = userPrompt; lastAttachments = attachments   // preserve for retry
+        persistSession()
         do {
             let allDecks = try await gateway.allDecks()
             lastAllDecks = allDecks
@@ -332,6 +370,7 @@ public final class AIChatViewModel: ObservableObject {
         if !outcome.skipped.isEmpty {
             error = "Added \(outcome.cards.count) card(s); \(outcome.skipped.count) could not be read: " + outcome.skipped.joined(separator: "; ")
         }
+        persistSession()
     }
 
     /// Port of the deck-resolution fallback chain in `parseGenerationProposals`.
@@ -352,6 +391,7 @@ public final class AIChatViewModel: ObservableObject {
             _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: proposal.deckId)
             addedCount += 1
             generationProposals.removeAll { $0.id == proposal.id }
+            persistSession()
         } catch {
             self.error = "Failed to add card: \(error.localizedDescription)"
         }
@@ -360,6 +400,7 @@ public final class AIChatViewModel: ObservableObject {
 
     public func removeGenerationProposal(_ proposal: CardProposal) {
         generationProposals.removeAll { $0.id == proposal.id }
+        persistSession()
     }
 
     // MARK: - Settings / spend
@@ -374,9 +415,20 @@ public final class AIChatViewModel: ObservableObject {
         hasAPIKey = false
     }
 
+    /// Clear the chat + unfinished creator session (messages, draft state,
+    /// proposals, parse-failure state). Cards already added to the collection are
+    /// NOT removed. Persisted creator state is cleared too.
     public func clearSession() {
         try? db.deleteSession(sessionId)
         messages = []
+        generationProposals = []
+        skippedCards = []
+        parseFailed = false
+        lastRawResponse = nil
+        lastPrompt = nil
+        lastAttachments = []
+        repairAttempted = false
+        CreatorSessionStore.clear(sessionId: sessionId)
     }
 
     public func clearError() { error = nil }
