@@ -259,7 +259,7 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
 - NOT CI-tested (needs a real account) — DEVICE-VERIFIED ONLY. Two-way sync +
   media sync are follow-ups.
 
-### M2.20 — AnkiWeb sync completion: two-way + upload (IN PROGRESS)
+### M2.20 — AnkiWeb sync completion: two-way + upload (CI GREEN ✅, run 28138733546)
 - [ ] Bridge anki_backend_sync (normal_sync, two-way) + anki_backend_sync_upload
   (full_upload). Gateway sync()/uploadToAnkiWeb(); Settings shows "Sync now" when
   logged in, with a full-sync-direction prompt (download/upload). COLLECTION sync
