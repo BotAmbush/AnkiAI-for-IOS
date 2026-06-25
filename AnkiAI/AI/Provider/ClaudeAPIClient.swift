@@ -62,11 +62,32 @@ public protocol AIChatAPIClient: Sendable {
         dynamicSystemSuffix: String,
         onTokensUsed: (@Sendable (TokenUsage) -> Void)?
     ) async -> Result<String, AIClientError>
+
+    /// Image-capable variant. Default maps to the text-only `chat` (dropping
+    /// images) so test fakes keep working; `ClaudeAPIClient` sends the images.
+    func chatWithImages(
+        systemPrompt: String,
+        history: [ChatTurnWithImage],
+        dynamicSystemSuffix: String,
+        onTokensUsed: (@Sendable (TokenUsage) -> Void)?
+    ) async -> Result<String, AIClientError>
 }
 
 public extension AIChatAPIClient {
     func chat(systemPrompt: String, history: [ChatTurn]) async -> Result<String, AIClientError> {
         await chat(systemPrompt: systemPrompt, history: history, dynamicSystemSuffix: "", onTokensUsed: nil)
+    }
+
+    /// Default: ignore images, forward the text to `chat`.
+    func chatWithImages(
+        systemPrompt: String,
+        history: [ChatTurnWithImage],
+        dynamicSystemSuffix: String,
+        onTokensUsed: (@Sendable (TokenUsage) -> Void)?
+    ) async -> Result<String, AIClientError> {
+        let text = history.map { ChatTurn(role: $0.role, content: $0.text) }
+        return await chat(systemPrompt: systemPrompt, history: text,
+                          dynamicSystemSuffix: dynamicSystemSuffix, onTokensUsed: onTokensUsed)
     }
 }
 

@@ -216,7 +216,8 @@ public final class AIChatViewModel: ObservableObject {
 
     // MARK: - Creator mode
 
-    public func generateCards(_ userPrompt: String, defaultDeckName: String = "") async {
+    public func generateCards(_ userPrompt: String, defaultDeckName: String = "",
+                              attachments: [ImagePayload] = []) async {
         guard let apiKey = settings.apiKey else { error = "Please enter your API key first."; return }
         isLoading = true; error = nil; generationProposals = []
         do {
@@ -224,9 +225,10 @@ public final class AIChatViewModel: ObservableObject {
             let hierarchy = allDecks.map { $0.name }.joined(separator: "\n")
             let resolvedDefault = defaultDeckName.isEmpty ? (allDecks.first?.name ?? "Default") : defaultDeckName
             let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
-            let result = await client.chat(
+            let userMessage = Prompts.creatorUserMessage(userPrompt: userPrompt, attachmentCount: attachments.count)
+            let result = await client.chatWithImages(
                 systemPrompt: Prompts.creatorStaticSystemPrompt(),
-                history: [ChatTurn(role: "user", content: Prompts.creatorUserMessage(userPrompt: userPrompt, attachmentCount: 0))],
+                history: [ChatTurnWithImage(role: "user", text: userMessage, images: attachments)],
                 dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: resolvedDefault),
                 onTokensUsed: { [weak self] usage in
                     Task { @MainActor in self?.recordSpend(AIPricing.costSonnet(input: usage.inputTokens, output: usage.outputTokens)) }

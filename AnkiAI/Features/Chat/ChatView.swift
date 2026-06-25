@@ -1,10 +1,16 @@
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
 
 /// Shared chat surface for both reviewer chat ("Ask Claude") and the AI card
 /// creator. Mirrors `fragment_ai_chat.xml` + `AiChatBottomSheetFragment`.
 struct ChatView: View {
     @StateObject private var vm: AIChatViewModel
     @State private var input: String = ""
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var attachments: [ImagePayload] = []
+    @State private var showPDFImporter = false
+    @State private var loadingAttachment = false
 
     init(viewModel: AIChatViewModel) {
         _vm = StateObject(wrappedValue: viewModel)
@@ -66,25 +72,69 @@ struct ChatView: View {
     }
 
     private var inputBar: some View {
-        HStack(spacing: 8) {
-            TextField(vm.isCreatorMode ? "Describe what to learn…" : "Ask a question…", text: $input, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(1...4)
-            if vm.isLoading {
-                ProgressView()
-            } else {
-                Button {
-                    let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !text.isEmpty else { return }
-                    input = ""
-                    Task { await vm.sendMessage(text) }
-                } label: {
-                    Image(systemName: "paperplane.fill")
+        VStack(spacing: 6) {
+            if vm.isCreatorMode && (!attachments.isEmpty || loadingAttachment) {
+                HStack(spacing: 6) {
+                    if loadingAttachment { ProgressView().scaleEffect(0.8) }
+                    Image(systemName: "paperclip")
+                    Text("\(attachments.count) attachment\(attachments.count == 1 ? "" : "s")")
+                        .font(.caption)
+                    Button("Clear") { attachments = []; photoItems = [] }.font(.caption)
+                    Spacer()
                 }
-                .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !vm.hasAPIKey)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+            }
+            HStack(spacing: 8) {
+                if vm.isCreatorMode {
+                    PhotosPicker(selection: $photoItems, maxSelectionCount: 6, matching: .images) {
+                        Image(systemName: "photo.on.rectangle")
+                    }
+                    Button { showPDFImporter = true } label: { Image(systemName: "doc.fill") }
+                }
+                TextField(vm.isCreatorMode ? "Describe what to learn…" : "Ask a question…", text: $input, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...4)
+                if vm.isLoading {
+                    ProgressView()
+                } else {
+                    Button {
+                        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !text.isEmpty else { return }
+                        input = ""
+                        if vm.isCreatorMode {
+                            let imgs = attachments
+                            attachments = []; photoItems = []
+                            Task { await vm.generateCards(text, attachments: imgs) }
+                        } else {
+                            Task { await vm.sendMessage(text) }
+                        }
+                    } label: {
+                        Image(systemName: "paperplane.fill")
+                    }
+                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !vm.hasAPIKey)
+                }
             }
         }
         .padding()
+        .onChange(of: photoItems) { items in
+            Task {
+                loadingAttachment = true
+                var loaded: [ImagePayload] = []
+                for item in items {
+                    if let p = await AttachmentLoader.payload(from: item) { loaded.append(p) }
+                }
+                attachments = loaded
+                loadingAttachment = false
+            }
+        }
+        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf]) { result in
+            guard case .success(let url) = result else { return }
+            loadingAttachment = true
+            let pages = AttachmentLoader.pdfPayloads(from: url)
+            attachments.append(contentsOf: pages)
+            loadingAttachment = false
+        }
     }
 }
 

@@ -267,8 +267,14 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
 - Honest status upgrades (genuinely complete): reviewer, scheduler, fsrs,
   navigation, app_lifecycle, migrations → completed (accurate notes).
 
-### M2.21 — Real AI Insights + honest status upgrades (IN PROGRESS)
+### M2.21 — Real AI Insights + honest status upgrades (CI GREEN ✅, run 28139238605)
 - [ ] InsightsView now feeds AITipEngine REAL collection data (total/mature/weak/
   today/30-day retention via search); streak/timing tips omitted (need revlog).
   AITipEngine gained includeStreak flag. Upgraded to completed: migrations,
   statistics (numeric), settings, ai_insights.
+
+### M2.22 — AI creator image + PDF attachments (IN PROGRESS)
+- [ ] AttachmentLoader (PhotosPicker images → JPEG; PDFKit rasterizes up to 6
+  pages → JPEG); ChatView creator input bar gains photo + PDF buttons with an
+  attachment chip; generateCards(attachments:) sends via chatWithImages.
+  Added chatWithImages to AIChatAPIClient protocol (text-only default).

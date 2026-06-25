@@ -720,13 +720,15 @@ features:
       - AnkiDroid/src/main/java/com/ichi2/anki/ai/chat/AiChatViewModel.kt
     ios_paths:
       - AnkiAI/AI/Provider/ClaudeAPIClient.swift
+      - AnkiAI/Features/Chat/AttachmentLoader.swift
+      - AnkiAI/Features/Chat/ChatView.swift
     backend_components: []
     tests:
       - AnkiAITests/ClaudeAPIClientTests.swift
-    status: partial
+    status: completed
     verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: Image transport supported + tested; capture UI (PhotosPicker) and PDF rasterization (PDFKit) not yet built.
+    notes: "M2.22 — AI card creator now attaches images (PhotosPicker, up to 6) and PDFs (PDFKit rasterizes up to 6 pages); both normalize to JPEG ImagePayloads sent via chatWithImages (added to the AIChatAPIClient protocol with a text-only default for test fakes). Image transport unit-tested."
 
   - feature_id: forced_study
     description: Forced/enforced study mode (overlay + scheduling).
