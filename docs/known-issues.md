@@ -42,6 +42,19 @@ Loading a user's existing collection via **file import (.apkg/.colpkg) is incomp
 (see below). Per the user's direction, the current path to load a real collection is
 **AnkiWeb sync** (M2.19+). File import remains an open TODO to revisit later.
 
+## .apkg import — SAFE but happy-path blocked (audit M2)
+`.apkg` import is now defence-in-depth SAFE: a pre-import `.colpkg` backup is
+written and the merge runs in a backend transaction that rolls back on any
+failure, so a malformed/incompatible package leaves the collection unchanged
+(tested: malformed + missing package preserve all cards/decks). However the
+HAPPY-PATH `.apkg` import still fails with an anki-internal `InvalidInput`
+(`decks have different kinds`, rslib import_export/package/apkg/import/decks.rs:141)
+where `update_deck` is reached for a same-kind deck yet neither normal nor
+filtered branch matches. This needs LOCAL anki debugging (cannot run anki on the
+Windows dev box). The WORKING package-import paths are `.colpkg` restore
+(round-trip integration-tested) and AnkiWeb sync. import_export/apkg_colpkg stay
+**partial**.
+
 ## M2.10/M2.18 import round-trip — needs local debugging
 `.apkg` **export** works (verified: valid ZIP package). The export→**import**
 round-trip into a *fresh* collection fails with an opaque anki `InvalidInput`
