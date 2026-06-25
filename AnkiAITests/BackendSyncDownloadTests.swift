@@ -60,6 +60,7 @@ final class BackendSyncDownloadTests: XCTestCase {
         XCTAssertThrowsError(
             try AnkiCollection.syncDownload(path: path, hkey: "k", endpoint: "not a url"))
         let after = BackendCollectionGateway(path: path)
-        XCTAssertEqual(try await after.searchCardIds(query: "").count, 7)
+        let count = try await after.searchCardIds(query: "").count
+        XCTAssertEqual(count, 7)
     }
 }
