@@ -401,7 +401,7 @@ Device feedback fixes:
 - [ ] NoteEditorView gains a Deck picker (current deck from cardInfo, all decks);
   on save, moves the card if changed (moveCard). Swift-only.
 
-### M2.41 — AI client robustness tests (CLAUDE.md testing requirements) (IN PROGRESS)
+### M2.41 — AI client robustness tests (CI GREEN, run 28152783723)
 - [ ] Cover the required failure modes: network errors (URLError → noInternet),
   rate limiting (429 → rateLimited), generic HTTP (500 → .http), and malformed AI
   responses (non-JSON 200 → malformedResponse; missing text → noTextContent) +
