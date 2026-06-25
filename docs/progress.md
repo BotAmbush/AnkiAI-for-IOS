@@ -347,7 +347,7 @@ download retest (per task).
   BGTaskSchedulerPermittedIdentifiers. accessibility + background_behavior →
   completed. This finishes all discoverable features except device-pending sync.
 
-### M2.32 — Reviewer uses the scheduler QUEUE; login asks sync direction (IN PROGRESS)
+### M2.32 — Reviewer uses the scheduler QUEUE; login asks sync direction (CI GREEN ✅, run 28146998633, 97 tests)
 Device feedback fixes:
 - Reviewer now studies the real scheduler queue (set_current_deck + get_queued_cards/
   get_next_card) instead of searching ALL deck cards. Fixes: suspended/non-due cards
