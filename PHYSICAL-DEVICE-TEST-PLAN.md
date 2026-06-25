@@ -16,6 +16,27 @@
 - **Manual Add Card** entry point (Decks → "+" Add card) — new step.
 - **Logout / initial auth UI** (demo never shown as logged in; Logout works now) — steps 1–3 + a logout.
 
+## 🔁 AI workflow + UX retest (phase 3 — not yet device-verified)
+1. **Deck selection:** Decks → "+" Add card → Deck → pick between two long similarly
+   named paths; the leaf is prominent and the full path wraps (not truncated).
+2. **Search deck hierarchy:** in the deck sheet, search a parent name and a child name.
+3. **Hebrew language:** chat ⋯ menu → Language → Hebrew (persists across reopen).
+4. **RTL I/O:** Hebrew input is right-aligned; the assistant reply is right-aligned.
+5. **Mixed Hebrew/English:** formulas/Latin terms/numbers stay readable LTR inline.
+6. **Recover proposals:** Create with AI → generate → dismiss sheet → reopen → the
+   pending proposals are still there.
+7. **Recover after force-close:** generate → force-quit the app → reopen → the
+   creator session (draft + proposals) is restored.
+8. **Clear session:** ⋯ → Clear session → confirm; chat/draft/proposals cleared,
+   previously-added cards remain.
+9. **Reviewer Markdown:** ask a question that yields headings/bold/lists — they render
+   formatted (no literal `#`/`**`).
+10. **Creator with an attachment:** attach a photo/PDF and generate cards.
+11. **Malformed response recovery:** if a generation fails to parse, the session is
+    kept and Try-again / Repair / Regenerate appear (note which cost money).
+12. **No duplicates:** accept generated cards once, then retry — no duplicate cards.
+13. **Sync accepted cards:** Sync now and confirm the new cards reach Anki Desktop.
+
 ---
 
 Run this **ordered** sequence on a real iPhone after installing the latest unsigned

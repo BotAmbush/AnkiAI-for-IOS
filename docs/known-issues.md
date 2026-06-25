@@ -2,6 +2,14 @@
 
 Updated 2026-06-24 (M1).
 
+## 2026-06-25 device repair phase 3 (AI/UX) — resolved + awaiting retest
+Fixed (code-complete, NOT yet device-retested): ambiguous deck selection (searchable
+sheet, full wrapped path), AI output-language selection + full Hebrew RTL chat/editor
+alignment, creator-session persistence + Clear, Markdown rendering in reviewer chat,
+robust malformed-response recovery (local re-parse + repair/regenerate without losing
+the session). Honest remaining: chat math renders as plain text (not MathJax) in the
+safe chat renderer — card previews still use the WebView MathJax. CI green (192 tests).
+
 ## 2026-06-25 device repair — resolved + awaiting retest
 Three physical-device defects were fixed (code-complete, **not yet device-retested**):
 - **Manual backup invisible in Files** — root cause was the missing Info.plist

@@ -2,6 +2,19 @@
 
 Canonical status of the AnkiAI iOS migration. Updated after every milestone.
 
+## 2026-06-25 — device repair phase 3 (AI workflow + UX)
+Six device-found AI/UX issues fixed: (1) searchable deck-picker sheet (leaf + full
+wrapped path, no truncation); (2) AI output language (automatic/Hebrew/English,
+persisted + per-chat) injected into prompts without changing the JSON schema + bidi
+RTL alignment (no string reversal); (3) creator-session persistence (draft, language,
+proposals, parse-failure, attachments → app-support file, restored after dismiss /
+background / relaunch) + confirmed Clear; (4) safe Markdown rendering for assistant
+chat; (5) robust creator parse recovery (fenced/prose/array/{cards}/single/BOM/
+one-bad-card) + Try-again/Repair/Regenerate without losing the session; (6) compact
+chat status + overflow menu. CI green (run 28187409436, **192 tests**); IPA
+7,418,531 bytes. These seven behaviors are NOT yet device-verified (await retest).
+Still Mode A — NOT finalized. See CLAUDE-REPAIR-REPORT.md.
+
 ## 2026-06-25 — DE-FINALIZED (Mode A) + audit repair + device repair
 An independent Codex audit returned NOT COMPLETE; the premature finalization was
 REVERTED to Mode A (history Entry 3). Audit repairs landed: P0 seeded-collection

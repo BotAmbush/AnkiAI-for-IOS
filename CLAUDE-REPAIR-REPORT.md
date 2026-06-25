@@ -7,6 +7,48 @@ report tracks the repairs. The migration will **not** be re-finalized until the
 repairs land, CI is green, a new physical-device test passes, and a **second
 independent audit** verifies completion.
 
+## Device-repair phase 3 (AI workflow + UX) — 2026-06-25
+
+Confirmed working on device (kept device-verified): full download, media, two-way
+sync, persistence, scheduler short-delay, MathJax, manual backups, manual card
+creation, login/logout, demo-upload protection. Six further issues fixed:
+
+- **Issue 1 — ambiguous deck selection:** `DeckPickerSheet` (searchable; leaf
+  prominent; full parent path wrapped, never truncated; VoiceOver full-path;
+  selection indicated). `ManualAddCardView` uses it. Files:
+  `Features/Editor/DeckPickerSheet.swift`, `ManualAddCardView.swift`. Tests:
+  `DeckPickerModelTests` (same-leaf/long/Hebrew/mixed paths, search by parent+child).
+- **Issue 2 — output language + RTL:** `AILanguage` (automatic/hebrew/english)
+  persisted + per-chat override; injected into creator + reviewer prompts WITHOUT
+  changing the JSON schema. `TextDirection` first-strong bidi (no string reversal);
+  messages / compose / field editors align by language. Files: `AI/AILanguage.swift`,
+  `Prompts.swift`, `KeychainStore.swift`, `ChatView.swift`. Tests: `AILanguageTests`.
+- **Issue 3 — creator session persistence:** `CreatorSessionStore` (app-support JSON
+  file, NOT UserDefaults) persists draft/language/proposals/parse-failure/raw
+  response/attachments after every meaningful change + on disappear/background;
+  restored on load. Confirmed Clear action (does not delete accepted cards). Files:
+  `AI/CreatorSessionStore.swift`, `AIChatViewModel.swift`, `ChatView.swift`. Tests:
+  `AICreatorSessionTests`.
+- **Issue 4 — Markdown rendering:** `ChatMarkdown` safe block parser (headings,
+  bold/italic/inline-code, bullet/numbered lists, code blocks, rules) + RTL-aware
+  `ChatMarkdownView` for assistant messages (no HTML/script execution). Files:
+  `AI/ChatMarkdown.swift`, `ChatView.swift`. Tests: `ChatMarkdownTests`.
+- **Issue 5 — robust parse recovery:** `AIResponseParser.parseGeneratedCards` →
+  `CardParseOutcome` recovers fenced/prose/array/`{cards}`/single-object/BOM and
+  one-bad-card-among-valid; the VM preserves prompt+attachment+raw response on
+  failure and offers Try-again (free) / Repair ($, once, billed) / Regenerate ($).
+  Sanitized `AIDiagnostics` (no key/attachment/card content). Tests:
+  `AIResponseParserRecoveryTests`.
+- **Issue 6 — session visibility:** compact status inset (language, pending count,
+  attachments) + overflow menu (language, clear). File: `ChatView.swift`.
+
+**Delivery:** CI run **28187409436** — green, **192 tests, 0 failures**
+(https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28187409436). Commit
+`9690b02`. IPA `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,418,531 bytes** (compiled
+file-sharing keys still verified by CI). Feature map: 42 completed / 4 partial / 9
+device-verified. The seven new behaviors are recorded **not** device-verified until
+the new IPA is retested (see PHYSICAL-DEVICE-TEST-PLAN). Still Mode A — NOT finalized.
+
 ## Status of audit findings
 
 | # | Finding | Status |
