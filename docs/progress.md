@@ -364,7 +364,7 @@ Device feedback fixes:
   Reviews (last 30d) + Due forecast (next 30d) bar charts (Swift Charts). Read-only
   (safe for the live collection). Integration-tested.
 
-### M2.34 — Browser multi-select + safe bulk actions (IN PROGRESS)
+### M2.34 — Browser multi-select + safe bulk actions (CI GREEN, run 28148390473)
 - [ ] CardBrowserView: EditButton multi-select + bottom bar with bulk Suspend,
   Flag (color submenu), and Add-tag (alert). Loops the already-tested gateway ops
   (suspendCard/setFlag/addTags via cardInfo→noteId). No destructive bulk delete.
