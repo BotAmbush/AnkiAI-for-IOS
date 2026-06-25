@@ -9,6 +9,7 @@ struct DeckListView: View {
     @State private var isLoading = true
     @State private var loadError: String?
     @State private var showCreator = false
+    @State private var showCustomStudy = false
     @State private var renameTarget: DeckTreeEntry?
     @State private var renameText = ""
 
@@ -48,11 +49,19 @@ struct DeckListView: View {
             }
             .navigationTitle("Decks")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button { showCustomStudy = true } label: {
+                        Label("Custom Study", systemImage: "slider.horizontal.3")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showCreator = true } label: {
                         Label("Create Cards with AI", systemImage: "sparkles")
                     }
                 }
+            }
+            .sheet(isPresented: $showCustomStudy) {
+                CustomStudyView { Task { await load() } }
             }
             .sheet(isPresented: $showCreator) {
                 NavigationStack {

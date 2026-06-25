@@ -28,6 +28,8 @@ use anki::prelude::*;
 use anki::search::SortMode;
 use anki::services::DecksService;
 use anki::services::NotesService;
+use anki_proto::decks::deck::filtered::SearchTerm as FilteredSearchTerm;
+use anki_proto::decks::DeckId as PbDeckId;
 use anki_proto::decks::DeckTreeNode;
 use anki_proto::decks::RenameDeckRequest;
 use anki_proto::import_export::{ExportAnkiPackageOptions, ImportAnkiPackageOptions};
@@ -600,6 +602,75 @@ pub extern "C" fn anki_backend_remove_deck(handle: *mut Handle, deck_id: i64) ->
         Ok(_) => 0,
         Err(e) => {
             set_last_error(format!("remove_decks failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Create (or rebuild) a filtered deck named `name` that gathers up to `limit`
+/// cards matching the Anki `search`. Writes the deck id to `out_deck_id`.
+/// This is the engine behind custom study. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_create_filtered_deck(
+    handle: *mut Handle,
+    name: *const c_char,
+    search: *const c_char,
+    limit: u32,
+    out_deck_id: *mut i64,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let name = match unsafe { cstr_to_string(name) } {
+        Some(n) => n,
+        None => {
+            set_last_error("null name".into());
+            return 1;
+        }
+    };
+    let search = match unsafe { cstr_to_string(search) } {
+        Some(s) => s,
+        None => {
+            set_last_error("null search".into());
+            return 1;
+        }
+    };
+    if out_deck_id.is_null() {
+        set_last_error("null out pointer".into());
+        return 1;
+    }
+    // Start from a fresh filtered-deck template (DeckId 0 = create new).
+    let mut fd = match DecksService::get_or_create_filtered_deck(&mut handle.col, PbDeckId { did: 0 }) {
+        Ok(f) => f,
+        Err(e) => {
+            set_last_error(format!("get_or_create_filtered_deck failed: {e}"));
+            return 2;
+        }
+    };
+    fd.name = name;
+    if let Some(cfg) = fd.config.as_mut() {
+        if let Some(term) = cfg.search_terms.first_mut() {
+            term.search = search;
+            term.limit = limit;
+        } else {
+            cfg.search_terms.push(FilteredSearchTerm {
+                search,
+                limit,
+                order: 0,
+            });
+        }
+    }
+    match DecksService::add_or_update_filtered_deck(&mut handle.col, fd) {
+        Ok(out) => {
+            unsafe { *out_deck_id = out.id };
+            0
+        }
+        Err(e) => {
+            set_last_error(format!("add_or_update_filtered_deck failed: {e:?}"));
             2
         }
     }

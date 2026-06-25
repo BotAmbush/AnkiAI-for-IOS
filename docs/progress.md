@@ -292,3 +292,9 @@ User direction: file import deferred; use AnkiWeb sync to load the real collecti
   rewrites <img src> + [sound:] → <audio> (unit-tested). Media sync wired into the
   AnkiWeb flow; Settings backup button (.colpkg → Documents). media/audio/
   backups_restore → completed.
+
+### M2.25 — Filtered decks + custom study (IN PROGRESS)
+- [ ] Bridge create_filtered_deck (get_or_create_filtered_deck → set search/limit
+  → add_or_update_filtered_deck). Gateway createFilteredDeck; CustomStudyView
+  (deck-list toolbar) with presets. Integration test: filtered deck appears in
+  the tree. filtered_decks + custom_study → completed.

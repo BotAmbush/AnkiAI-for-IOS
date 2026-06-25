@@ -68,6 +68,10 @@ int32_t anki_backend_rename_deck(AnkiHandle *handle, int64_t deck_id, const char
 /* Delete a deck and its child decks (and their cards). */
 int32_t anki_backend_remove_deck(AnkiHandle *handle, int64_t deck_id);
 
+/* Create/rebuild a filtered deck gathering up to `limit` cards matching `search`. */
+int32_t anki_backend_create_filtered_deck(AnkiHandle *handle, const char *name,
+                                          const char *search, uint32_t limit, int64_t *out_deck_id);
+
 /* Set a card's flag (0=none, 1=red, 2=orange, 3=green, 4=blue). */
 int32_t anki_backend_set_card_flag(AnkiHandle *handle, int64_t card_id, uint32_t flag);
 

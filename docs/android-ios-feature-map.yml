@@ -514,26 +514,31 @@ features:
     category: core
     android_paths:
       - libanki/src/main/java/com/ichi2/anki/libanki/sched/Scheduler.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Decks/CustomStudyView.swift
+      - rust/anki-backend-ios/src/lib.rs
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendFilteredDeckTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.25 — anki_backend_create_filtered_deck (get_or_create_filtered_deck → set search/limit → add_or_update_filtered_deck) builds a filtered deck that gathers matching cards (reschedule on). Integration-tested; studied via the normal reviewer."
 
   - feature_id: custom_study
     description: Custom study sessions.
     category: core
     android_paths:
       - AnkiDroid/src/main/java/com/ichi2/anki/CustomStudyDialog.kt
-    ios_paths: []
+    ios_paths:
+      - AnkiAI/Features/Decks/CustomStudyView.swift
     backend_components: [Frameworks/AnkiCore.xcframework]
-    tests: []
-    status: not_started
-    verification: { compile_verified: false, unit_test_verified: false, integration_test_verified: false, physical_device_verified: false }
+    tests:
+      - AnkiAITests/BackendFilteredDeckTests.swift
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: M2.2+.
+    notes: "M2.25 — CustomStudyView (deck-list toolbar) builds a filtered deck from an Anki search + card limit, with presets (due now / forgotten 7d / new / hard / added this week). Backs onto create_filtered_deck."
 
   - feature_id: settings
     description: App and collection preferences.

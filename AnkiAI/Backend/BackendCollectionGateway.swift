@@ -72,6 +72,9 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func removeDeck(deckId: Int64) async throws {
         try opened().removeDeck(deckId: deckId)
     }
+    public func createFilteredDeck(name: String, search: String, limit: Int) async throws -> Int64 {
+        try opened().createFilteredDeck(name: name, search: search, limit: limit)
+    }
     public func setFlag(cardId: Int64, flag: Int) async throws {
         try opened().setFlag(cardId: cardId, flag: UInt32(max(0, flag)))
     }

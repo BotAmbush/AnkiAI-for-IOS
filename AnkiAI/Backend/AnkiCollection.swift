@@ -231,6 +231,17 @@ final class AnkiCollection {
         guard anki_backend_remove_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func createFilteredDeck(name: String, search: String, limit: Int) throws -> Int64 {
+        var out: Int64 = 0
+        let rc = name.withCString { n in
+            search.withCString { s in
+                anki_backend_create_filtered_deck(handle, n, s, UInt32(max(0, limit)), &out)
+            }
+        }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+        return out
+    }
+
     func setFlag(cardId: Int64, flag: UInt32) throws {
         guard anki_backend_set_card_flag(handle, cardId, flag) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
