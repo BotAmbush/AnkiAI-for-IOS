@@ -400,3 +400,9 @@ Device feedback fixes:
 ### M2.40 — Note editor: move card to deck (CI GREEN, run 28152051839)
 - [ ] NoteEditorView gains a Deck picker (current deck from cardInfo, all decks);
   on save, moves the card if changed (moveCard). Swift-only.
+
+### M2.41 — AI client robustness tests (CLAUDE.md testing requirements) (IN PROGRESS)
+- [ ] Cover the required failure modes: network errors (URLError → noInternet),
+  rate limiting (429 → rateLimited), generic HTTP (500 → .http), and malformed AI
+  responses (non-JSON 200 → malformedResponse; missing text → noTextContent) +
+  unexpected errors → underlying. Closes the testing-requirements gap.
