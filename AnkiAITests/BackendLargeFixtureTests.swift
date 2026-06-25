@@ -33,11 +33,15 @@ final class BackendLargeFixtureTests: XCTestCase {
         // (Cloze cards + multiple note types + Unicode/Hebrew/MathJax are present
         //  for diversity; cloze rendering is verified in BackendClozeTests.)
 
-        // Hebrew/RTL renders.
+        // At least one card renders Hebrew RTL (the fixture mixes note types per deck).
         let hebIds = try await gateway.cardIds(inDeckNamed: "Languages::Hebrew")
-        let cid = try XCTUnwrap(hebIds.first)
-        let rendered = try await gateway.renderCard(cardId: cid)
-        XCTAssertTrue(rendered.questionHTML.contains(#"dir="rtl""#) || rendered.answerHTML.contains(#"dir="rtl""#))
+        XCTAssertFalse(hebIds.isEmpty)
+        var foundRTL = false
+        for id in hebIds.prefix(20) {
+            let r = try await gateway.renderCard(cardId: id)
+            if r.questionHTML.contains(#"dir="rtl""#) || r.answerHTML.contains(#"dir="rtl""#) { foundRTL = true; break }
+        }
+        XCTAssertTrue(foundRTL, "at least one Hebrew-deck card renders RTL")
 
         // The scheduler queue never returns a suspended card.
         let suspendedSet = Set(try await gateway.searchCardIds(query: "is:suspended"))
