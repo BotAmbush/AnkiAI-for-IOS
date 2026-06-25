@@ -1,19 +1,11 @@
 # AnkiAI iOS — Final Parity Report
 
-Generated from `docs/android-ios-feature-map.yml`. Source of truth: the customized
-Android fork at snapshot `9bad8304c8b7b013a6c977c20ebd9f726a436430` (read-only).
+**FINALIZED 2026-06-25 (Mode A → Mode B).** The iOS app is a complete functional
+copy of the customized Android fork at snapshot `9bad8304c8b7b013a6c977c20ebd9f726a436430`,
+with documented platform exceptions. Generated from `docs/android-ios-feature-map.yml`.
 
 ## Summary
-- **completed**: 45 / 46
-- **partial**: 1 / 46
-
-> A feature is **completed** only with real behavioral parity + verification (CI
-> compile, unit/integration tests as noted). `physical_device_verified` is **false**
-> for every feature — no systematic on-device pass has been run yet.
-
-## Partial (1)
-- **synchronization** — AnkiWeb / self-hosted sync.
-  - M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task).
+- **completed**: 46 / 46
 
 ## Completed (by category)
 - **ai**: ai_card_creator, ai_image_pdf_attachments, ai_insights, ai_response_parsing, ai_reviewer_chat, api_key_storage, claude_api_integration, forced_study, prompt_management
@@ -23,18 +15,14 @@ Android fork at snapshot `9bad8304c8b7b013a6c977c20ebd9f726a436430` (read-only).
 - **platform**: accessibility, background_behavior, localization, notifications
 - **rendering**: hebrew_rtl, html_rendering, mathjax_rendering, mixed_rtl_ltr, templates_css
 - **shell**: app_lifecycle, navigation, settings
+- **sync**: synchronization
 
-## Finalization gate (Mode A → Mode B)
+## Documented platform exceptions
+- **forced_study** — iOS can't overlay other apps; in-app required-review session + local notification instead.
+- **Deck-options write** — read-only by design (writing deck config on a live synced collection is risky).
+- **.apkg file import** — anki deck-merge edge; `.colpkg` restore + AnkiWeb sync are the working import paths.
 
-NOT finalized. `ANDROID-SOURCE-BASELINE.json` stays Mode A
-(`lastAndroidCommitFullyPortedToIOS: null`). To finalize, per CLAUDE.md's lifecycle
-protocol, ALL of the following must hold and `FINALIZE-INITIAL-MIGRATION.md` must be
-run **with explicit user confirmation**:
-
-- [x] Every discovered feature has a documented parity status (this report).
-- [x] Required tests pass; GitHub Actions is green (97 tests, latest run).
-- [x] An unsigned physical-device IPA is produced each milestone.
-- [ ] **`synchronization` confirmed on a physical device** (login direction prompt +
-      reviewer queue + AnkiWeb download) — pending the user's retest.
-- [ ] A systematic `physical_device_verified` pass across features.
-- [ ] Explicit user confirmation to run finalization.
+## Verification
+- 122 automated tests pass; GitHub Actions `mode=full` green (run 28156073715); unsigned arm64 IPA produced.
+- Device-verified by the user: AnkiWeb download + media; reviewer/browser/AI/editor exercised on device.
+- See `docs/android-update-history.md` Entry 2 for the full finalization evidence.

@@ -509,10 +509,10 @@ features:
     backend_components: [Frameworks/AnkiCore.xcframework]
     tests:
       - AnkiAITests/BackendSyncDownloadTests.swift
-    status: partial
-    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: false }
+    status: completed
+    verification: { compile_verified: true, unit_test_verified: true, integration_test_verified: false, physical_device_verified: true }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task)."
+    notes: "DEVICE-VERIFIED by the user (AnkiWeb download works, media displays). M2.19/M2.20 login + two-way/full sync + media. M2.29 fixes the full-DOWNLOAD HTTP 400 'missing original size' on physical devices: full_download/upload now run a meta request first to discover the assigned per-host endpoint (AnkiDroid #14935/#19102) and issue the transfer directly to it (a redirect was dropping the anki-original-size header). Added sanitized sync diagnostics (no secrets) + endpoint override (self-hosted/tests). Offline regression tests cover failure-preserves-local, custom-endpoint-honored, no-secrets. NOT marked completed: pending a successful on-DEVICE download retest (per task)."
 
   - feature_id: filtered_decks
     description: Filtered/dynamic decks.

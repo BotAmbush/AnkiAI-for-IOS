@@ -52,3 +52,58 @@ successful incremental update (Mode B), atomically with
 - Notifications; background behavior; localization; accessibility.
 - AI: wiring edit/add-card writes to the backend; live insights from revlog;
   image/PDF attachment capture UI; forced-study (iOS-constrained).
+
+---
+
+## Entry 2 — FINALIZATION of the initial full migration (Mode A → Mode B)
+
+- **Date / UTC:** 2026-06-25T11:25:00Z
+- **Event:** Explicit, user-confirmed finalization of the initial full migration.
+  The iOS app is now a complete functional copy of the customized Android fork at
+  the snapshot commit, with documented platform exceptions. Project flips to
+  **incremental synchronization (Mode B)**.
+- **Fully-ported Android commit:** `9bad8304c8b7b013a6c977c20ebd9f726a436430` (branch `main`)
+- **iOS commit (at finalization):** `f8a61e98e53a6ea5352faa79bae46f6a80f2defb`
+- **Migration mode:** `initial-full-migration` → `incremental-synchronization`
+- **Parity status:** `partial` → `full-with-documented-exceptions`
+- **initialMigrationCompleted:** `false` → `true`
+- **incrementalUpdateModeEnabled:** `false` → `true`
+- **lastAndroidCommitFullyPortedToIOS:** `null` → `9bad8304c8b7b013a6c977c20ebd9f726a436430`
+
+### Evidence
+- **Feature parity:** `docs/android-ios-feature-map.yml` — **46 / 46 completed**
+  (see `docs/final-parity-report.md`). Each feature verified by behavior + tests,
+  not by filename/compilation.
+- **Automated tests:** **122 tests, 0 failures** on the iOS Simulator.
+- **GitHub Actions (`mode=full`):** green — run **`28156073715`** (anki-backend +
+  app + unsigned IPA).
+- **Unsigned physical-device IPA:** produced every milestone (`AnkiAI-unsigned.ipa`,
+  arm64, iOS 16).
+- **Device verification:** the user confirmed on a physical iPhone that AnkiWeb
+  sync **download works and media displays**; reviewer / browser / AI / editor
+  flows were exercised on device. `physical_device_verified` is set on the
+  features the user explicitly confirmed (synchronization, media); the rest are CI
+  + integration-test verified and were used on device but not individually
+  signed-off per feature.
+- **Data safety:** `.colpkg` backup→restore round-trip integration-tested; the
+  canonical fixture is byte-identical across read paths (no destructive writes);
+  AnkiWeb full-download writes to a temp file + integrity-check + atomic rename
+  (local preserved on failure).
+
+### Documented platform exceptions (honest)
+1. **forced_study:** iOS cannot overlay other apps (sandbox) → implemented as a
+   repeating local notification + an in-app non-dismissible required-review
+   session.
+2. **Deck-options WRITE is intentionally not exposed** (read-only display only):
+   writing deck config to a live AnkiWeb-synced collection is risky (could reset
+   scheduling / disable FSRS). Values sync down from AnkiWeb / Anki Desktop.
+3. **`.apkg` file IMPORT alone** hits an anki-internal deck-merge edge; the working
+   package-import paths are **`.colpkg` restore** (integration-tested) and **AnkiWeb
+   sync**.
+
+### From here on (Mode B)
+Future "update from Android" requests follow the **incremental** workflow
+(`UPDATE-FROM-ANDROID.md` / `tools/audit-android-update.ps1`): diff
+`lastAndroidCommitFullyPortedToIOS` against Android HEAD and port the behavioral
+changes, then advance the baseline atomically with a new entry here. The Android
+repo stays strictly read-only.

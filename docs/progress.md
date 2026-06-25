@@ -423,3 +423,13 @@ Device feedback fixes:
   effective config: new/day, reviews/day, desired retention, FSRS on/off). Gateway
   deckOptions; DeckOptionsView (deck-list leading swipe "Options"). READ-ONLY by
   design — writing deck config to a live synced collection is risky. Integration-tested.
+
+### ✅ FINALIZED — Initial full migration complete (Mode A → Mode B), 2026-06-25
+User-confirmed finalization. ANDROID-SOURCE-BASELINE.json advanced:
+lastAndroidCommitFullyPortedToIOS = 9bad8304…, initialMigrationCompleted = true,
+incrementalUpdateModeEnabled = true, migrationMode = incremental-synchronization.
+Evidence: 46/46 features completed, 122 tests green (CI run 28156073715), unsigned
+IPA produced, device-verified (sync+media) by the user. Documented exceptions:
+forced-study overlay (iOS sandbox), deck-options write (read-only by design),
+.apkg file import (use .colpkg/sync). See docs/android-update-history.md Entry 2.
+Future updates follow the incremental Mode-B workflow.
