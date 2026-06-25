@@ -176,6 +176,9 @@ public protocol CollectionGateway: AnyObject, Sendable {
     func suspendCard(cardId: Int64) async throws
     func buryCard(cardId: Int64) async throws
     func undo() async throws
+    /// Reschedule a card's due date (Anki spec, e.g. "0","3","1-7") / forget it (M2.35).
+    func setDueDate(cardId: Int64, spec: String) async throws
+    func forgetCard(cardId: Int64) async throws
     /// Move a card to another deck (M2.6).
     func moveCard(cardId: Int64, toDeckId: Int64) async throws
     /// Rename / delete a deck (M2.17).

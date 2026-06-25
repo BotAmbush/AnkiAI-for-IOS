@@ -75,6 +75,8 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func suspendCard(cardId: Int64) async throws { try opened().suspendCard(cardId: cardId) }
     public func buryCard(cardId: Int64) async throws { try opened().buryCard(cardId: cardId) }
     public func undo() async throws { try opened().undo() }
+    public func setDueDate(cardId: Int64, spec: String) async throws { try opened().setDueDate(cardId: cardId, spec: spec) }
+    public func forgetCard(cardId: Int64) async throws { try opened().forgetCard(cardId: cardId) }
     public func moveCard(cardId: Int64, toDeckId: Int64) async throws {
         try opened().setCardDeck(cardId: cardId, deckId: toDeckId)
     }

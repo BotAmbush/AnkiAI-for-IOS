@@ -369,3 +369,9 @@ Device feedback fixes:
   Flag (color submenu), and Add-tag (alert). Loops the already-tested gateway ops
   (suspendCard/setFlag/addTags via cardInfo→noteId). No destructive bulk delete.
   Swift-only (no Rust change).
+
+### M2.35 — Per-card reschedule: set due date + forget (IN PROGRESS)
+- [ ] Bridge set_due_date (Anki spec "0"/"3"/"1-7") + forget_card
+  (reschedule_cards_as_new, restore position). Gateway + reviewer menu ("Set due
+  date…" alert, "Forget card"). Integration test: set-due-date → review with a due
+  date; forget → new with a queue position.

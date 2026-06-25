@@ -226,6 +226,15 @@ final class AnkiCollection {
         guard anki_backend_set_current_deck(handle, deckId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
     }
 
+    func setDueDate(cardId: Int64, spec: String) throws {
+        let rc = spec.withCString { anki_backend_set_due_date(handle, cardId, $0) }
+        guard rc == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
+    func forgetCard(cardId: Int64) throws {
+        guard anki_backend_forget_card(handle, cardId) == 0 else { throw AnkiBackendError.answer(Self.lastError()) }
+    }
+
     func statsGraphs(search: String, days: Int) throws -> StatsGraphs {
         var out: UnsafeMutablePointer<CChar>?
         let rc = search.withCString { anki_backend_graphs(handle, $0, UInt32(max(1, days)), &out) }

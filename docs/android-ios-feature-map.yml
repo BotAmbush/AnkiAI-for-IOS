@@ -246,7 +246,7 @@ features:
     status: completed
     verification: { compile_verified: true, unit_test_verified: false, integration_test_verified: true, physical_device_verified: false }
     last_android_commit_reviewed: 9bad8304c8b7b013a6c977c20ebd9f726a436430
-    notes: "Scheduler runs in the linked backend: due counts, grade_now (Again/Hard/Good/Easy), next-interval labels (describe_next_states), set_due_date, bury/suspend/undo — all integration-tested. (Per-deck options config UI is a separate settings item.)"
+    notes: "Scheduler runs in the linked backend: due counts, grade_now (Again/Hard/Good/Easy), next-interval labels, queue-based review, bury/suspend/undo, and M2.35 per-card reschedule (set_due_date + forget/reschedule_cards_as_new, surfaced in the reviewer menu) — all integration-tested. (Per-deck options config UI is intentionally not exposed — risky to write on a live synced collection.)"
 
   - feature_id: fsrs
     description: FSRS parameters and scheduling.

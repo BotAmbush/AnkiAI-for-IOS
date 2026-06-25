@@ -528,6 +528,59 @@ pub extern "C" fn anki_backend_answer_card(
     }
 }
 
+/// Reschedule a card's due date. `spec` is Anki's set-due-date syntax: "0" = today,
+/// "3" = in 3 days, "1-7" = a random day in 1..7. Returns 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_set_due_date(
+    handle: *mut Handle,
+    card_id: i64,
+    spec: *const c_char,
+) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    let spec = match unsafe { cstr_to_string(spec) } {
+        Some(s) => s,
+        None => {
+            set_last_error("null spec".into());
+            return 1;
+        }
+    };
+    match handle.col.set_due_date(&[CardId(card_id)], &spec, None) {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("set_due_date failed: {e}"));
+            2
+        }
+    }
+}
+
+/// Forget a card: reset it to "new" (restoring its original position). 0 on success.
+#[no_mangle]
+pub extern "C" fn anki_backend_forget_card(handle: *mut Handle, card_id: i64) -> c_int {
+    let handle = match unsafe { handle.as_mut() } {
+        Some(h) => h,
+        None => {
+            set_last_error("null handle".into());
+            return 1;
+        }
+    };
+    match handle
+        .col
+        .reschedule_cards_as_new(&[CardId(card_id)], true, true, false, None)
+    {
+        Ok(_) => 0,
+        Err(e) => {
+            set_last_error(format!("forget_card failed: {e}"));
+            2
+        }
+    }
+}
+
 /// Backend statistics graphs for `search` over the last `days` days, as compact
 /// JSON: { "reviews":[[dayOffset,count],…], "future_due":[[dayOffset,count],…],
 /// "added":[[dayOffset,count],…] } (day offsets sorted ascending; reviews/added use

@@ -20,6 +20,8 @@ struct ReviewerView: View {
     @State private var error: String?
     @State private var showChat = false
     @State private var showEditor = false
+    @State private var showDueDate = false
+    @State private var dueDateSpec = "0"
 
     private var leaf: String { deckName.components(separatedBy: "::").last ?? deckName }
 
@@ -57,6 +59,10 @@ struct ReviewerView: View {
                         label: { Label("Bury card".loc, systemImage: "arrow.down.to.line") }
                     Button { Task { await mutateCurrent { try await env.gateway.suspendCard(cardId: $0) }; await advance() } }
                         label: { Label("Suspend card", systemImage: "pause.circle") }
+                    Button { showDueDate = true }
+                        label: { Label("Set due date…", systemImage: "calendar") }
+                    Button { Task { await mutateCurrent { try await env.gateway.forgetCard(cardId: $0) }; await advance() } }
+                        label: { Label("Forget card", systemImage: "arrow.counterclockwise") }
                     Button { Task { await moveCurrentToDefault(); await advance() } }
                         label: { Label("Move to Default deck", systemImage: "tray.and.arrow.down") }
                     Menu {
@@ -75,6 +81,13 @@ struct ReviewerView: View {
             }
         }
         .task { await startStudy() }
+        .alert("Set due date", isPresented: $showDueDate) {
+            TextField("0, 3, or 1-7", text: $dueDateSpec)
+            Button("Cancel", role: .cancel) {}
+            Button("Set") { Task { await setDueDate() } }
+        } message: {
+            Text("Days from today: \"0\" = today, \"3\" = in 3 days, \"1-7\" = a random day in that range.")
+        }
         .sheet(isPresented: $showEditor) {
             if let cid = currentCardId {
                 NoteEditorView(cardId: cid) { Task { await renderCurrent() } }
@@ -202,6 +215,13 @@ struct ReviewerView: View {
 
     private func flagCurrent(_ flag: Int) async {
         await mutateCurrent { try await env.gateway.setFlag(cardId: $0, flag: flag) }
+    }
+
+    private func setDueDate() async {
+        let spec = dueDateSpec.trimmingCharacters(in: .whitespaces)
+        guard !spec.isEmpty else { return }
+        await mutateCurrent { try await env.gateway.setDueDate(cardId: $0, spec: spec) }
+        await advance()
     }
 
     private func moveCurrentToDefault() async {
