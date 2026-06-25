@@ -393,6 +393,6 @@ Device feedback fixes:
   No prompt/parser change. Unit-tested (detection); cloze rendering already
   integration-tested (BackendClozeTests).
 
-### M2.39 — Browser bulk move-to-deck (IN PROGRESS)
+### M2.39 — Browser bulk move-to-deck (CI GREEN, run 28151426306)
 - [ ] Browser bulk bar gains a "Move" deck menu (loops the integration-tested
   moveCard op across selected cards). Swift-only.
