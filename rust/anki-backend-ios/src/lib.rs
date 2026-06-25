@@ -30,6 +30,8 @@ use anki::import_export::ImportProgress;
 use anki::search::SortMode;
 use anki::services::DecksService;
 use anki::services::NotesService;
+use anki::services::SchedulerService;
+use anki_proto::scheduler::GetQueuedCardsRequest;
 use anki_proto::decks::deck::filtered::SearchTerm as FilteredSearchTerm;
 use anki_proto::decks::DeckId as PbDeckId;
 use anki_proto::decks::DeckTreeNode;
@@ -566,10 +568,20 @@ pub extern "C" fn anki_backend_next_card(
         set_last_error("null out pointer".into());
         return 1;
     }
-    match handle.col.get_queued_cards(1, false) {
+    let req = GetQueuedCardsRequest {
+        fetch_limit: 1,
+        intraday_learning_only: false,
+    };
+    match SchedulerService::get_queued_cards(&mut handle.col, req) {
         Ok(q) => {
+            let cid = q
+                .cards
+                .first()
+                .and_then(|qc| qc.card.as_ref())
+                .map(|c| c.id)
+                .unwrap_or(-1);
             unsafe {
-                *out_card_id = q.cards.first().map(|c| c.card.id.0).unwrap_or(-1);
+                *out_card_id = cid;
                 *out_new = q.new_count as i32;
                 *out_learn = q.learning_count as i32;
                 *out_review = q.review_count as i32;
