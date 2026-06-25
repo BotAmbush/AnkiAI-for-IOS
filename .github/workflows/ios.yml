@@ -158,6 +158,19 @@ jobs:
           echo "Built IPA:"
           ls -la build/AnkiAI-unsigned.ipa
 
+      - name: Verify compiled Info.plist (file-sharing keys)
+        run: |
+          APP_PATH=$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -1)
+          PLIST="$APP_PATH/Info.plist"
+          echo "Inspecting compiled $PLIST"
+          FS=$(/usr/libexec/PlistBuddy -c 'Print :UIFileSharingEnabled' "$PLIST" 2>/dev/null || echo MISSING)
+          IP=$(/usr/libexec/PlistBuddy -c 'Print :LSSupportsOpeningDocumentsInPlace' "$PLIST" 2>/dev/null || echo MISSING)
+          echo "UIFileSharingEnabled=$FS  LSSupportsOpeningDocumentsInPlace=$IP"
+          if [ "$FS" != "true" ] || [ "$IP" != "true" ]; then
+            echo "::error::compiled Info.plist is missing the file-sharing keys (Files-app visibility)"; exit 1
+          fi
+          echo "✓ file-sharing keys present in the compiled app"
+
       - name: Collect dSYMs
         if: always()
         run: |

@@ -20,6 +20,8 @@ struct AISettingsView: View {
     @State private var backupStatus: String?
     @State private var backingUp = false
     @State private var showRestoreImporter = false
+    @State private var lastBackup: BackupInfo?
+    @State private var exportPickerURL: URL?
     @State private var showUploadConfirm = false
     @State private var collectionCounts: (cards: Int, decks: Int)?
 
@@ -140,18 +142,37 @@ struct AISettingsView: View {
                     Button { Task { await exportBackup() } } label: {
                         HStack { Text("Back up collection (.colpkg)"); if backingUp { Spacer(); ProgressView() } }
                     }.disabled(backingUp)
+                    NavigationLink {
+                        BackupsListView().environmentObject(env)
+                    } label: { Label("Show backups", systemImage: "externaldrive") }
                     Button(role: .destructive) { showRestoreImporter = true } label: {
                         Text("Restore from .colpkg (replaces all)")
                     }.disabled(backingUp)
-                    if let backupStatus { Text(backupStatus).font(.caption) }
+                    if let info = lastBackup {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("✓ Saved \(info.name)").font(.caption).foregroundColor(.green)
+                            Text("\(ByteCountFormatter.string(fromByteCount: Int64(info.size), countStyle: .file)) · On My iPhone/AnkiAI/Backups")
+                                .font(.caption2).foregroundColor(.secondary)
+                            HStack {
+                                ShareLink("Share backup", item: info.url)
+                                Button("Save to Files") { exportPickerURL = info.url }
+                            }.font(.caption)
+                        }
+                    } else if let backupStatus { Text(backupStatus).font(.caption) }
                 } header: {
                     Text("Backup & restore")
                 } footer: {
-                    Text("Back up saves a full .colpkg (collection + media) to the app's Documents folder (Files app). Restore REPLACES your whole collection from a .colpkg exported by AnkiAI or Anki Desktop.")
+                    Text("Back up saves a validated .colpkg (collection + media) to On My iPhone/AnkiAI/Backups (visible in the Files app). Restore REPLACES your whole collection from a .colpkg exported by AnkiAI or Anki Desktop, or one chosen from Files/iCloud Drive.")
                 }
                 .fileImporter(isPresented: $showRestoreImporter, allowedContentTypes: colpkgTypes) { result in
                     guard case .success(let url) = result else { return }
                     Task { await restoreBackup(url) }
+                }
+                .fileExporter(isPresented: Binding(get: { exportPickerURL != nil }, set: { if !$0 { exportPickerURL = nil } }),
+                              document: exportPickerURL.map { ColpkgFile(url: $0) },
+                              contentType: colpkgTypes.first ?? .data,
+                              defaultFilename: exportPickerURL?.deletingPathExtension().lastPathComponent) { _ in
+                    exportPickerURL = nil
                 }
 
                 Section {
@@ -285,15 +306,16 @@ struct AISettingsView: View {
     }
 
     private func exportBackup() async {
-        backingUp = true; backupStatus = "Backing up…"
+        backingUp = true; backupStatus = "Backing up…"; lastBackup = nil
         do {
-            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-            let out = docs.appendingPathComponent("AnkiAI-backup-\(stamp).colpkg")
-            try await env.gateway.backup(toPath: out.path)
-            backupStatus = "✓ Saved \(out.lastPathComponent) to Documents."
+            // Validated, atomic backup into Documents/Backups (Files-app visible).
+            let info = try await BackupService().create { tempPath in
+                try await env.gateway.backup(toPath: tempPath)
+            }
+            lastBackup = info
+            backupStatus = nil
         } catch {
-            backupStatus = "✗ \(error)"
+            backupStatus = "✗ \(error.localizedDescription)"
         }
         backingUp = false
     }
