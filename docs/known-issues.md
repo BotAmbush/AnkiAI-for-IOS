@@ -2,6 +2,15 @@
 
 Updated 2026-06-24 (M1).
 
+## 2026-06-26 third repair pass (second audit) — resolved
+`.apkg` happy-path import now works (round trip CI-tested); the blocker was a missing
+media folder on collection open, not deck kinds. AI creator now uses a persisted real
+deck picker; attachments are file-backed (no inline base64); accepted-card duplicates
+are prevented (fingerprint ledger). AI Insights shows no retention number without real
+data (no fabricated 0.85). Docs reconciled to one authoritative Mode-A status. Still
+NOT device-verified (await on-device retest): AI creator deck/attachments/dedup, APKG
+import on device. Remaining partial: AI Insights average-ease + per-deck retention.
+
 ## 2026-06-25 device repair phase 3 (AI/UX) — resolved + awaiting retest
 Fixed (code-complete, NOT yet device-retested): ambiguous deck selection (searchable
 sheet, full wrapped path), AI output-language selection + full Hebrew RTL chat/editor

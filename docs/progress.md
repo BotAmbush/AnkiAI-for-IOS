@@ -2,6 +2,22 @@
 
 Canonical status of the AnkiAI iOS migration. Updated after every milestone.
 
+## 2026-06-26 — third repair pass (second independent Codex audit)
+Addressed all six second-audit findings (CI green, run 28247367888, **217 tests**):
+(1) AI creator deck selection wired to DeckPickerSheet, persisted + restored, passed
+explicitly to the prompt, inserted into the SELECTED real deck (never silent
+allDecks.first), with deck-existence re-check; (2) creator attachments now file-backed
+(scoped dir, metadata-only JSON, checksum/size/path-traversal validated, size limits,
+cleanup) + persisted retry state, deck list re-resolved live; (3) accepted-card
+duplicate ledger (HTML/whitespace-normalized fingerprint, survives regenerate/repair/
+relaunch, explicit override); (4) **`.apkg` happy-path import fixed** — the real
+blocker was a missing media folder on collection open (now set via
+with_desktop_media_paths), not deck kinds; export→fresh-import round trip + double
+round trip now pass on CI; (5) AI Insights retention is nil (not a fabricated 0.85)
+when there's no review data; (6) docs reconciled to one authoritative Mode-A status.
+Feature map: **44 completed / 2 partial (AI Insights, forced study) / 9 device-verified**.
+Still **initial-full-migration, NOT finalized**. See CLAUDE-THIRD-REPAIR-REPORT.md.
+
 ## 2026-06-25 — device repair phase 3 (AI workflow + UX)
 Six device-found AI/UX issues fixed: (1) searchable deck-picker sheet (leaf + full
 wrapped path, no truncation); (2) AI output language (automatic/Hebrew/English,
