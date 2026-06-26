@@ -153,7 +153,14 @@ pub extern "C" fn anki_backend_open(path: *const c_char, out: *mut *mut Handle) 
         set_last_error("null out pointer".into());
         return 1;
     }
-    match CollectionBuilder::new(PathBuf::from(path)).build() {
+    // Set the desktop-style media folder (`<collection>.media`) so media operations
+    // (apkg/colpkg import, media sync) work on the main handle, and ensure it exists.
+    let col_path = PathBuf::from(&path);
+    let media_folder = col_path.with_extension("media");
+    let _ = std::fs::create_dir_all(&media_folder);
+    let mut builder = CollectionBuilder::new(col_path);
+    builder.with_desktop_media_paths();
+    match builder.build() {
         Ok(col) => {
             let handle = Box::new(Handle { col });
             unsafe { *out = Box::into_raw(handle) };
