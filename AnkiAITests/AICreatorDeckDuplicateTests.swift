@@ -43,7 +43,8 @@ final class AICreatorDeckDuplicateTests: XCTestCase {
         let proposal = try XCTUnwrap(vm.generationProposals.first)
         await vm.addCardFromProposal(proposal)
         XCTAssertEqual(vm.addedCount, 1)
-        XCTAssertEqual(gateway.lastAddedDeckId, 2, "uses the user's selected deck, not the model's")
+        let addedDeck = await gateway.lastAddedDeckId
+        XCTAssertEqual(addedDeck, 2, "uses the user's selected deck, not the model's")
     }
 
     func testMissingDeckStopsAndAsks() async throws {
