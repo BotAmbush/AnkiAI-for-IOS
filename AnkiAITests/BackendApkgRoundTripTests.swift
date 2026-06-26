@@ -84,6 +84,7 @@ final class BackendApkgRoundTripTests: XCTestCase {
         _ = try await final.searchCardIds(query: "")
         try await final.importApkg(fromPath: apkg2)
 
-        XCTAssertEqual(try await final.searchCardIds(query: "").count, n, "card count stable across two round trips")
+        let finalCount = try await final.searchCardIds(query: "").count
+        XCTAssertEqual(finalCount, n, "card count stable across two round trips")
     }
 }
