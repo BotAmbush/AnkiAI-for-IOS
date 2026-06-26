@@ -42,15 +42,16 @@ save/restore, checksum/size/missing/path-traversal/oversize rejection, clear cle
 
 ## Delivery
 - **APKG happy-path round trip: PASS on GitHub Actions.**
-- **CI run:** 28247367888 — green, **217 tests, 0 failures**
-  (https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28247367888).
-- **Commit (verified IPA):** `a4e13f0`.
-- **IPA:** `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,477,195 bytes**. Verified: arm64
-  Mach-O device executable (`cffa edfe 0c00 0001`), real anki Rust backend statically
-  linked (~22MB executable), no XCTest/test payload, MathJax `tex-mml-svg.js` bundled,
-  compiled `Info.plist` has `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`,
-  no `.mobileprovision`/certs/secrets embedded.
-  (A docs-only commit follows this report; it does not change the binary.)
+- **CI runs (both green, 217 tests, 0 failures):** code run **28247367888** (commit
+  `a4e13f0`, all repairs) and the final docs/report run **28248573396** (commit
+  `2d4c001`) — https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28248573396.
+  The docs commit does not change the binary (identical 7,477,195-byte IPA).
+- **Final commit:** `2d4c001`.
+- **IPA:** `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,477,195 bytes** (from run
+  28248573396). Verified: arm64 Mach-O device executable (`cffa edfe 0c00 0001`), real
+  anki Rust backend statically linked (~22MB executable), no XCTest/test payload,
+  MathJax `tex-mml-svg.js` bundled, compiled `Info.plist` has `UIFileSharingEnabled` +
+  `LSSupportsOpeningDocumentsInPlace`, no `.mobileprovision`/certs/secrets embedded.
 
 ## Remaining device-validation gaps (NOT device-verified)
 - AI creator on device: deck selection lands in the chosen deck; attachments persist
