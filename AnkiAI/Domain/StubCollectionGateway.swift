@@ -126,9 +126,12 @@ public actor StubCollectionGateway: CollectionGateway {
     public func basicNotetypeId() async throws -> Int64 { basicNotetype.id }
     public func notetypeId(named name: String) async throws -> Int64 { basicNotetype.id }
 
+    public private(set) var lastAddedDeckId: Int64?
+
     public func addNote(notetypeId: Int64, fields: [String], deckId: Int64) async throws -> Int64 {
         nextId += 1
         notes[nextId] = NoteData(id: nextId, notetypeId: notetypeId, fields: fields)
+        lastAddedDeckId = deckId
         return nextId
     }
 }

@@ -12,6 +12,9 @@ struct ChatView: View {
     @State private var showPDFImporter = false
     @State private var loadingAttachment = false
     @State private var showClearConfirm = false
+    @State private var decks: [DeckNameId] = []
+    @State private var showDeckPicker = false
+    @State private var deckSelection: Int64 = 0
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -23,10 +26,17 @@ struct ChatView: View {
         TextDirection.isRTL(language: vm.language, text: vm.isCreatorMode ? vm.draft : input)
     }
 
+    private var selectedDeckName: String {
+        vm.selectedDeckPath ?? decks.first(where: { $0.id == vm.selectedDeckId })?.name ?? "Not selected"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if !vm.hasAPIKey {
                 APIKeyPrompt(vm: vm)
+            }
+            if vm.isCreatorMode {
+                CreatorDeckBar(vm: vm, decks: decks) { showDeckPicker = true }
             }
             ScrollViewReader { proxy in
                 ScrollView {
@@ -40,8 +50,13 @@ struct ChatView: View {
                             MessageBubble(message: message, language: vm.language).id(message.id)
                         }
                         ForEach(vm.generationProposals) { proposal in
-                            ProposalCard(proposal: proposal) {
+                            ProposalCard(proposal: proposal,
+                                         selectedDeckName: selectedDeckName,
+                                         isDuplicate: vm.isDuplicate(proposal),
+                                         modelDeckDiffers: vm.selectedDeckId != nil && proposal.deckId != vm.selectedDeckId) {
                                 Task { await vm.addCardFromProposal(proposal) }
+                            } onUseModelDeck: {
+                                Task { await vm.addCardFromProposal(proposal, useModelDeck: true) }
                             } onDismiss: {
                                 vm.removeGenerationProposal(proposal)
                             }
@@ -114,7 +129,28 @@ struct ChatView: View {
         } message: {
             Text("This removes the chat history, draft, attachments, and any unresolved generated-card proposals. Cards already added to your collection are NOT deleted.")
         }
-        .task { await vm.load() }
+        .sheet(isPresented: $showDeckPicker) {
+            DeckPickerSheet(decks: decks, selectedId: $deckSelection)
+        }
+        .onChange(of: deckSelection) { id in
+            if let d = decks.first(where: { $0.id == id }) { vm.setCreatorDeck(id: d.id, path: d.name) }
+        }
+        .alert("Duplicate card", isPresented: Binding(get: { vm.duplicatePending != nil }, set: { if !$0 { vm.dismissDuplicateWarning() } })) {
+            Button("Add anyway", role: .destructive) {
+                if let p = vm.duplicatePending { Task { await vm.confirmAddDuplicate(p) } }
+            }
+            Button("Cancel", role: .cancel) { vm.dismissDuplicateWarning() }
+        } message: {
+            Text("You already added an identical card to this deck in this session. Add it again?")
+        }
+        .task {
+            await vm.load()
+            if vm.isCreatorMode {
+                decks = await vm.creatorDecks()
+                deckSelection = vm.selectedDeckId ?? 0
+                attachments = vm.pendingAttachments   // reflect restored attachments
+            }
+        }
         .onDisappear { vm.persistSession() }
         .onChange(of: scenePhase) { phase in if phase != .active { vm.persistSession() } }
     }
@@ -218,19 +254,60 @@ private struct MessageBubble: View {
     }
 }
 
+/// Creator destination-deck banner (Repair 1).
+private struct CreatorDeckBar: View {
+    @ObservedObject var vm: AIChatViewModel
+    let decks: [DeckNameId]
+    let onPick: () -> Void
+    var body: some View {
+        Button(action: onPick) {
+            HStack {
+                Image(systemName: "tray.and.arrow.down")
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Add to deck").font(.caption2).foregroundColor(.secondary)
+                    Text(vm.selectedDeckPath.map { DeckPickerModel.leaf($0) } ?? "Choose a deck")
+                        .font(.callout)
+                    if let p = vm.selectedDeckPath, !DeckPickerModel.parentPath(p).isEmpty {
+                        Text(DeckPickerModel.parentPath(p)).font(.caption2).foregroundColor(.secondary)
+                            .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+            }
+            .padding(.horizontal).padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .background(Color(.secondarySystemBackground))
+    }
+}
+
 private struct ProposalCard: View {
     let proposal: CardProposal
+    var selectedDeckName: String = ""
+    var isDuplicate: Bool = false
+    var modelDeckDiffers: Bool = false
     let onAdd: () -> Void
+    var onUseModelDeck: () -> Void = {}
     let onDismiss: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Proposed card → \(proposal.deckName)").font(.caption).foregroundColor(.secondary)
+            Text("Proposed card → \(selectedDeckName.isEmpty ? proposal.deckName : selectedDeckName)")
+                .font(.caption).foregroundColor(.secondary)
+            if isDuplicate {
+                Label("Looks like a card you already added this session.", systemImage: "exclamationmark.triangle")
+                    .font(.caption2).foregroundColor(.orange)
+            }
             CardWebView(html: proposal.front).frame(height: 90)
             Divider()
             CardWebView(html: proposal.back).frame(height: 120)
             HStack {
                 Button("Add to deck", action: onAdd).buttonStyle(.borderedProminent)
                 Button("Dismiss", action: onDismiss).buttonStyle(.bordered)
+            }
+            if modelDeckDiffers {
+                Button("Use suggested deck “\(proposal.deckName)” instead", action: onUseModelDeck)
+                    .font(.caption).buttonStyle(.bordered)
             }
         }
         .padding()
@@ -284,7 +361,7 @@ private struct ParseFailureBar: View {
                 .font(.caption.bold()).foregroundColor(.orange)
             Text("Your prompt and attachment are kept.").font(.caption2).foregroundColor(.secondary)
             HStack {
-                Button("Try parsing again") { vm.tryParseAgain() }.buttonStyle(.bordered)
+                Button("Try parsing again") { Task { await vm.tryParseAgain() } }.buttonStyle(.bordered)
                 Button("Ask Claude to repair ($)") { Task { await vm.repairResponse() } }.buttonStyle(.bordered)
                 Button("Regenerate ($)") { Task { await vm.regenerate() } }.buttonStyle(.bordered)
             }.font(.caption)

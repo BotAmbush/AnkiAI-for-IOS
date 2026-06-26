@@ -33,13 +33,23 @@ public final class AIChatViewModel: ObservableObject {
     /// True when the last generation produced a response we could not parse — the
     /// session is preserved and the user can retry/repair/regenerate.
     @Published public private(set) var parseFailed = false
+    /// The creator's chosen destination deck (Repair 1), persisted + restored.
+    @Published public private(set) var selectedDeckId: Int64?
+    @Published public private(set) var selectedDeckPath: String?
+    /// Restored attachment count for the UI (Repair 2 — from persisted refs).
+    @Published public private(set) var attachmentCount = 0
+    /// A proposal awaiting explicit confirmation because it duplicates an already
+    /// accepted card this session (Repair 3).
+    @Published public var duplicatePending: CardProposal?
 
     // Preserved for retry without re-calling the API (Issue 5).
     private var lastRawResponse: String?
     private var lastPrompt: String?
     private var lastAttachments: [ImagePayload] = []
-    private var lastAllDecks: [DeckNameId] = []
+    private var attachmentRefs: [CreatorAttachmentRef] = []
     private var repairAttempted = false
+    /// Fingerprints of cards already inserted this session (Repair 3).
+    private var acceptedFingerprints: Set<String> = []
 
     private let gateway: CollectionGateway
     private let db: AIDatabase
@@ -86,15 +96,25 @@ public final class AIChatViewModel: ObservableObject {
         language = AILanguage(rawValue: s.language) ?? language
         addedCount = s.addedCount
         parseFailed = s.parseFailed
+        repairAttempted = s.repairAttempted
         lastRawResponse = s.rawResponse
         lastPrompt = s.lastPrompt
-        lastAttachments = s.attachments.map { ImagePayload(base64: $0.base64, mediaType: $0.mediaType) }
+        selectedDeckId = s.selectedDeckId
+        selectedDeckPath = s.selectedDeckPath
+        acceptedFingerprints = Set(s.acceptedFingerprints)
         generationProposals = s.proposals.map {
             CardProposal(front: $0.front, back: $0.back, deckName: $0.deckName, deckId: $0.deckId)
         }
+        // Validate + load attachment files; drop any that fail (missing/checksum).
+        attachmentRefs = s.attachments
+        lastAttachments = s.attachments.compactMap { try? CreatorAttachmentStore.load(ref: $0, sessionId: sessionId) }
+        attachmentCount = lastAttachments.count
+        // Note: the deck list is intentionally NOT persisted — it is re-resolved
+        // from the live backend before any add/retry/repair.
     }
 
     /// Persist the unfinished creator session after every meaningful change.
+    /// Stores ONLY attachment metadata (bytes are in scoped files).
     public func persistSession() {
         guard isCreatorMode else { return }
         let snapshot = PersistedCreatorSession(
@@ -102,13 +122,40 @@ public final class AIChatViewModel: ObservableObject {
             language: language.rawValue,
             addedCount: addedCount,
             parseFailed: parseFailed,
+            repairAttempted: repairAttempted,
             rawResponse: lastRawResponse,
             lastPrompt: lastPrompt,
+            selectedDeckId: selectedDeckId,
+            selectedDeckPath: selectedDeckPath,
             proposals: generationProposals.map {
                 PersistedProposal(front: $0.front, back: $0.back, deckName: $0.deckName, deckId: $0.deckId)
             },
-            attachments: lastAttachments.map { PersistedAttachment(base64: $0.base64, mediaType: $0.mediaType) })
+            attachments: attachmentRefs,
+            acceptedFingerprints: Array(acceptedFingerprints))
         CreatorSessionStore.save(snapshot, sessionId: sessionId)
+    }
+
+    // MARK: - Creator deck selection (Repair 1)
+
+    /// Set the creator destination deck (persisted + restored).
+    public func setCreatorDeck(id: Int64, path: String) {
+        selectedDeckId = id
+        selectedDeckPath = path
+        persistSession()
+    }
+
+    /// Persist the current attachments to scoped files (Repair 2) and update refs.
+    /// Replaces any previous attachment files for this session.
+    public func setAttachments(_ payloads: [ImagePayload]) {
+        CreatorAttachmentStore.clear(sessionId: sessionId)
+        var refs: [CreatorAttachmentRef] = []
+        for p in payloads {
+            if let ref = try? CreatorAttachmentStore.save(payload: p, sessionId: sessionId) { refs.append(ref) }
+        }
+        attachmentRefs = refs
+        lastAttachments = payloads
+        attachmentCount = payloads.count
+        persistSession()
     }
 
     private func loadMessages() {
@@ -282,23 +329,36 @@ public final class AIChatViewModel: ObservableObject {
 
     // MARK: - Creator mode
 
+    /// Re-resolve the live deck list from the backend (never persisted/stale).
+    private func currentDecks() async -> [DeckNameId] {
+        (try? await gateway.allDecks()) ?? []
+    }
+
+    /// Live deck list for the creator deck picker (re-resolved from the backend).
+    public func creatorDecks() async -> [DeckNameId] { await currentDecks() }
+
+    /// Restored/pending attachments (loaded from scoped files) for UI display.
+    public var pendingAttachments: [ImagePayload] { lastAttachments }
+
     public func generateCards(_ userPrompt: String, defaultDeckName: String = "",
-                              attachments: [ImagePayload] = []) async {
+                              attachments: [ImagePayload]? = nil) async {
         guard let apiKey = settings.apiKey else { error = "Please enter your API key first."; return }
         isLoading = true; error = nil; generationProposals = []; skippedCards = []; parseFailed = false
         repairAttempted = false
-        lastPrompt = userPrompt; lastAttachments = attachments   // preserve for retry
+        lastPrompt = userPrompt
+        if let attachments { setAttachments(attachments) }   // persist to scoped files
         persistSession()
         do {
             let allDecks = try await gateway.allDecks()
-            lastAllDecks = allDecks
             let hierarchy = allDecks.map { $0.name }.joined(separator: "\n")
-            let resolvedDefault = defaultDeckName.isEmpty ? (allDecks.first?.name ?? "Default") : defaultDeckName
+            // Prefer the user's explicitly selected deck as the default destination.
+            let preferred = !defaultDeckName.isEmpty ? defaultDeckName : (selectedDeckPath ?? "")
+            let resolvedDefault = preferred.isEmpty ? (allDecks.first?.name ?? "Default") : preferred
             let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
-            let userMessage = Prompts.creatorUserMessage(userPrompt: userPrompt, attachmentCount: attachments.count)
+            let userMessage = Prompts.creatorUserMessage(userPrompt: userPrompt, attachmentCount: lastAttachments.count)
             let result = await client.chatWithImages(
                 systemPrompt: Prompts.creatorStaticSystemPrompt(),
-                history: [ChatTurnWithImage(role: "user", text: userMessage, images: attachments)],
+                history: [ChatTurnWithImage(role: "user", text: userMessage, images: lastAttachments)],
                 dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: resolvedDefault,
                                                                         language: language),
                 onTokensUsed: { [weak self] usage in
@@ -317,17 +377,18 @@ public final class AIChatViewModel: ObservableObject {
         isLoading = false
     }
 
-    /// Re-parse the LAST raw response locally — no API call, no cost (Issue 5).
-    public func tryParseAgain() {
+    /// Re-parse the LAST raw response locally — no API call, no cost. Re-resolves
+    /// the live deck list first (Repair 2 — never uses a stale persisted list).
+    public func tryParseAgain() async {
         guard let reply = lastRawResponse else { return }
-        applyParse(reply, allDecks: lastAllDecks)
+        applyParse(reply, allDecks: await currentDecks())
     }
 
     /// Ask Claude ONCE to repair its previous response into valid JSON. This is a
     /// paid API call (recorded in spend); allowed at most once per failure.
     public func repairResponse() async {
         guard !repairAttempted, let apiKey = settings.apiKey, let raw = lastRawResponse else { return }
-        repairAttempted = true
+        repairAttempted = true; persistSession()
         isLoading = true; error = nil
         let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
         let result = await client.chat(
@@ -338,16 +399,17 @@ public final class AIChatViewModel: ObservableObject {
                 Task { @MainActor in self?.recordSpend(AIPricing.costSonnet(input: usage.inputTokens, output: usage.outputTokens)) }
             })
         switch result {
-        case .success(let reply): lastRawResponse = reply; applyParse(reply, allDecks: lastAllDecks)
+        case .success(let reply): lastRawResponse = reply; applyParse(reply, allDecks: await currentDecks())
         case .failure(let e): error = AIErrorPresenter.message(for: e)
         }
         isLoading = false
     }
 
-    /// Regenerate from the preserved prompt + attachments (a fresh paid call).
+    /// Regenerate from the preserved prompt + attachments (a fresh paid call). The
+    /// accepted-card ledger is preserved so it can't recreate accepted duplicates.
     public func regenerate() async {
         guard let prompt = lastPrompt else { return }
-        await generateCards(prompt, attachments: lastAttachments)
+        await generateCards(prompt)   // attachments already persisted; lastAttachments reused
     }
 
     private func applyParse(_ reply: String, allDecks: [DeckNameId]) {
@@ -363,8 +425,12 @@ public final class AIChatViewModel: ObservableObject {
         parseFailed = false
         skippedCards = outcome.skipped
         generationProposals = outcome.cards.map { card in
-            CardProposal(front: card.front, back: card.back, deckName: card.deckName,
-                         deckId: resolveDeckId(card.deckName, in: allDecks))
+            // Resolve the model's deck; if it doesn't match, fall back to the user's
+            // SELECTED deck (never silently to allDecks.first).
+            let resolved = resolveDeckId(card.deckName, in: allDecks)
+            let deckId = resolved ?? (selectedDeckId ?? 0)
+            let deckName = allDecks.first { $0.id == deckId }?.name ?? card.deckName
+            return CardProposal(front: card.front, back: card.back, deckName: deckName, deckId: deckId)
         }
         AIDiagnostics.log(stage: outcome.stage, model: ClaudeAPIClient.defaultCreatorModel,
                           responseLength: reply.count, recovered: outcome.cards.count)
@@ -374,29 +440,72 @@ public final class AIChatViewModel: ObservableObject {
         persistSession()
     }
 
-    /// Port of the deck-resolution fallback chain in `parseGenerationProposals`.
-    private func resolveDeckId(_ deckName: String, in all: [DeckNameId]) -> Int64 {
+    /// Resolve a model-supplied deck name to a real deck id, or nil if none match
+    /// (NEVER silently `allDecks.first`).
+    private func resolveDeckId(_ deckName: String, in all: [DeckNameId]) -> Int64? {
         if let exact = all.first(where: { $0.name.caseInsensitiveCompare(deckName) == .orderedSame }) { return exact.id }
         if let suffix = all.first(where: { $0.name.lowercased().hasSuffix("::\(deckName.lowercased())") }) { return suffix.id }
         if let contains = all.first(where: { $0.name.lowercased().contains(deckName.lowercased()) }) { return contains.id }
-        return all.first?.id ?? 1
+        return nil
     }
 
-    public func addCardFromProposal(_ proposal: CardProposal) async {
+    /// Add a generated card. By default it goes to the user's SELECTED creator deck;
+    /// pass `useModelDeck` to honor the model's suggested deck instead. Verifies the
+    /// deck still exists, and suppresses duplicates of already-accepted cards unless
+    /// `allowDuplicate` is set (Repairs 1 + 3).
+    public func addCardFromProposal(_ proposal: CardProposal, useModelDeck: Bool = false,
+                                    allowDuplicate: Bool = false) async {
+        let targetDeckId = useModelDeck ? proposal.deckId : (selectedDeckId ?? proposal.deckId)
+        guard targetDeckId != 0 else {
+            error = "Choose a destination deck before adding cards."; return
+        }
         isLoading = true
         do {
+            let decks = await currentDecks()
+            guard decks.contains(where: { $0.id == targetDeckId }) else {
+                error = "That deck no longer exists — please choose another deck."
+                isLoading = false; return
+            }
             let cloze = Self.containsCloze(proposal.front) || Self.containsCloze(proposal.back)
+            let fp = Self.fingerprint(proposal, deckId: targetDeckId)
+            if acceptedFingerprints.contains(fp), !allowDuplicate {
+                duplicatePending = proposal           // require explicit override
+                isLoading = false; return
+            }
             let notetypeId = cloze
                 ? try await gateway.notetypeId(named: "Cloze")
                 : try await gateway.basicNotetypeId()
-            _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: proposal.deckId)
+
+            _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: targetDeckId)
+            acceptedFingerprints.insert(fp)           // record ONLY after success
             addedCount += 1
+            duplicatePending = nil
             generationProposals.removeAll { $0.id == proposal.id }
             persistSession()
         } catch {
             self.error = "Failed to add card: \(error.localizedDescription)"
         }
         isLoading = false
+    }
+
+    /// Confirm adding a card that duplicates an already-accepted one.
+    public func confirmAddDuplicate(_ proposal: CardProposal, useModelDeck: Bool = false) async {
+        await addCardFromProposal(proposal, useModelDeck: useModelDeck, allowDuplicate: true)
+    }
+
+    public func dismissDuplicateWarning() { duplicatePending = nil }
+
+    /// Stable per-session fingerprint: a cloze/basic type discriminator + target
+    /// deck + normalized fields (so HTML/whitespace-only differences don't matter).
+    nonisolated static func fingerprint(_ proposal: CardProposal, deckId: Int64) -> String {
+        let cloze = containsCloze(proposal.front) || containsCloze(proposal.back)
+        return CardFingerprint.make(notetypeId: cloze ? -2 : -1, deckId: deckId,
+                                    fields: [proposal.front, proposal.back])
+    }
+
+    /// True if this proposal would duplicate a card already accepted this session.
+    public func isDuplicate(_ proposal: CardProposal) -> Bool {
+        acceptedFingerprints.contains(Self.fingerprint(proposal, deckId: selectedDeckId ?? proposal.deckId))
     }
 
     public func removeGenerationProposal(_ proposal: CardProposal) {
@@ -428,8 +537,14 @@ public final class AIChatViewModel: ObservableObject {
         lastRawResponse = nil
         lastPrompt = nil
         lastAttachments = []
+        attachmentRefs = []
+        attachmentCount = 0
         repairAttempted = false
-        CreatorSessionStore.clear(sessionId: sessionId)
+        duplicatePending = nil
+        acceptedFingerprints = []
+        // Keep the selected deck (a stable user preference) across a session clear.
+        CreatorSessionStore.clear(sessionId: sessionId)   // also deletes scoped attachment files
+        persistSession()                                  // re-persist the kept deck (creator only)
     }
 
     public func clearError() { error = nil }

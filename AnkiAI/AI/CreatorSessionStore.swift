@@ -9,10 +9,16 @@ public struct PersistedCreatorSession: Codable, Equatable {
     public var language: String = AILanguage.automatic.rawValue
     public var addedCount: Int = 0
     public var parseFailed: Bool = false
+    public var repairAttempted: Bool = false      // Repair 2: persist retry state
     public var rawResponse: String?
     public var lastPrompt: String?
+    public var selectedDeckId: Int64?             // Repair 1: persisted creator deck
+    public var selectedDeckPath: String?
     public var proposals: [PersistedProposal] = []
-    public var attachments: [PersistedAttachment] = []
+    /// Metadata ONLY — the attachment bytes live in scoped files (Repair 2).
+    public var attachments: [CreatorAttachmentRef] = []
+    /// Accepted-card fingerprints to suppress duplicates (Repair 3).
+    public var acceptedFingerprints: [String] = []
 }
 
 public struct PersistedProposal: Codable, Equatable {
@@ -20,11 +26,6 @@ public struct PersistedProposal: Codable, Equatable {
     public var back: String
     public var deckName: String
     public var deckId: Int64
-}
-
-public struct PersistedAttachment: Codable, Equatable {
-    public var base64: String
-    public var mediaType: String
 }
 
 public enum CreatorSessionStore {
@@ -56,5 +57,6 @@ public enum CreatorSessionStore {
 
     public static func clear(sessionId: String) {
         if let url = try? fileURL(sessionId) { try? FileManager.default.removeItem(at: url) }
+        CreatorAttachmentStore.clear(sessionId: sessionId)   // remove scoped attachment files too
     }
 }

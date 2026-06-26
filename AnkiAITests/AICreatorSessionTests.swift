@@ -74,15 +74,31 @@ final class AICreatorSessionTests: XCTestCase {
         XCTAssertTrue(vm2.parseFailed, "parse-failure state persisted (session not lost)")
     }
 
-    func testStoreRoundTripIncludingAttachments() {
+    func testStoreRoundTripWithMetadataAttachments() {
         let id = "rt-\(UUID().uuidString)"
         var s = PersistedCreatorSession()
-        s.draft = "hello"; s.language = "hebrew"
+        s.draft = "hello"; s.language = "hebrew"; s.repairAttempted = true
+        s.selectedDeckId = 7; s.selectedDeckPath = "A::B"
         s.proposals = [PersistedProposal(front: "F", back: "B", deckName: "D", deckId: 5)]
-        s.attachments = [PersistedAttachment(base64: "QUJD", mediaType: "image/png")]
+        s.attachments = [CreatorAttachmentRef(id: "a1", filename: "a1.png", contentType: "image/png",
+                                              byteSize: 10, sha256: "abc", createdAt: Date(timeIntervalSince1970: 1))]
+        s.acceptedFingerprints = ["fp1"]
         CreatorSessionStore.save(s, sessionId: id)
         XCTAssertEqual(CreatorSessionStore.load(sessionId: id), s)
         CreatorSessionStore.clear(sessionId: id)
         XCTAssertNil(CreatorSessionStore.load(sessionId: id))
+    }
+
+    func testSessionJSONContainsNoBase64AttachmentPayload() throws {
+        let id = "nob64-\(UUID().uuidString)"
+        var s = PersistedCreatorSession()
+        s.attachments = [CreatorAttachmentRef(id: "a1", filename: "a1.png", contentType: "image/png",
+                                              byteSize: 4, sha256: "deadbeef", createdAt: Date())]
+        CreatorSessionStore.save(s, sessionId: id)
+        let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let url = base.appendingPathComponent("AICreatorSessions").appendingPathComponent("\(id).json")
+        let json = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertFalse(json.contains("base64"), "session JSON must not carry attachment bytes")
+        CreatorSessionStore.clear(sessionId: id)
     }
 }
