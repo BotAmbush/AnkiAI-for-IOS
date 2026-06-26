@@ -45,7 +45,7 @@ struct InsightsView: View {
                 } header: {
                     Text("AI tips")
                 } footer: {
-                    Text("Live from your collection + revlog: card counts, weak cards (≥3 lapses), today's reviews, 30-day retention, study streak, average reviews/day, and average time/card. (Average ease and per-deck retention are not yet computed.)")
+                    Text("Live from your collection + revlog: card counts, weak cards (≥3 lapses), today's reviews, study streak, average reviews/day, and average time/card. 30-day retention is shown only when you have enough recent reviews (no estimate is invented otherwise). Average ease and per-deck retention are not yet computed.")
                 }
             }
             .navigationTitle("Insights")
@@ -64,7 +64,8 @@ struct InsightsView: View {
         let today = (try? await env.gateway.searchCardIds(query: "rated:1").count) ?? 0
         let reviewed30 = (try? await env.gateway.searchCardIds(query: "rated:30").count) ?? 0
         let again30 = (try? await env.gateway.searchCardIds(query: "rated:30:1").count) ?? 0
-        let retention: Float = reviewed30 > 0 ? max(0, 1 - Float(again30) / Float(reviewed30)) : 0.85
+        // nil when there isn't enough review data — never a fabricated 0.85.
+        let retention: Float? = reviewed30 > 0 ? max(0, 1 - Float(again30) / Float(reviewed30)) : nil
         let g = try? await env.gateway.statsGraphs(search: "", days: 365)
         graphs = g
         // REAL revlog-derived metrics (no placeholders): streak, daily reviews,

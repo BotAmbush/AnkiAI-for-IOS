@@ -18,7 +18,9 @@ public struct DeckRetention: Equatable, Sendable {
 public struct InsightStats: Equatable, Sendable {
     public let streak: Int
     public let todayCount: Int
-    public let retention30d: Float
+    /// 30-day retention, or `nil` when there is not enough review data (never
+    /// fabricated). No retention tip is shown while this is `nil`.
+    public let retention30d: Float?
     public let weakCardCount: Int
     public let avgEaseFactor: Float
     public let avgDailyReviews: Float
@@ -28,7 +30,7 @@ public struct InsightStats: Equatable, Sendable {
     public let deckRetentions: [DeckRetention]
     public let avgSecPerCard: Float
 
-    public init(streak: Int, todayCount: Int, retention30d: Float, weakCardCount: Int,
+    public init(streak: Int, todayCount: Int, retention30d: Float?, weakCardCount: Int,
                 avgEaseFactor: Float, avgDailyReviews: Float, matureCards: Int, totalCards: Int,
                 worstDeck: DeckRetention?, deckRetentions: [DeckRetention], avgSecPerCard: Float) {
         self.streak = streak
@@ -72,13 +74,15 @@ public enum AITipEngine {
             }
         }
 
-        // Retention
-        let retPct = Int(stats.retention30d * 100)
-        switch stats.retention30d {
-        case ..<0.60: tips.append(AITip(icon: "📉", message: L.retentionLow(retPct), priority: 9))
-        case 0.60..<0.75: tips.append(AITip(icon: "📊", message: L.retentionMedium(retPct), priority: 6))
-        case 0.75..<0.90: tips.append(AITip(icon: "✅", message: L.retentionGood(retPct), priority: 1))
-        default: tips.append(AITip(icon: "💡", message: L.retentionHigh(retPct), priority: 2))
+        // Retention — only when real review data exists (never on fabricated data).
+        if let retention = stats.retention30d {
+            let retPct = Int(retention * 100)
+            switch retention {
+            case ..<0.60: tips.append(AITip(icon: "📉", message: L.retentionLow(retPct), priority: 9))
+            case 0.60..<0.75: tips.append(AITip(icon: "📊", message: L.retentionMedium(retPct), priority: 6))
+            case 0.75..<0.90: tips.append(AITip(icon: "✅", message: L.retentionGood(retPct), priority: 1))
+            default: tips.append(AITip(icon: "💡", message: L.retentionHigh(retPct), priority: 2))
+            }
         }
 
         // Weak cards

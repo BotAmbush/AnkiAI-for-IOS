@@ -39,6 +39,25 @@ final class PricingAndTipsTests: XCTestCase {
         let priorities = tips.map { $0.priority }
         XCTAssertEqual(priorities, priorities.sorted(by: >))
     }
+
+    // Repair 5 — no fabricated retention advice when review data is missing.
+    private let retentionIcons = ["📉", "📊", "✅", "💡"]
+
+    func testNoRetentionTipWhenRetentionDataMissing() {
+        let stats = InsightStats(streak: 3, todayCount: 0, retention30d: nil, weakCardCount: 0,
+                                 avgEaseFactor: 2500, avgDailyReviews: 0, matureCards: 0, totalCards: 100,
+                                 worstDeck: nil, deckRetentions: [], avgSecPerCard: 0)
+        let tips = AITipEngine.generateTips(stats)
+        XCTAssertFalse(tips.contains { retentionIcons.contains($0.icon) }, "no retention tip on nil data")
+    }
+
+    func testRetentionTipShownWhenRealDataExists() {
+        let stats = InsightStats(streak: 3, todayCount: 0, retention30d: 0.5, weakCardCount: 0,
+                                 avgEaseFactor: 2500, avgDailyReviews: 0, matureCards: 0, totalCards: 100,
+                                 worstDeck: nil, deckRetentions: [], avgSecPerCard: 0)
+        let tips = AITipEngine.generateTips(stats)
+        XCTAssertTrue(tips.contains { retentionIcons.contains($0.icon) }, "low retention tip on real data")
+    }
 }
 
 /// Sample stats mirror of `InsightsView.sampleStats` for use in tests.
