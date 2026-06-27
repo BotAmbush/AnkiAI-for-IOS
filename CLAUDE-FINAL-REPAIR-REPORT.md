@@ -48,15 +48,16 @@ the pre-import backup. Remaining `allDecks.first { $0.id == … }` uses are find
 name lookups for display, not deck selection.
 
 ## Delivery
-- **CI run:** 28299778258 — green, **230 tests, 0 failures**
-  (https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28299778258).
-- **Final commit (verified IPA):** `d8de59c`.
-- **IPA:** `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,489,914 bytes**. Verified: arm64
-  Mach-O device executable (`cffa edfe 0c00 0001`), ~22 MB executable with the real anki
-  Rust backend statically linked, no XCTest/test payload, no `_CodeSignature`/
-  `.mobileprovision`, no embedded `sk-ant-` secret, MathJax bundled, `Info.plist` has
-  `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`, min iOS 16.
-  (A docs-only commit follows; it does not change the binary.)
+- **CI runs (both green, 230 tests, 0 failures):** code run **28299778258** (commit
+  `d8de59c`) and the final report run **28300139696** (commit `1d65e3e`) —
+  https://github.com/BotAmbush/AnkiAI-for-IOS/actions/runs/28300139696.
+- **Final commit:** `1d65e3e`.
+- **IPA:** `C:\AnkiAI-for-IOS\AnkiAI-unsigned.ipa`, **7,489,914 bytes** (from run
+  28300139696, commit `1d65e3e`). Verified: arm64 Mach-O device executable
+  (`cffa edfe 0c00 0001`), ~22 MB executable with the real anki Rust backend statically
+  linked, no XCTest/test payload, no `_CodeSignature`/`.mobileprovision`, no embedded
+  `sk-ant-` secret, MathJax bundled, `Info.plist` has `UIFileSharingEnabled` +
+  `LSSupportsOpeningDocumentsInPlace`, min iOS 16.
 
 ## Remaining physical-device validation gaps (NOT device-verified)
 - AI creator on device: deck selection enforced; attachment size-limit messaging;
