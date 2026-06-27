@@ -194,7 +194,7 @@ public final class AIChatViewModel: ObservableObject {
     @discardableResult
     public func attachFiles(_ payloads: [ImagePayload]) -> Bool {
         do { try setAttachments(payloads); return true }
-        catch { error = Self.attachmentErrorMessage(error); return false }
+        catch { self.error = Self.attachmentErrorMessage(error); return false }
     }
 
     static func attachmentErrorMessage(_ error: Error) -> String {
@@ -452,7 +452,7 @@ public final class AIChatViewModel: ObservableObject {
         if let attachments {
             // Surface attachment persistence/size failures; don't proceed silently.
             do { try setAttachments(attachments) }
-            catch { error = Self.attachmentErrorMessage(error); return }
+            catch { self.error = Self.attachmentErrorMessage(error); return }
         }
         isLoading = true; error = nil; generationProposals = []; skippedCards = []; parseFailed = false
         repairAttempted = false
