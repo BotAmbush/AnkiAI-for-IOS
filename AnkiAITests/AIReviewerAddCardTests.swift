@@ -37,7 +37,8 @@ final class AIReviewerAddCardTests: XCTestCase {
         XCTAssertNotNil(vm.pendingAddCardMissingDeck, "missing deck asks the user")
         let addedBefore = await gateway.lastAddedDeckId
         XCTAssertNil(addedBefore, "no card added before confirmation")
-        XCTAssertEqual((try? await gateway.allDecks().count) ?? 0, before, "no deck created before confirmation")
+        let countBeforeConfirm = (try? await gateway.allDecks().count) ?? 0
+        XCTAssertEqual(countBeforeConfirm, before, "no deck created before confirmation")
 
         await vm.confirmCreateMissingDeckAndAdd()
         let addedAfter = await gateway.lastAddedDeckId
