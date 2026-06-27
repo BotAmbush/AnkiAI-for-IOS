@@ -83,6 +83,7 @@ final class AIChatViewModelTests: XCTestCase {
         let reply = #"[{"front":"Q1","back":"A1","deckName":"Physics"},{"front":"Q2","back":"A2","deckName":"Default"}]"#
         let (vm, fake, _) = try makeVM(cardId: -1, reply: .success(reply))
         await vm.load()
+        vm.setCreatorDeck(id: 2, path: "Physics")   // creator now requires a deck (Repair 1)
         await vm.generateCards("teach me physics")
         XCTAssertEqual(vm.generationProposals.count, 2)
         XCTAssertEqual(vm.generationProposals[0].front, "Q1")
