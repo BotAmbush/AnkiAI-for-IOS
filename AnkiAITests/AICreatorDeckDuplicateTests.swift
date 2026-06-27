@@ -47,15 +47,42 @@ final class AICreatorDeckDuplicateTests: XCTestCase {
         XCTAssertEqual(addedDeck, 2, "uses the user's selected deck, not the model's")
     }
 
-    func testMissingDeckStopsAndAsks() async throws {
+    func testNoSelectedDeckBlocksGeneration() async throws {
         let (vm, _) = try makeCreator(reply: oneCard)
         await vm.load()
-        vm.setCreatorDeck(id: 9999, path: "Ghost")            // a deck that does not exist
+        // No setCreatorDeck → generation must be blocked, no API/proposals.
         await vm.generateCards("x")
-        let proposal = try XCTUnwrap(vm.generationProposals.first)
+        XCTAssertTrue(vm.generationProposals.isEmpty)
+        XCTAssertEqual(vm.addedCount, 0)
+        XCTAssertTrue(vm.error?.localizedCaseInsensitiveContains("select a destination deck") ?? false)
+    }
+
+    func testNoSelectedDeckBlocksInsertion() async throws {
+        let (vm, _) = try makeCreator(reply: oneCard)
+        await vm.load()
+        let proposal = CardProposal(front: "Q", back: "A", deckName: "Physics", deckId: 2)
+        await vm.addCardFromProposal(proposal)   // no selected deck
+        XCTAssertEqual(vm.addedCount, 0)
+        XCTAssertTrue(vm.error?.localizedCaseInsensitiveContains("select a destination deck") ?? false)
+    }
+
+    func testDeletedSelectedDeckBlocksGenerationAndClearsSelection() async throws {
+        let (vm, _) = try makeCreator(reply: oneCard)
+        await vm.load()
+        vm.setCreatorDeck(id: 9999, path: "Ghost")   // a deck that does not exist (deleted)
+        await vm.generateCards("x")
+        XCTAssertTrue(vm.generationProposals.isEmpty)
+        XCTAssertNil(vm.selectedDeckId, "deleted deck selection is cleared")
+        XCTAssertTrue(vm.error?.localizedCaseInsensitiveContains("no longer exists") ?? false)
+    }
+
+    func testDeletedSelectedDeckBlocksAdd() async throws {
+        let (vm, _) = try makeCreator(reply: oneCard)
+        await vm.load()
+        let proposal = CardProposal(front: "Q", back: "A", deckName: "Physics", deckId: 2)
+        vm.setCreatorDeck(id: 8888, path: "Ghost")   // selection points at a missing deck
         await vm.addCardFromProposal(proposal)
         XCTAssertEqual(vm.addedCount, 0)
-        XCTAssertNotNil(vm.error)
         XCTAssertTrue(vm.error?.localizedCaseInsensitiveContains("deck") ?? false)
     }
 

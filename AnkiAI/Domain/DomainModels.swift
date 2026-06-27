@@ -316,4 +316,7 @@ public enum GatewayError: Error, Equatable {
     case noNotetypes
     /// A write/edit path not yet wired to the backend in milestone M2.1.
     case notImplementedInM21(String)
+    /// A mandatory pre-import `.colpkg` backup failed or was invalid, so the import
+    /// was aborted to protect the collection.
+    case backupRequired(String)
 }

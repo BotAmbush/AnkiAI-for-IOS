@@ -38,11 +38,12 @@ public struct EditProposal: Equatable, Sendable {
     public let explanation: String
 }
 
-/// A proposed new card from the reviewer chat. Mirrors `AddCardProposal`.
+/// A proposed new card from the reviewer chat. `deckName` is NON-authoritative
+/// proposal metadata — the deck is resolved only at approval time, never created or
+/// defaulted before the user approves.
 public struct AddCardProposal: Equatable, Sendable {
     public let front: String
     public let back: String
-    public let deckId: Int64
     public let deckName: String
     public let explanation: String
 }

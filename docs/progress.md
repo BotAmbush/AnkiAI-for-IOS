@@ -2,6 +2,21 @@
 
 Canonical status of the AnkiAI iOS migration. Updated after every milestone.
 
+## 2026-06-27 — fourth repair pass (third independent Codex audit)
+Addressed all five third-audit findings: (1) AI creator requires an explicit selected
+deck before generation AND add — removed the `allDecks.first`/Default fallback,
+revalidate the deck after relaunch + before add (clear if deleted), Generate/Add
+disabled with a "Select a deck" prompt; (2) reviewer add-card resolves the deck only
+at approval (no pre-approval create/mutate, never deck id 1) — missing deck requires
+explicit Create-or-pick-another confirmation; (3) creator attachment persistence is
+throwing/user-visible (exact size limits), failed/oversized attachments are not
+silently kept or sent, count stays synced; (4) `.apkg` pre-import backup is mandatory
++ verified (no silent `try?`) and aborts on failure; (5) stale comments/docs
+reconciled (CreatorSessionStore base64 comment; known-issues M1/M2 archive banner).
+New tests: no-selection/deleted-deck creator, reviewer add-card resolution, attachment
+failure/limit/retry/relaunch, APKG backup-failure-blocks-import. Still
+initial-full-migration, NOT finalized. See CLAUDE-FINAL-REPAIR-REPORT.md.
+
 ## 2026-06-26 — third repair pass (second independent Codex audit)
 Addressed all six second-audit findings (CI green, run 28247367888, **217 tests**):
 (1) AI creator deck selection wired to DeckPickerSheet, persisted + restored, passed

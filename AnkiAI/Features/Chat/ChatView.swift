@@ -143,6 +143,12 @@ struct ChatView: View {
         } message: {
             Text("You already added an identical card to this deck in this session. Add it again?")
         }
+        .alert("Create deck?", isPresented: Binding(get: { vm.pendingAddCardMissingDeck != nil }, set: { if !$0 { vm.dismissMissingDeck() } })) {
+            Button("Create & add") { Task { await vm.confirmCreateMissingDeckAndAdd() } }
+            Button("Cancel", role: .cancel) { vm.dismissMissingDeck() }
+        } message: {
+            Text("The deck “\(vm.pendingAddCardMissingDeck?.deckName ?? "")” doesn't exist yet. Create it and add the card, or cancel and adjust the proposal.")
+        }
         .task {
             await vm.load()
             if vm.isCreatorMode {
@@ -157,13 +163,20 @@ struct ChatView: View {
 
     private var inputBar: some View {
         VStack(spacing: 6) {
+            if vm.isCreatorMode && vm.selectedDeckId == nil {
+                Button { showDeckPicker = true } label: {
+                    Label("Select a deck to generate cards", systemImage: "exclamationmark.circle")
+                        .font(.caption).foregroundColor(.orange)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal)
+            }
             if vm.isCreatorMode && (!attachments.isEmpty || loadingAttachment) {
                 HStack(spacing: 6) {
                     if loadingAttachment { ProgressView().scaleEffect(0.8) }
                     Image(systemName: "paperclip")
                     Text("\(attachments.count) attachment\(attachments.count == 1 ? "" : "s")")
                         .font(.caption)
-                    Button("Clear") { attachments = []; photoItems = [] }.font(.caption)
+                    Button("Clear") { vm.attachFiles([]); attachments = []; photoItems = [] }.font(.caption)
                     Spacer()
                 }
                 .foregroundColor(.secondary)
@@ -189,9 +202,8 @@ struct ChatView: View {
                         let text = source.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !text.isEmpty else { return }
                         if vm.isCreatorMode {
-                            let imgs = attachments
-                            vm.draft = ""; attachments = []; photoItems = []
-                            Task { await vm.generateCards(text, attachments: imgs) }
+                            vm.draft = ""   // attachments are already persisted via attachFiles
+                            Task { await vm.generateCards(text) }
                         } else {
                             input = ""
                             Task { await vm.sendMessage(text) }
@@ -199,7 +211,9 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "paperplane.fill")
                     }
-                    .disabled((vm.isCreatorMode ? vm.draft : input).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !vm.hasAPIKey)
+                    .disabled((vm.isCreatorMode ? vm.draft : input).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                              || !vm.hasAPIKey
+                              || (vm.isCreatorMode && vm.selectedDeckId == nil))   // require a deck (Repair 1)
                 }
             }
         }
@@ -211,7 +225,10 @@ struct ChatView: View {
                 for item in items {
                     if let p = await AttachmentLoader.payload(from: item) { loaded.append(p) }
                 }
-                attachments = loaded
+                // Persist + validate now; failures (oversize/limit) surface via vm.error
+                // and only successfully-stored attachments are kept.
+                vm.attachFiles(loaded)
+                attachments = vm.pendingAttachments
                 loadingAttachment = false
             }
         }
@@ -219,7 +236,8 @@ struct ChatView: View {
             guard case .success(let url) = result else { return }
             loadingAttachment = true
             let pages = AttachmentLoader.pdfPayloads(from: url)
-            attachments.append(contentsOf: pages)
+            vm.attachFiles(vm.pendingAttachments + pages)
+            attachments = vm.pendingAttachments
             loadingAttachment = false
         }
     }

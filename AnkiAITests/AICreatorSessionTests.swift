@@ -24,6 +24,7 @@ final class AICreatorSessionTests: XCTestCase {
         let json = #"[{"front":"Q1","back":"A1","deckName":"Default"},{"front":"Q2","back":"A2","deckName":"Default"}]"#
         let vm1 = try makeCreator(reply: json)
         await vm1.load()
+        vm1.setCreatorDeck(id: 2, path: "Physics")
         await vm1.generateCards("make cards")
         XCTAssertEqual(vm1.generationProposals.count, 2)
 
@@ -51,6 +52,7 @@ final class AICreatorSessionTests: XCTestCase {
         let json = #"[{"front":"Q","back":"A","deckName":"Default"}]"#
         let vm1 = try makeCreator(reply: json)
         await vm1.load()
+        vm1.setCreatorDeck(id: 2, path: "Physics")
         await vm1.generateCards("x")
         XCTAssertEqual(vm1.generationProposals.count, 1)
         vm1.clearSession()
@@ -64,6 +66,7 @@ final class AICreatorSessionTests: XCTestCase {
     func testParseFailurePreservesSessionForRetry() async throws {
         let vm1 = try makeCreator(reply: "I cannot do that as JSON, sorry.")
         await vm1.load()
+        vm1.setCreatorDeck(id: 2, path: "Physics")
         await vm1.generateCards("make cards")
         XCTAssertTrue(vm1.parseFailed, "unparseable response flags failure")
         XCTAssertTrue(vm1.generationProposals.isEmpty)

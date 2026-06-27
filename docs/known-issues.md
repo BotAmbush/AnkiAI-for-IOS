@@ -34,6 +34,27 @@ Confirmed working on device and recorded device-verified: full download, media,
 two-way sync, persistence, learning-delay, MathJax, demo-upload-block. Full **upload**
 remains NOT device-verified (guarded).
 
+## 2026-06-27 fourth repair pass (third audit) — resolved
+- AI creator now REQUIRES an explicit selected deck before generation and before add;
+  the `allDecks.first`/Default fallback is removed; the deck is revalidated after
+  relaunch and before add (cleared if deleted).
+- Reviewer add-card resolves the deck ONLY at approval (no pre-approval create/mutate,
+  never deck id 1); a missing deck requires explicit confirmation or picking another.
+- Creator attachment persistence is throwing/user-visible (exact size limits shown);
+  a failed/oversized attachment is not silently kept or sent; count stays in sync.
+- `.apkg` pre-import backup is now MANDATORY and verified (no silent `try?`); a failed
+  backup aborts the import.
+- Stale comments/docs corrected (CreatorSessionStore base64 comment, etc.).
+
+---
+# ───────── ARCHIVE: historical M1/M2 milestone notes (SUPERSEDED) ─────────
+> Everything below is an EARLY-MILESTONE log kept for history. Where it says `.apkg`
+> import is "blocked", card import is an "open TODO", or features are "stubbed", those
+> statements are **SUPERSEDED** — see the resolution sections above and the
+> authoritative `docs/android-ios-feature-map.yml`. APKG export+import round trips now
+> pass on CI; collection writes, cloze, media, browser, editing, sync, backups are
+> implemented and tested.
+
 ## ⛔ BLOCKER (2026-06-24): GitHub Actions macOS minutes exhausted
 After ~10+ full macOS builds in one day on the **private** repo (macOS minutes bill
 at 10×), GitHub Actions began failing every job **instantly** (0 steps, ~3–6 s, no

@@ -102,15 +102,25 @@ public actor BackendCollectionGateway: CollectionGateway {
     public func exportApkg(toPath path: String) async throws {
         try opened().exportApkg(toPath: path)
     }
-    /// Import a `.apkg` into the current collection. Defence in depth: a `.colpkg`
-    /// backup of the current collection is written first, then the package is merged
-    /// inside a backend transaction that ROLLS BACK on any failure — so a malformed
-    /// or incompatible package leaves the existing collection unchanged. The backup
-    /// is kept next to the collection regardless.
+    /// Import a `.apkg` into the current collection. A successful, verified `.colpkg`
+    /// backup is MANDATORY first (Repair 4): if the backup export fails or the file is
+    /// missing/empty, the import is ABORTED (`GatewayError.backupRequired`) and the
+    /// collection is left untouched. The merge then runs inside a backend transaction
+    /// that rolls back on any failure. `allowWithoutBackup` is an explicit, documented
+    /// escape hatch (e.g. an empty test collection); never used silently in the UI.
     public func importApkg(fromPath apkgPath: String) async throws {
         collection = nil  // release the handle so the backup export can open the file
         let backup = (path as NSString).deletingPathExtension + "-preimport.colpkg"
-        try? AnkiCollection.exportColpkg(path: path, outPath: backup)
+        // MANDATORY, verified pre-import backup — abort (no silent bypass) on failure.
+        do {
+            try AnkiCollection.exportColpkg(path: path, outPath: backup)
+        } catch {
+            throw GatewayError.backupRequired("Pre-import backup failed; import aborted to protect your collection: \(error.localizedDescription)")
+        }
+        let size = ((try? FileManager.default.attributesOfItem(atPath: backup))?[.size] as? Int) ?? 0
+        guard FileManager.default.fileExists(atPath: backup), size > 256 else {
+            throw GatewayError.backupRequired("Pre-import backup is missing or invalid; import aborted.")
+        }
         try opened().importApkg(fromPath: apkgPath)
     }
 

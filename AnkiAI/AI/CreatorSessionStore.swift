@@ -2,8 +2,9 @@ import Foundation
 
 /// Persisted snapshot of an unfinished AI creator session (Issue 3). Stored as a
 /// JSON file in Application Support (NOT UserDefaults) so it survives sheet
-/// dismissal, tab switches, backgrounding and relaunch. Attachments are kept as
-/// their base64 payloads in the same app-controlled file.
+/// dismissal, tab switches, backgrounding and relaunch. Attachments are stored as
+/// metadata-only references (`CreatorAttachmentRef`); the bytes live in scoped files
+/// under CreatorSessions/<id>/Attachments/ — never inline in this JSON.
 public struct PersistedCreatorSession: Codable, Equatable {
     public var draft: String = ""
     public var language: String = AILanguage.automatic.rawValue

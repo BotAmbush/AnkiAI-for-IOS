@@ -41,6 +41,9 @@ public final class AIChatViewModel: ObservableObject {
     /// A proposal awaiting explicit confirmation because it duplicates an already
     /// accepted card this session (Repair 3).
     @Published public var duplicatePending: CardProposal?
+    /// A reviewer add-card proposal whose deck does not exist yet — awaiting the
+    /// user's explicit decision to create it or pick another (Repair 2).
+    @Published public var pendingAddCardMissingDeck: AddCardProposal?
 
     // Preserved for retry without re-calling the API (Issue 5).
     private var lastRawResponse: String?
@@ -84,8 +87,20 @@ public final class AIChatViewModel: ObservableObject {
 
     public func load() async {
         loadMessages()
-        if isCreatorMode { restoreCreatorSession() }
+        if isCreatorMode { restoreCreatorSession(); await revalidateSelectedDeck() }
         if !isCreatorMode { await loadCardContext() }
+    }
+
+    /// After relaunch, confirm the restored creator deck still exists; clear it (so
+    /// the user must reselect) if it was deleted (Repair 1).
+    private func revalidateSelectedDeck() async {
+        guard let id = selectedDeckId else { return }
+        let decks = await currentDecks()
+        if !decks.contains(where: { $0.id == id }) {
+            selectedDeckId = nil
+            selectedDeckPath = nil
+            persistSession()
+        }
     }
 
     // MARK: - Creator session persistence (Issue 3)
@@ -105,10 +120,18 @@ public final class AIChatViewModel: ObservableObject {
         generationProposals = s.proposals.map {
             CardProposal(front: $0.front, back: $0.back, deckName: $0.deckName, deckId: $0.deckId)
         }
-        // Validate + load attachment files; drop any that fail (missing/checksum).
-        attachmentRefs = s.attachments
-        lastAttachments = s.attachments.compactMap { try? CreatorAttachmentStore.load(ref: $0, sessionId: sessionId) }
-        attachmentCount = lastAttachments.count
+        // Validate + load attachment files; drop any whose file is missing/corrupt so
+        // refs, payloads and count stay in sync with what is actually on disk.
+        var loadedRefs: [CreatorAttachmentRef] = []
+        var loadedPayloads: [ImagePayload] = []
+        for ref in s.attachments {
+            if let payload = try? CreatorAttachmentStore.load(ref: ref, sessionId: sessionId) {
+                loadedRefs.append(ref); loadedPayloads.append(payload)
+            }
+        }
+        attachmentRefs = loadedRefs
+        lastAttachments = loadedPayloads
+        attachmentCount = loadedPayloads.count
         // Note: the deck list is intentionally NOT persisted — it is re-resolved
         // from the live backend before any add/retry/repair.
     }
@@ -144,18 +167,47 @@ public final class AIChatViewModel: ObservableObject {
         persistSession()
     }
 
-    /// Persist the current attachments to scoped files (Repair 2) and update refs.
-    /// Replaces any previous attachment files for this session.
-    public func setAttachments(_ payloads: [ImagePayload]) {
+    /// Persist attachments to scoped files (Repair 2/3). THROWS on the first
+    /// validation/write failure so the UI can surface it; only successfully-stored
+    /// attachments are kept and later sent (a failed attachment is never silently
+    /// kept or presented as persisted). `attachmentCount` always matches what is
+    /// actually on disk.
+    public func setAttachments(_ payloads: [ImagePayload]) throws {
         CreatorAttachmentStore.clear(sessionId: sessionId)
         var refs: [CreatorAttachmentRef] = []
-        for p in payloads {
-            if let ref = try? CreatorAttachmentStore.save(payload: p, sessionId: sessionId) { refs.append(ref) }
+        var stored: [ImagePayload] = []
+        defer {
+            attachmentRefs = refs
+            lastAttachments = stored
+            attachmentCount = stored.count
+            persistSession()
         }
-        attachmentRefs = refs
-        lastAttachments = payloads
-        attachmentCount = payloads.count
-        persistSession()
+        for p in payloads {
+            let ref = try CreatorAttachmentStore.save(payload: p, sessionId: sessionId)
+            refs.append(ref); stored.append(p)
+        }
+    }
+
+    /// Non-throwing wrapper for the UI: persists attachments and, on failure,
+    /// surfaces an actionable message (with the exact limit) without silently
+    /// keeping the failed one. Returns true on full success.
+    @discardableResult
+    public func attachFiles(_ payloads: [ImagePayload]) -> Bool {
+        do { try setAttachments(payloads); return true }
+        catch { error = Self.attachmentErrorMessage(error); return false }
+    }
+
+    static func attachmentErrorMessage(_ error: Error) -> String {
+        let perFileMB = CreatorAttachmentStore.maxFileBytes / 1_048_576
+        let perSessionMB = CreatorAttachmentStore.maxSessionBytes / 1_048_576
+        switch error as? CreatorAttachmentError {
+        case .tooLarge: return "That attachment is too large (limit \(perFileMB) MB per file). Remove it and try again."
+        case .sessionTooLarge: return "Attachments exceed the per-session limit (\(perSessionMB) MB total). Remove some and try again."
+        case .writeFailed: return "Couldn't save an attachment to disk. Retry or remove it."
+        case .decodeFailed: return "An attachment couldn't be read. Remove it and try again."
+        case .some(let e): return "Attachment error: \(e)"
+        case .none: return "Attachment error: \(error.localizedDescription)"
+        }
     }
 
     private func loadMessages() {
@@ -256,8 +308,9 @@ public final class AIChatViewModel: ObservableObject {
             insertAssistant("I've prepared an edit proposal for the **\(fieldName)** field. \(explanation)",
                             type: AIChatMessage.typeEditProposal)
         case .addCard(let front, let back, let deckName, let explanation):
-            let deckId = (try? await gateway.resolveOrCreateDeck(name: deckName)) ?? 1
-            pendingAddCardProposal = AddCardProposal(front: front, back: back, deckId: deckId,
+            // Do NOT resolve or create the deck here — that happens only at approval,
+            // with explicit confirmation if the deck is missing (no deck-id-1 default).
+            pendingAddCardProposal = AddCardProposal(front: front, back: back,
                                                      deckName: deckName, explanation: explanation)
             insertAssistant("I've prepared a new card proposal for deck **\(deckName)**. \(explanation)",
                             type: AIChatMessage.typeAddCardProposal)
@@ -293,9 +346,33 @@ public final class AIChatViewModel: ObservableObject {
 
     public func dismissEditProposal() { pendingEditProposal = nil }
 
-    public func approveAddCardProposal(_ proposal: AddCardProposal) async {
+    /// Approve a reviewer add-card proposal. The deck is resolved ONLY now (never
+    /// before approval): an existing deck by name is used; a missing deck requires
+    /// explicit confirmation (`createIfMissing`) or an `overrideDeckId` the user
+    /// picked. Never creates/mutates before approval and never defaults to deck 1.
+    public func approveAddCardProposal(_ proposal: AddCardProposal,
+                                       createIfMissing: Bool = false,
+                                       overrideDeckId: Int64? = nil) async {
         isLoading = true
         do {
+            let decks = try await gateway.allDecks()
+            let targetDeckId: Int64
+            if let override = overrideDeckId {
+                guard decks.contains(where: { $0.id == override }) else {
+                    error = "The chosen deck no longer exists — pick another."
+                    isLoading = false; return
+                }
+                targetDeckId = override
+            } else if let existing = decks.first(where: { $0.name.caseInsensitiveCompare(proposal.deckName) == .orderedSame }) {
+                targetDeckId = existing.id
+            } else if createIfMissing {
+                targetDeckId = try await gateway.resolveOrCreateDeck(name: proposal.deckName)
+            } else {
+                // Missing deck — ask the user; do NOT mutate or default to deck 1.
+                pendingAddCardMissingDeck = proposal
+                isLoading = false; return
+            }
+
             let notetypeId: Int64
             if Self.containsCloze(proposal.front) || Self.containsCloze(proposal.back) {
                 notetypeId = try await gateway.notetypeId(named: "Cloze")
@@ -305,16 +382,34 @@ public final class AIChatViewModel: ObservableObject {
             } else {
                 notetypeId = try await gateway.basicNotetypeId()
             }
-            _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: proposal.deckId)
-            insertUser("✓ Card added to **\(proposal.deckName)**.")
+            _ = try await gateway.addNote(notetypeId: notetypeId, fields: [proposal.front, proposal.back], deckId: targetDeckId)
+            let landed = decks.first { $0.id == targetDeckId }?.name ?? proposal.deckName
+            insertUser("✓ Card added to **\(landed)**.")
+            pendingAddCardProposal = nil
+            pendingAddCardMissingDeck = nil
         } catch {
             self.error = "Failed to add card: \(error.localizedDescription)"
         }
-        pendingAddCardProposal = nil
         isLoading = false
     }
 
-    public func dismissAddCardProposal() { pendingAddCardProposal = nil }
+    /// Confirm creating the missing proposed deck, then add the card there.
+    public func confirmCreateMissingDeckAndAdd() async {
+        guard let proposal = pendingAddCardMissingDeck else { return }
+        pendingAddCardMissingDeck = nil
+        await approveAddCardProposal(proposal, createIfMissing: true)
+    }
+
+    /// Add the pending reviewer proposal to a user-chosen EXISTING deck instead.
+    public func addProposalToExistingDeck(_ deckId: Int64) async {
+        guard let proposal = pendingAddCardMissingDeck ?? pendingAddCardProposal else { return }
+        pendingAddCardMissingDeck = nil
+        await approveAddCardProposal(proposal, overrideDeckId: deckId)
+    }
+
+    public func dismissMissingDeck() { pendingAddCardMissingDeck = nil }
+
+    public func dismissAddCardProposal() { pendingAddCardProposal = nil; pendingAddCardMissingDeck = nil }
 
     /// True if the text contains Anki cloze syntax (`{{c1::…}}`), so the card
     /// should be created with the Cloze note type rather than Basic.
@@ -340,26 +435,37 @@ public final class AIChatViewModel: ObservableObject {
     /// Restored/pending attachments (loaded from scoped files) for UI display.
     public var pendingAttachments: [ImagePayload] { lastAttachments }
 
-    public func generateCards(_ userPrompt: String, defaultDeckName: String = "",
-                              attachments: [ImagePayload]? = nil) async {
+    public func generateCards(_ userPrompt: String, attachments: [ImagePayload]? = nil) async {
         guard let apiKey = settings.apiKey else { error = "Please enter your API key first."; return }
+        // Require an explicit, still-existing destination deck — NEVER fall back to
+        // the first/Default deck (Repair 1).
+        guard let deckId = selectedDeckId, let deckPath = selectedDeckPath else {
+            error = "Select a destination deck before generating cards."
+            return
+        }
+        let allDecks = await currentDecks()
+        guard allDecks.contains(where: { $0.id == deckId }) else {
+            selectedDeckId = nil; selectedDeckPath = nil; persistSession()
+            error = "Your selected deck no longer exists — choose another deck."
+            return
+        }
+        if let attachments {
+            // Surface attachment persistence/size failures; don't proceed silently.
+            do { try setAttachments(attachments) }
+            catch { error = Self.attachmentErrorMessage(error); return }
+        }
         isLoading = true; error = nil; generationProposals = []; skippedCards = []; parseFailed = false
         repairAttempted = false
         lastPrompt = userPrompt
-        if let attachments { setAttachments(attachments) }   // persist to scoped files
         persistSession()
         do {
-            let allDecks = try await gateway.allDecks()
             let hierarchy = allDecks.map { $0.name }.joined(separator: "\n")
-            // Prefer the user's explicitly selected deck as the default destination.
-            let preferred = !defaultDeckName.isEmpty ? defaultDeckName : (selectedDeckPath ?? "")
-            let resolvedDefault = preferred.isEmpty ? (allDecks.first?.name ?? "Default") : preferred
             let client = clientFactory(apiKey, ClaudeAPIClient.defaultCreatorModel)
             let userMessage = Prompts.creatorUserMessage(userPrompt: userPrompt, attachmentCount: lastAttachments.count)
             let result = await client.chatWithImages(
                 systemPrompt: Prompts.creatorStaticSystemPrompt(),
                 history: [ChatTurnWithImage(role: "user", text: userMessage, images: lastAttachments)],
-                dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: resolvedDefault,
+                dynamicSystemSuffix: Prompts.creatorDynamicSystemSuffix(deckHierarchy: hierarchy, defaultDeck: deckPath,
                                                                         language: language),
                 onTokensUsed: { [weak self] usage in
                     Task { @MainActor in self?.recordSpend(AIPricing.costSonnet(input: usage.inputTokens, output: usage.outputTokens)) }
@@ -455,9 +561,20 @@ public final class AIChatViewModel: ObservableObject {
     /// `allowDuplicate` is set (Repairs 1 + 3).
     public func addCardFromProposal(_ proposal: CardProposal, useModelDeck: Bool = false,
                                     allowDuplicate: Bool = false) async {
-        let targetDeckId = useModelDeck ? proposal.deckId : (selectedDeckId ?? proposal.deckId)
-        guard targetDeckId != 0 else {
-            error = "Choose a destination deck before adding cards."; return
+        // The destination is ALWAYS an explicit deck: the user's selected creator
+        // deck by default, or the model's deck only when the user explicitly chose
+        // it. Never the first/Default deck (Repair 1).
+        let targetDeckId: Int64
+        if useModelDeck {
+            guard proposal.deckId != 0 else {
+                error = "The suggested deck couldn't be resolved — choose a deck."; return
+            }
+            targetDeckId = proposal.deckId
+        } else {
+            guard let selected = selectedDeckId else {
+                error = "Select a destination deck before adding cards."; return
+            }
+            targetDeckId = selected
         }
         isLoading = true
         do {

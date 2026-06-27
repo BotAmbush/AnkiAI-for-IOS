@@ -61,6 +61,28 @@ final class BackendApkgRoundTripTests: XCTestCase {
         XCTAssertTrue(foundRTL, "imported Hebrew card renders RTL")
     }
 
+    /// Repair 4 — a failed mandatory pre-import backup ABORTS the import (the
+    /// collection is not modified). Here the target path is a directory, so the
+    /// backup export cannot open it.
+    func testImportBlockedWhenPreImportBackupFails() async throws {
+        let dir = try tempDir()
+        let srcPath = dir.appendingPathComponent("src.anki2").path
+        try AnkiCollection.createFixture(path: srcPath)
+        let apkg = dir.appendingPathComponent("e.apkg").path
+        try await BackendCollectionGateway(path: srcPath).exportApkg(toPath: apkg)
+
+        // A path that is a directory — exportColpkg(path:) will fail to open it.
+        let badPath = dir.appendingPathComponent("not-a-collection-dir")
+        try FileManager.default.createDirectory(at: badPath, withIntermediateDirectories: true)
+        let gateway = BackendCollectionGateway(path: badPath.path)
+        do {
+            try await gateway.importApkg(fromPath: apkg)
+            XCTFail("import must be blocked when the mandatory pre-import backup fails")
+        } catch let error as GatewayError {
+            guard case .backupRequired = error else { return XCTFail("expected backupRequired, got \(error)") }
+        }
+    }
+
     /// Export the imported result again and confirm a second round trip is stable.
     func testApkgDoubleRoundTrip() async throws {
         let dir = try tempDir()
